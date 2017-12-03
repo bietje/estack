@@ -12,10 +12,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <time.h>
 
 #include <estack/estack.h>
 #include <estack/list.h>
 #include <estack/netdev.h>
+#include <estack/ethernet.h>
 
 struct DLL_EXPORT nbdata {
 	void *data;
@@ -41,6 +43,7 @@ typedef enum {
 
 struct DLL_EXPORT netbuf {
 	struct list_head entry;
+	struct list_head bl_entry;
 
 	struct nbdata datalink,
 		network,
@@ -49,6 +52,7 @@ struct DLL_EXPORT netbuf {
 
 	struct netdev *dev;
 	uint16_t protocol;
+	time_t timestamp;
 	uint32_t flags;
 };
 
@@ -69,6 +73,12 @@ static inline void netbuf_set_flag(struct netbuf *nb, unsigned int num)
 	mask = 1UL << num;
 	nb->flags |= mask;
 }
+
+static inline void netbuf_set_timestamp(struct netbuf *nb)
+{
+	nb->timestamp = estack_utime();
+}
+
 CDECL_END
 
 #endif __NETBUF_H__

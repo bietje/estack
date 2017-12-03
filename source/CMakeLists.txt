@@ -13,6 +13,9 @@ ENDIF(WIN32)
 SET(ESTACK_SRCS
 netbuf.c
 util.c
+netdev.c
+802.3/eth-in.c
+802.3/eth-out.c
 #${ESTACK_SOURCES_DBG}
 )
 
@@ -31,7 +34,11 @@ netbuf.h
 list.h
 config.h.in
 netdev.h
+ethernet.h
 )
+
+SET(BASE_HDRS
+${PROJECT_SOURCE_DIR}/include/estack.h)
 
 # Append include dir to header files
 prepend_path(GENERIC_HEADERS ${INCLUDE_DIR}/estack)
@@ -43,8 +50,8 @@ CONFIGURE_FILE(${INCLUDE_DIR}/estack/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/con
 include_directories(${PROJECT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR})
 
 # Shared and static library definitions
-add_library(estack SHARED ${ESTACK_SRCS} ${GENERIC_HEADERS})
-add_library(estack-static STATIC ${ESTACK_SRCS} ${GENERIC_HEADERS})
+add_library(estack SHARED ${ESTACK_SRCS} ${GENERIC_HEADERS} ${BASE_HDRS})
+add_library(estack-static STATIC ${ESTACK_SRCS} ${GENERIC_HEADERS} ${BASE_HDRS})
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
 	IF(WIN32)

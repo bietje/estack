@@ -21,6 +21,9 @@
 #define __always_inline __forceinline
 #pragma comment(lib, "Ws2_32.lib")
 
+#define likely(x) (x)
+#define unlikely(x) (x)
+
 #else
 #define DLL_EXPORT
 
@@ -64,6 +67,7 @@ typedef unsigned char u_char;
 
 CDECL
 extern DLL_EXPORT void *z_alloc(size_t size);
+extern DLL_EXPORT time_t estack_utime(void);
 CDECL_END
 
 #endif // !__ESTACK_H__

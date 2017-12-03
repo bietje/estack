@@ -32,6 +32,8 @@ struct netif {
 	uint8_t dummy;
 };
 
+typedef void(*xmit_handle)(struct netbuf *nb);
+
 struct DLL_EXPORT netdev {	
 	const char *name;
 	struct list_head entry;
@@ -44,10 +46,15 @@ struct DLL_EXPORT netdev {
 	uint8_t hwaddr[MAX_ADDR_LEN];
 	uint8_t addrlen;
 
+	xmit_handle rx, tx;
 	int(*write)(struct netdev *dev, struct netbuf *nb);
 	struct netbuf *(*read)(struct netdev *dev);
 	int(*available)(struct netdev *dev);
 };
+
+CDECL
+extern DLL_EXPORT void netdev_add_backlog(struct netdev *dev, struct netbuf *nb);
+CDECL_END
 
 #define backlog_for_each_safe(bl, e, p) \
 			list_for_each_safe(e, p, &((bl)->head))
