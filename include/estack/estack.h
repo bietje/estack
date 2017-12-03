@@ -18,6 +18,7 @@
 
 #pragma warning(disable : 4251)
 #define DLL_EXPORT __declspec(dllexport)
+#define __always_inline __forceinline
 #pragma comment(lib, "Ws2_32.lib")
 
 #else
@@ -25,6 +26,8 @@
 
 #ifndef offsetof
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+
+#define __always_inline __attribute__((__always_inline__))
 
 typedef unsigned char u_char;
 #endif

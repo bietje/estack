@@ -29,6 +29,7 @@ estack.h
 netbuf.h
 list.h
 config.h.in
+netdev.h
 )
 
 # Append include dir to header files
