@@ -12,6 +12,7 @@ ENDIF(WIN32)
 
 SET(ESTACK_SRCS
 netbuf.c
+util.c
 #${ESTACK_SOURCES_DBG}
 )
 

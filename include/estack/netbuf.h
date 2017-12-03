@@ -22,10 +22,22 @@ struct DLL_EXPORT nbdata {
 	size_t size;
 };
 
-#define NBUF_ARRIVED 0
-#define NBUF_DROPPED 1
-#define NBUF_AGAIN   2
-#define NBUF_RX      3
+#define NBUF_DATALINK_ALLOC    0
+#define NBUF_NETWORK_ALLOC     1
+#define NBUF_TRANSPORT_ALLOC   2
+#define NBUF_APPLICATION_ALLOC 3
+
+#define NBUF_ARRIVED           4
+#define NBUF_DROPPED           5
+#define NBUF_AGAIN             6
+#define NBUF_RX                7
+
+typedef enum {
+	NBAF_DATALINK,
+	NBAF_NETWORK,
+	NBAF_TRANSPORT,
+	NBAF_APPLICTION,
+} netbuf_type_t;
 
 struct DLL_EXPORT netbuf {
 	struct list_head entry;

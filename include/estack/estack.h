@@ -62,4 +62,8 @@ typedef unsigned char u_char;
 #define CDECL_END
 #endif
 
+CDECL
+extern DLL_EXPORT void *z_alloc(size_t size);
+CDECL_END
+
 #endif // !__ESTACK_H__
