@@ -14,6 +14,7 @@ SET(ESTACK_SRCS
 netbuf.c
 util.c
 netdev.c
+drivers/pcap.c
 802.3/eth-in.c
 802.3/eth-out.c
 #${ESTACK_SOURCES_DBG}
@@ -35,6 +36,7 @@ list.h
 config.h.in
 netdev.h
 ethernet.h
+pcap.h
 )
 
 SET(BASE_HDRS

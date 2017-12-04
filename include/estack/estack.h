@@ -9,6 +9,7 @@
 #ifndef __ESTACK_H__
 #define __ESTACK_H__
 
+#include <time.h>
 #include <stdint.h>
 
 #ifdef WIN32

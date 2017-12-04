@@ -79,6 +79,11 @@ static inline void netbuf_set_timestamp(struct netbuf *nb)
 	nb->timestamp = estack_utime();
 }
 
+extern DLL_EXPORT struct netbuf *netbuf_realloc(struct netbuf *nb, netbuf_type_t type, size_t size);
+extern DLL_EXPORT struct netbuf *netbuf_alloc(netbuf_type_t type, size_t size);
+extern DLL_EXPORT void netbuf_free(struct netbuf *nb);
+extern DLL_EXPORT void netbuf_cpy_data(struct netbuf *nb, const void *src,
+	size_t length, netbuf_type_t type);
 CDECL_END
 
 #endif __NETBUF_H__

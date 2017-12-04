@@ -25,4 +25,9 @@ struct DLL_EXPORT ethernet_header {
 };
 #pragma pack(pop)
 
+CDECL
+extern DLL_EXPORT void ethernet_input(struct netbuf *nb);
+extern DLL_EXPORT void ethernet_output(struct netbuf *nb);
+CDECL_END
+
 #endif // !__ETHERNET_H__

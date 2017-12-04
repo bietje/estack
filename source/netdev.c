@@ -15,6 +15,17 @@
 #include <estack/list.h>
 #include <estack/netdev.h>
 
+static struct list_head devices = STATIC_INIT_LIST_HEAD(devices);
+
+void netdev_init(struct netdev *dev)
+{
+	list_head_init(&dev->entry);
+	list_head_init(&dev->backlog.head);
+	dev->backlog.size = 0;
+
+	list_add(&dev->entry, &devices);
+}
+
 void netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
 {
 	assert(dev);

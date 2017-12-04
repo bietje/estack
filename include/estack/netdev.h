@@ -42,18 +42,19 @@ struct DLL_EXPORT netdev {
 	struct netdev_backlog backlog;
 	struct netdev_stats stats;
 
-	struct netif interface;
+	struct netif netif;
 	uint8_t hwaddr[MAX_ADDR_LEN];
 	uint8_t addrlen;
 
 	xmit_handle rx, tx;
 	int(*write)(struct netdev *dev, struct netbuf *nb);
-	struct netbuf *(*read)(struct netdev *dev);
+	int (*read)(struct netdev *dev, int num);
 	int(*available)(struct netdev *dev);
 };
 
 CDECL
 extern DLL_EXPORT void netdev_add_backlog(struct netdev *dev, struct netbuf *nb);
+extern DLL_EXPORT void netdev_init(struct netdev *dev);
 CDECL_END
 
 #define backlog_for_each_safe(bl, e, p) \
