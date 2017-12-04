@@ -15,6 +15,7 @@
 #include <estack/netbuf.h>
 #include <estack/ethernet.h>
 #include <estack/inet.h>
+#include <estack/log.h>
 
 void ethernet_input(struct netbuf *nb)
 {
@@ -27,15 +28,17 @@ void ethernet_input(struct netbuf *nb)
 
 	nb->protocol = ntohs(hdr->type);
 
+	print_dbg("Received ethernet (802.3) frame!\n");
+
 	switch (nb->protocol) {
 	case ETH_TYPE_ARP:
-		printf("Arp packet received!\n");
+		//printf("Arp packet received!\n");
 		break;
 
 	case ETH_TYPE_IP:
 	case ETH_TYPE_IP6:
 	default:
-		printf("Received protocol with unkown type field!\n");
+		print_dbg("Unkown ethernet type detected (packet dropped) (type number: %u)\n", nb->protocol);
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		break;
 	}
