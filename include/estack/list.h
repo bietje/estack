@@ -1,10 +1,10 @@
 /*
-* E/Stack list header
-*
-* Author: Michel Megens
-* Date: 28/11/2017
-* Email: dev@bietje.net
-*/
+ * E/Stack list header
+ *
+ * Author: Michel Megens
+ * Date: 28/11/2017
+ * Email: dev@bietje.net
+ */
 
 /**
  * @file etaos/list.h

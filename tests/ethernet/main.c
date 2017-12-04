@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <pcap.h>
+#include <estack.h>
 
-#include <estack/estack.h>
 #include <estack/netbuf.h>
 #include <estack/ethernet.h>
 #include <estack/netdev.h>
@@ -53,6 +53,7 @@ int main(int argc, char **argv)
 		input = argv[1];
 	}
 
+	estack_init(NULL);
 	dev = pcapdev_create(input, IPV4_ADDR, hwaddr, 1500);
 	dev->read(dev, -1);
 	printf("Backlog size: %i\n", dev->backlog.size);

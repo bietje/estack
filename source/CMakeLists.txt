@@ -11,6 +11,7 @@ netdev.c
 drivers/pcap.c
 802.3/eth-in.c
 802.3/eth-out.c
+log.c
 )
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -18,6 +19,7 @@ SET(${ESTACK_SRCS}
 ${ESTACK_SRCS}
 ${PROJECT_SOURCE_DIR}/source/dev/pcap.c
 )
+SET(HAVE_DEBUG True)
 ENDIF()
 
 # Magic macro's
@@ -37,6 +39,7 @@ config.h.in
 netdev.h
 ethernet.h
 pcapdev.h
+log.h
 )
 
 SET(BASE_HDRS
@@ -46,10 +49,10 @@ ${PROJECT_SOURCE_DIR}/include/estack.h)
 prepend_path(GENERIC_HEADERS ${INCLUDE_DIR}/estack)
 
 # Compile the configure file
-CONFIGURE_FILE(${INCLUDE_DIR}/estack/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+CONFIGURE_FILE(${INCLUDE_DIR}/estack/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 
 # Set the include directories
-include_directories(${PROJECT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
 
 # Shared and static library definitions
 add_library(estack SHARED ${ESTACK_SRCS} ${GENERIC_HEADERS} ${BASE_HDRS})

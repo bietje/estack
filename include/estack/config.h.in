@@ -11,3 +11,4 @@
 #cmakedefine HAVE_WINSOCK_H
 #cmakedefine HAVE_INET_H
 #cmakedefine HAVE_TIME_H
+#cmakedefine HAVE_DEBUG
