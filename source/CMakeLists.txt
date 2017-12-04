@@ -2,14 +2,6 @@
 # E/STACK library CMake file
 #
 
-IF(WIN32)
-	IF(CMAKE_BUILD_TYPE MATCHES Debug)
-		SET(ESTACK_SOURCES_DBG ${CMAKE_CURRENT_SOURCE_DIR}/dev/pcap.c)
-		link_directories(${PROJECT_SOURCE_DIR}/external/pcap/lib)
-		include_directories(${PROJECT_SOURCE_DIR}/external/pcap/include)
-	ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
-ENDIF(WIN32)
-
 SET(ESTACK_SRCS
 netbuf.c
 util.c
@@ -17,8 +9,21 @@ netdev.c
 drivers/pcap.c
 802.3/eth-in.c
 802.3/eth-out.c
-#${ESTACK_SOURCES_DBG}
 )
+
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+SET(${ESTACK_SRCS}
+${ESTACK_SRCS}
+${PROJECT_SOURCE_DIR}/source/dev/pcap.c
+)
+IF(WIN32)
+	link_directories(${PROJECT_SOURCE_DIR}/external/pcap/lib)
+	include_directories(${PROJECT_SOURCE_DIR}/external/pcap/include)
+	SET(PCAP_LIBRARY wpcap packet)
+ELSE()
+	find_library(PCAP REQUIRED)
+ENDIF()
+ENDIF()
 
 # Magic macro's
 FUNCTION( prepend_path SOURCE_FILES INC_PATH )
@@ -36,7 +41,7 @@ list.h
 config.h.in
 netdev.h
 ethernet.h
-pcap.h
+pcapdev.h
 )
 
 SET(BASE_HDRS
@@ -56,11 +61,6 @@ add_library(estack SHARED ${ESTACK_SRCS} ${GENERIC_HEADERS} ${BASE_HDRS})
 add_library(estack-static STATIC ${ESTACK_SRCS} ${GENERIC_HEADERS} ${BASE_HDRS})
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
-	IF(WIN32)
-		target_link_libraries(estack packet wpcap)
-		target_link_libraries(estack-static packet wpcap)
-	ELSE()
-		target_link_libraries(estack packet pcap)
-		target_link_libraries(estack-static packet pcap)
-	ENDIF()
+	target_link_libraries(estack ${PCAP_LIBRARY})
+	target_link_libraries(estack-static ${PCAP_LIBRARY})
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
