@@ -9,9 +9,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <assert.h>
 #include <pcap.h>
 #include <stdarg.h>
+
+#ifndef WIN32
+#include <limits.h>
+#endif
 
 #include <estack/estack.h>
 #include <estack/netbuf.h>
@@ -103,7 +108,7 @@ static int pcapdev_read(struct netdev *dev, int num)
 }
 
 #define HWADDR_LENGTH 6
-static void pcapdev_init(struct netdev *dev, const char *name, const char *hw, uint16_t mtu)
+static void pcapdev_init(struct netdev *dev, const char *name, const uint8_t *hw, uint16_t mtu)
 {
 	int len;
 

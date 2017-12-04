@@ -2,6 +2,8 @@
 # E/STACK library CMake file
 #
 
+include( ${PROJECT_SOURCE_DIR}/cmake/pcap.cmake )
+
 SET(ESTACK_SRCS
 netbuf.c
 util.c
@@ -16,13 +18,6 @@ SET(${ESTACK_SRCS}
 ${ESTACK_SRCS}
 ${PROJECT_SOURCE_DIR}/source/dev/pcap.c
 )
-IF(WIN32)
-	link_directories(${PROJECT_SOURCE_DIR}/external/pcap/lib)
-	include_directories(${PROJECT_SOURCE_DIR}/external/pcap/include)
-	SET(PCAP_LIBRARY wpcap packet)
-ELSE()
-	find_library(PCAP REQUIRED)
-ENDIF()
 ENDIF()
 
 # Magic macro's

@@ -17,7 +17,9 @@
 #include <estack/netdev.h>
 #include <estack/pcapdev.h>
 
+#ifdef WIN32
 #include <Windows.h>
+#endif
 
 #ifndef WIN32
 typedef unsigned char u_char;
@@ -43,7 +45,7 @@ int main(int argc, char **argv)
 {
 	char *input;
 	struct netdev *dev;
-	const char hwaddr[] = HW_ADDR;
+	const uint8_t hwaddr[] = HW_ADDR;
 
 	if (argc < 2) {
 		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);

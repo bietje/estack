@@ -11,8 +11,8 @@ project(estack)
 include(CheckIncludeFiles)
 
 if(UNIX)
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall")
 endif(UNIX)
 
 # Check header files
@@ -28,4 +28,7 @@ CHECK_INCLUDE_FILES (arpa/inet.h HAVE_INET_H)
 
 add_subdirectory(source)
 add_subdirectory(resources)
+
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
 add_subdirectory(tests)
+ENDIF()

@@ -30,15 +30,16 @@
 
 #ifndef offsetof
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-
-#define __always_inline __attribute__((__always_inline__))
-
-typedef unsigned char u_char;
 #endif
 
 #define container_of(ptr, type, member) ({		\
 		const typeof( ((type *)0)->member) *__mptr = (ptr); \
 		(type *)( ( char *)__mptr - offsetof(type,member) );})
+
+#ifndef __always_inline
+#define __always_inline __attribute__((__always_inline__))
+#endif
+typedef unsigned char u_char;
 #endif
 
 /* x86 / x64 definitions */

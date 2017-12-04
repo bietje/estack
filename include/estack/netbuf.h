@@ -86,4 +86,4 @@ extern DLL_EXPORT void netbuf_cpy_data(struct netbuf *nb, const void *src,
 	size_t length, netbuf_type_t type);
 CDECL_END
 
-#endif __NETBUF_H__
+#endif //!__NETBUF_H__

@@ -32,6 +32,7 @@ struct netif {
 	uint8_t dummy;
 };
 
+struct netbuf;
 typedef void(*xmit_handle)(struct netbuf *nb);
 
 struct DLL_EXPORT netdev {	
