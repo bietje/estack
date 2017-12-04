@@ -28,3 +28,4 @@ CHECK_INCLUDE_FILES (arpa/inet.h HAVE_INET_H)
 
 add_subdirectory(source)
 add_subdirectory(resources)
+add_subdirectory(tests)
