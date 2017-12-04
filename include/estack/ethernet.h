@@ -10,6 +10,7 @@
 #define __ETHERNET_H__
 
 #include <estack/estack.h>
+#include <estack/netbuf.h>
 
 typedef enum {
 	ETH_TYPE_ARP = 0x806,
@@ -27,7 +28,18 @@ struct DLL_EXPORT ethernet_header {
 
 CDECL
 extern DLL_EXPORT void ethernet_input(struct netbuf *nb);
-extern DLL_EXPORT void ethernet_output(struct netbuf *nb);
+extern DLL_EXPORT void ethernet_output(struct netbuf *nb, uint8_t *hw);
+
+static inline struct ethernet_header *ethernet_nb_to_hdr(struct netbuf *nb)
+{
+	return nb->datalink.data;
+}
+
+static inline uint16_t ethernet_get_type(struct netbuf *nb)
+{
+	struct ethernet_header *hdr = ethernet_nb_to_hdr(nb);
+	return hdr->type;
+}
 CDECL_END
 
 #endif // !__ETHERNET_H__

@@ -120,3 +120,31 @@ void netbuf_cpy_data(struct netbuf *nb, const void *src, size_t length, netbuf_t
 
 	memcpy(nbd->data, src, length);
 }
+
+static size_t __netbuf_pkt_size(struct netbuf *nb)
+{
+	size_t bytes;
+
+	bytes = nb->application.size;
+	bytes += nb->transport.size;
+	bytes += nb->network.size;
+	bytes += nb->datalink.size;
+	return bytes;
+}
+
+size_t netbuf_get_size(struct netbuf *nb)
+{
+	struct list_head *entry;
+	struct netbuf *_nb;
+	size_t totals;
+
+	totals = 0UL;
+	list_for_each(entry, &nb->entry)
+	{
+		_nb = list_entry(entry, struct netbuf, entry);
+		totals += __netbuf_pkt_size(_nb);
+	}
+
+	totals += __netbuf_pkt_size(nb);
+	return totals;
+}

@@ -17,7 +17,6 @@
 #include <estack/estack.h>
 #include <estack/list.h>
 #include <estack/netdev.h>
-#include <estack/ethernet.h>
 
 struct DLL_EXPORT nbdata {
 	void *data;
@@ -49,6 +48,7 @@ struct DLL_EXPORT netbuf {
 		network,
 		transport,
 		application;
+	size_t size;
 
 	struct netdev *dev;
 	uint16_t protocol;
@@ -79,11 +79,17 @@ static inline void netbuf_set_timestamp(struct netbuf *nb)
 	nb->timestamp = estack_utime();
 }
 
+static inline void netbuf_set_dev(struct netbuf *nb, struct netdev *dev)
+{
+	nb->dev = dev;
+}
+
 extern DLL_EXPORT struct netbuf *netbuf_realloc(struct netbuf *nb, netbuf_type_t type, size_t size);
 extern DLL_EXPORT struct netbuf *netbuf_alloc(netbuf_type_t type, size_t size);
 extern DLL_EXPORT void netbuf_free(struct netbuf *nb);
 extern DLL_EXPORT void netbuf_cpy_data(struct netbuf *nb, const void *src,
 	size_t length, netbuf_type_t type);
+extern DLL_EXPORT size_t netbuf_set_size(struct netbuf *nb);
 CDECL_END
 
 #endif //!__NETBUF_H__

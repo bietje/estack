@@ -16,8 +16,8 @@
 #include <estack/list.h>
 
 struct DLL_EXPORT netdev_stats {
-	uint32_t rx_bytes;
-	uint32_t tx_bytes;
+	uint32_t rx_bytes, rx_packets;
+	uint32_t tx_bytes, tx_packets;
 	uint32_t dropped;
 };
 
@@ -47,7 +47,7 @@ struct DLL_EXPORT netdev {
 	uint8_t hwaddr[MAX_ADDR_LEN];
 	uint8_t addrlen;
 
-	xmit_handle rx, tx;
+	xmit_handle rx;
 	int(*write)(struct netdev *dev, struct netbuf *nb);
 	int (*read)(struct netdev *dev, int num);
 	int(*available)(struct netdev *dev);
@@ -56,6 +56,7 @@ struct DLL_EXPORT netdev {
 CDECL
 extern DLL_EXPORT void netdev_add_backlog(struct netdev *dev, struct netbuf *nb);
 extern DLL_EXPORT void netdev_init(struct netdev *dev);
+extern DLL_EXPORT int netdev_poll(struct netdev *dev);
 CDECL_END
 
 #define backlog_for_each_safe(bl, e, p) \
