@@ -8,19 +8,22 @@ SET(ESTACK_SRCS
 netbuf.c
 util.c
 netdev.c
-drivers/pcap.c
 802.3/eth-in.c
 802.3/eth-out.c
 log.c
 )
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
-SET(${ESTACK_SRCS}
+SET(ESTACK_SRCS
 ${ESTACK_SRCS}
-${PROJECT_SOURCE_DIR}/source/dev/pcap.c
+drivers/pcap.c
 )
 SET(HAVE_DEBUG True)
 ENDIF()
+
+SET(${ESTACK_SRCS}
+${ESTACK_SRCS}
+)
 
 # Magic macro's
 FUNCTION( prepend_path SOURCE_FILES INC_PATH )
@@ -62,3 +65,12 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
 	target_link_libraries(estack ${PCAP_LIBRARY})
 	target_link_libraries(estack-static ${PCAP_LIBRARY})
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+
+
+# Generate MSVC filters
+foreach(source IN LISTS ${ESTACK_SRCS})
+    get_filename_component(source_path "${source}" PATH)
+    string(REPLACE "/" "\\" source_path_msvc "Source Files\\${source_path}")
+	MESSAGE(STATUS ${source_path_msvc})
+    source_group("${source_path_msvc}" FILES "${source}")
+endforeach()
