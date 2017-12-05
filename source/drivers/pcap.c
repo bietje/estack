@@ -6,6 +6,8 @@
  * Email: dev@bietje.net
  */
 
+#define _CRT_SECURE_NO_WARNINGS 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -22,6 +24,7 @@
 #include <estack/netbuf.h>
 #include <estack/netdev.h>
 #include <estack/ethernet.h>
+#include <estack/error.h>
 
 struct pcapdev_private {
 	pcap_t *cap;
@@ -73,9 +76,42 @@ static int pcapdev_available(struct netdev *dev)
 	return count;
 }
 
+#define OUTPUT_FILE_NAME "outputframes.pcap"
+#define PCAP_MAGIC 0xa1b2c3d4
+
 static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 {
-	return -1;
+	FILE *fp;
+	struct pcap_file_header fh;
+	struct pcap_pkthdr hdr;
+	uint64_t prem = 0xAAAAAAAAAAABULL;
+
+	fp = fopen(OUTPUT_FILE_NAME, "w");
+	assert(fp);
+	fh.magic = PCAP_MAGIC;
+	fh.sigfigs = 0;
+	fh.version_major = 2;
+	fh.version_minor = 8;
+	fh.snaplen = USHRT_MAX;
+	fh.thiszone = 0;
+	fh.linktype = DLT_EN10MB;
+
+	hdr.caplen = hdr.len = nb->size;
+	hdr.ts.tv_sec = (long)(estack_utime() / 1e6L);
+
+	fwrite(&fh, sizeof(fh), 1, fp);
+	fwrite(&hdr, sizeof(hdr), 1, fp);
+
+	if (nb->datalink.size > 0)
+		fwrite(nb->datalink.data, nb->datalink.size, 1, fp);
+	if (nb->network.size > 0)
+		fwrite(nb->network.data, nb->network.size, 1, fp);
+	if (nb->transport.size > 0)
+		fwrite(nb->transport.data, nb->transport.size, 1, fp);
+	if (nb->application.size > 0)
+		fwrite(nb->application.data, nb->application.size, 1, fp);
+
+	return -EOK;
 }
 
 static int pcapdev_read(struct netdev *dev, int num)
@@ -98,6 +134,8 @@ static int pcapdev_read(struct netdev *dev, int num)
 		length = hdr->len;
 		nb = netbuf_alloc(NBAF_DATALINK, length);
 		netbuf_cpy_data(nb, data, length, NBAF_DATALINK);
+		netbuf_set_flag(nb, NBUF_RX);
+		nb->protocol = ethernet_get_type(nb);
 		netdev_add_backlog(dev, nb);
 
 		num -= 1;
@@ -154,7 +192,6 @@ struct netdev *pcapdev_create(const char *srcfile, uint32_t ip, const uint8_t *h
 	dev->available = pcapdev_available;
 
 	dev->rx = ethernet_input;
-	dev->tx = ethernet_output;
 
 	return dev;
 }
