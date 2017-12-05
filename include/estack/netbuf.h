@@ -89,7 +89,7 @@ extern DLL_EXPORT struct netbuf *netbuf_alloc(netbuf_type_t type, size_t size);
 extern DLL_EXPORT void netbuf_free(struct netbuf *nb);
 extern DLL_EXPORT void netbuf_cpy_data(struct netbuf *nb, const void *src,
 	size_t length, netbuf_type_t type);
-extern DLL_EXPORT size_t netbuf_set_size(struct netbuf *nb);
+extern DLL_EXPORT size_t netbuf_get_size(struct netbuf *nb);
 CDECL_END
 
 #endif //!__NETBUF_H__

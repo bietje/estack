@@ -18,14 +18,14 @@
 
 #ifdef HAVE_DEBUG
 CDECL
-extern DLL_EXPORT void log_init(FILE *file);
 extern DLL_EXPORT void print_dbg(const char *fmt, ...);
 CDECL_END
 #else
-#define log_init(x)
+#define print_dbg(x, ...)
 #endif
 
 CDECL
+extern DLL_EXPORT void log_init(FILE *file);
 extern DLL_EXPORT void panic(const char *fmt, ...);
 CDECL_END
 

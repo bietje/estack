@@ -22,6 +22,7 @@ static void vfprint_dbg(const char *prefix, const char *fmt, va_list va)
 	vfprintf(dbg_file, fmt, va);
 }
 
+#ifdef HAVE_DEBUG
 void print_dbg(const char *fmt, ...)
 {
 	va_list va;
@@ -30,6 +31,7 @@ void print_dbg(const char *fmt, ...)
 	vfprint_dbg("[E/STACK]: ", fmt, va);
 	va_end(va);
 }
+#endif
 
 void panic(const char *fmt, ...)
 {

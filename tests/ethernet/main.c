@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <pcap.h>
 #include <estack.h>
+#include <string.h>
 
 #include <estack/netbuf.h>
 #include <estack/ethernet.h>
