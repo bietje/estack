@@ -37,7 +37,6 @@ static int err_exit(int code, const char *fmt, ...)
 
 	getchar();
 	exit(code);
-	return code; /* Shouldn't be reached */
 }
 
 #define IPV4_ADDR 0x9130CD1B

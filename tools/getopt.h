@@ -9,6 +9,7 @@
 #ifndef __GETOPT_H__
 #define __GETOPT_H__
 
+extern int getopt(int nargc, char * const nargv[], const char *ostr);
 extern char *optarg; 
 extern int optind, opterr, optopt;
 

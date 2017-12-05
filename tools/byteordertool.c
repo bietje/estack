@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 #ifdef WIN32
-#include "getopt.h"
+#include <getopt.h>
 #include <WinSock2.h>
 #pragma comment(lib, "Ws2_32.lib")
 #else
@@ -40,18 +40,27 @@ static void print_usage_long(const char *program)
 	printf("\t-v\t\t Print the program version string\n");
 	printf("\t-s\t\t Treat the input number as a 16-bit integer\n");
 	printf("\t-i\t\t Treat the input number as a 32-bit integer\n");
+#ifdef WIN32
 	printf("\t-l\t\t Treat the input number as a 64-bit integer\n");
+#endif
 	printf("\t-n\t\t Convert network to host order\n");
 }
 
 int main(int argc, char **argv)
 {
-	bool hosttonetwork;
-	bool v_16, v_32, v_64;
+	bool v_16, v_32;
+#ifdef WIN32
+	bool v_64;
+#endif
 	uint64_t num;
 	int c;
 
 	v_32 = true;
+	v_16 = false;
+#ifdef WIN32
+	v_64 = false;
+#endif
+
 	while ((c = getopt(argc, argv, "hvisl")) != -1)
 	{
 		switch (c) {
@@ -72,10 +81,12 @@ int main(int argc, char **argv)
 			v_32 = false;
 			break;
 
+#ifdef WIN32
 		case 'l':
 			v_64 = true;
 			v_32 = false;
 			break;
+#endif
 
 		default:
 			print_usage_short(argv[0]);
@@ -95,8 +106,10 @@ int main(int argc, char **argv)
 		printf("Result: %u\n", htons(num & 0xFFFF));
 	else if (v_32)
 		printf("Result: %u\n", htonl((uint32_t)num));
+#ifdef WIN32
 	else if (v_64)
 		printf("Result: %llu\n", htonll(num));
+#endif
 
 	return -EXIT_SUCCESS;
 }

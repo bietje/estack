@@ -18,6 +18,7 @@
 ((type *)((char*)(addr) - offsetof(type, field)))
 
 #pragma warning(disable : 4251)
+#pragma warning (disable : 4820)
 #define DLL_EXPORT __declspec(dllexport)
 #define __always_inline __forceinline
 #pragma comment(lib, "Ws2_32.lib")

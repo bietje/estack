@@ -23,9 +23,18 @@ if(UNIX)
 		set(CFLAGS_EXTRA "${CFLAGS_EXTRA} -O3 -ffast-math")
 	endif()
 
-		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CFLAGS_EXTRA} -std=gnu11 -Wall")
-		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CFLAGS_EXTRA} -std=gnu++11 -Wall")
-endif(UNIX)
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CFLAGS_EXTRA} -std=gnu11 -Wall")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CFLAGS_EXTRA} -std=gnu++11 -Wall")
+elseif(WIN32)
+	if(CMAKE_BUILD_TYPE MATCHES Debug)
+		SET(CFLAGS_EXTRA "/W4 /Od /Ob1 /Zi /Gd")
+	elseif(CMAKE_BUILD_TYPE MATCHES Release)
+		SET(CFLAGS_EXTRA "/W4 /O2 /Ob2 /Gd /Oi")
+	endif()
+	
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CFLAGS_EXTRA}")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CFLAGS_EXTRA}")
+endif()
 
 
 # Check header files

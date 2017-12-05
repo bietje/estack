@@ -11,6 +11,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include <estack/estack.h>
+
 #include "config.h"
 
 void *z_alloc(size_t size)

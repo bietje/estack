@@ -181,6 +181,7 @@ struct netdev *pcapdev_create(const char *srcfile, const char *dstfile, uint32_t
 	struct netdev *dev;
 	int len;
 
+	(void)ip;
 	priv = z_alloc(sizeof(*priv));
 	assert(srcfile != NULL);
 	assert(priv != NULL);

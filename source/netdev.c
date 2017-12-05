@@ -70,7 +70,7 @@ static void netdev_tx_stats_inc(struct netdev *dev, struct netbuf *nb)
 	stats->tx_bytes += nb->size;
 }
 
-static inline void netdev_dropped_stats_inc(struct netdev *dev, struct netbuf *nb)
+static inline void netdev_dropped_stats_inc(struct netdev *dev)
 {
 	struct netdev_stats *stats;
 
@@ -144,7 +144,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 		if (netbuf_test_flag(nb, NBUF_AGAIN)) {
 			netdev_add_backlog(dev, nb);
 		} else if (netbuf_test_flag(nb, NBUF_DROPPED)) {
-			netdev_dropped_stats_inc(dev, nb);
+			netdev_dropped_stats_inc(dev);
 			netbuf_free(nb);
 			continue;
 		}
@@ -176,6 +176,7 @@ static void __netdev_demux_handle(struct netbuf *nb)
 
 	dev = nb->dev;
 	list_for_each(entry, &dev->protocols) {
+		proto = list_entry(entry, struct protocol, entry);
 		if (proto->protocol == nb->protocol)
 			proto->rx(nb);
 	}

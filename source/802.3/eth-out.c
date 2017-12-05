@@ -1,10 +1,10 @@
 /*
-* E/Stack ethernet input
-*
-* Author: Michel Megens
-* Date: 03/12/2017
-* Email: dev@bietje.net
-*/
+ * E/Stack ethernet input
+ *
+ * Author: Michel Megens
+ * Date: 03/12/2017
+ * Email: dev@bietje.net
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
