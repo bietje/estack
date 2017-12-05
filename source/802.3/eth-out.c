@@ -16,7 +16,24 @@
 #include <estack/ethernet.h>
 #include <estack/inet.h>
 
-void ethernet_output(struct netbuf *nb)
+#define ETHERNET_MAC_LENGTH 6
+
+void ethernet_output(struct netbuf *nb, uint8_t *hw)
 {
-	netbuf_set_flag(nb, NBUF_DROPPED);
+	struct ethernet_header *hdr;
+	struct netdev *dev;
+
+	nb = netbuf_realloc(nb, NBAF_DATALINK, sizeof(*hdr));
+	hdr = nb->datalink.data;
+
+	dev = nb->dev;
+
+	memcpy(hdr->src_mac, dev->hwaddr, ETHERNET_MAC_LENGTH);
+	if (hw)
+		memcpy(hdr->dest_mac, hw, ETHERNET_MAC_LENGTH);
+	else
+		memset(hdr->dest_mac, 0xFF, ETHERNET_MAC_LENGTH);
+
+	hdr->type = htons(nb->protocol);
+	netdev_add_backlog(dev, nb);
 }

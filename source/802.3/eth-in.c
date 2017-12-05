@@ -26,13 +26,9 @@ void ethernet_input(struct netbuf *nb)
 	nb->network.size = nb->datalink.size - sizeof(struct ethernet_header);
 	nb->datalink.size = sizeof(struct ethernet_header);
 
-	nb->protocol = ntohs(hdr->type);
-
-	print_dbg("Received ethernet (802.3) frame!\n");
-
 	switch (nb->protocol) {
 	case ETH_TYPE_ARP:
-		//printf("Arp packet received!\n");
+		print_dbg("Received ARP packet in an ethernet (802.3) frame\n");
 		break;
 
 	case ETH_TYPE_IP:
