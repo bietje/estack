@@ -12,6 +12,10 @@
 #include <time.h>
 #include <stdint.h>
 
+#ifndef UNUSED
+#define UNUSED(x) (void)x
+#endif
+
 #ifdef WIN32
 
 #define container_of(addr, type, field) \

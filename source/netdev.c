@@ -17,7 +17,7 @@
 #include <estack/error.h>
 #include <estack/inet.h>
 
-static struct list_head devices = STATIC_INIT_LIST_HEAD(devices);
+static struct list_head dst_cache = STATIC_INIT_LIST_HEAD(dst_cache);
 static int netdev_processing_weight = 15000;
 static int netdev_rx_max = 10;
 
@@ -27,8 +27,6 @@ void netdev_init(struct netdev *dev)
 	list_head_init(&dev->backlog.head);
 	list_head_init(&dev->protocols);
 	dev->backlog.size = 0;
-
-	list_add(&dev->entry, &devices);
 }
 
 void netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
@@ -99,6 +97,80 @@ bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto)
 	}
 
 	return false;
+}
+
+void netdev_add_destination(const uint8_t *dst, uint8_t daddrlen , const uint8_t *src, uint8_t saddrlen)
+{
+	struct dst_cache_entry *centry;
+
+	centry = z_alloc(sizeof(*centry));
+	assert(centry);
+
+	centry->saddr_length = saddrlen;
+	centry->hwaddr_length = daddrlen;
+	
+	centry->saddr = malloc(saddrlen);
+	memcpy(centry->saddr, src, saddrlen);
+
+	centry->hwaddr = malloc(daddrlen);
+	memcpy(centry->hwaddr, dst, daddrlen);
+
+	list_head_init(&centry->entry);
+	list_add(&centry->entry, &dst_cache);
+}
+
+bool netdev_update_destination(const uint8_t *dst, uint8_t dlength, const uint8_t *src, uint8_t slength)
+{
+	struct list_head *entry;
+	struct dst_cache_entry *centry;
+
+	list_for_each(entry, &dst_cache) {
+		centry = list_entry(entry, struct dst_cache_entry, entry);
+		if (!memcmp(centry->saddr, src, slength)) {
+			if (dlength != centry->hwaddr_length)
+				centry->hwaddr = realloc(centry->hwaddr, dlength);
+
+			memcpy(centry->hwaddr, dst, dlength);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool netdev_remove_destination(const uint8_t *src, uint8_t length)
+{
+	struct list_head *entry;
+	struct dst_cache_entry *centry;
+
+	list_for_each(entry, &dst_cache)
+	{
+		centry = list_entry(entry, struct dst_cache_entry, entry);
+		if (!memcmp(centry->saddr, src, length)) {
+			list_del(entry);
+			free(centry->hwaddr);
+			free(centry->saddr);
+			free(centry);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+struct dst_cache_entry *netdev_find_destination(const uint8_t *src, uint8_t length)
+{
+	struct list_head *entry;
+	struct dst_cache_entry *centry;
+
+	list_for_each(entry, &dst_cache)
+	{
+		centry = list_entry(entry, struct dst_cache_entry, entry);
+		if (!memcmp(centry->saddr, src, length))
+			return centry;
+	}
+
+	return NULL;
 }
 
 static int netdev_process_backlog(struct netdev *dev, int weight)

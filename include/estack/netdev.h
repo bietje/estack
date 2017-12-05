@@ -27,6 +27,7 @@ struct DLL_EXPORT netdev_backlog {
 };
 
 #define MAX_ADDR_LEN 8
+#define MAX_LOCAL_ADDRESS_LENGTH 16
 
 struct netif {
 	uint8_t dummy;
@@ -45,6 +46,7 @@ struct DLL_EXPORT netdev {
 	const char *name;
 	struct list_head entry;
 	struct list_head protocols;
+	struct list_head destinations;
 
 	uint16_t mtu;
 	struct netdev_backlog backlog;
@@ -60,12 +62,25 @@ struct DLL_EXPORT netdev {
 	int(*available)(struct netdev *dev);
 };
 
+struct DLL_EXPORT dst_cache_entry {
+	struct list_head entry;
+
+	uint8_t *saddr;
+	uint8_t saddr_length;
+	uint8_t *hwaddr;
+	uint8_t hwaddr_length;
+};
+
 CDECL
 extern DLL_EXPORT void netdev_add_backlog(struct netdev *dev, struct netbuf *nb);
 extern DLL_EXPORT void netdev_init(struct netdev *dev);
 extern DLL_EXPORT int netdev_poll(struct netdev *dev);
 extern DLL_EXPORT void netdev_demux_handle(struct netbuf *nb);
 extern DLL_EXPORT bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto);
+extern DLL_EXPORT void netdev_add_destination(const uint8_t *dst, uint8_t daddrlen, const uint8_t *src, uint8_t saddrlen);
+extern DLL_EXPORT struct dst_cache_entry *netdev_find_destination(const uint8_t *src, uint8_t length);
+extern DLL_EXPORT bool netdev_remove_destination(const uint8_t *src, uint8_t length);
+extern DLL_EXPORT bool netdev_update_destination(const uint8_t *dst, uint8_t dlength, const uint8_t *src, uint8_t slength);
 CDECL_END
 
 #define backlog_for_each_safe(bl, e, p) \
