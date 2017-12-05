@@ -15,7 +15,7 @@
 #include <estack/estack.h>
 #include <estack/netdev.h>
 
-extern DLL_EXPORT struct netdev *pcapdev_create(const char *srcfile, uint32_t ip,
-	const uint8_t *hwaddr, uint16_t mtu);
+extern DLL_EXPORT struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
+	uint32_t ip, const uint8_t *hwaddr, uint16_t mtu);
 
 #endif

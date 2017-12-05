@@ -29,6 +29,7 @@
 struct pcapdev_private {
 	pcap_t *cap;
 	char *src;
+	FILE *dst;
 	struct netdev dev;
 	int available;
 };
@@ -82,24 +83,16 @@ static int pcapdev_available(struct netdev *dev)
 static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 {
 	FILE *fp;
-	struct pcap_file_header fh;
 	struct pcap_pkthdr hdr;
-	uint64_t prem = 0xAAAAAAAAAAABULL;
+	struct pcapdev_private *priv;
 
-	fp = fopen(OUTPUT_FILE_NAME, "w");
+	priv = container_of(dev, struct pcapdev_private, dev);
+	fp = priv->dst;
 	assert(fp);
-	fh.magic = PCAP_MAGIC;
-	fh.sigfigs = 0;
-	fh.version_major = 2;
-	fh.version_minor = 8;
-	fh.snaplen = USHRT_MAX;
-	fh.thiszone = 0;
-	fh.linktype = DLT_EN10MB;
 
 	hdr.caplen = hdr.len = nb->size;
 	hdr.ts.tv_sec = (long)(estack_utime() / 1e6L);
 
-	fwrite(&fh, sizeof(fh), 1, fp);
 	fwrite(&hdr, sizeof(hdr), 1, fp);
 
 	if (nb->datalink.size > 0)
@@ -164,7 +157,25 @@ static void pcapdev_init(struct netdev *dev, const char *name, const uint8_t *hw
 	memcpy((char*)dev->name, name, len);
 }
 
-struct netdev *pcapdev_create(const char *srcfile, uint32_t ip, const uint8_t *hwaddr, uint16_t mtu)
+static void pcapdev_setup_output(const char *dst, struct pcapdev_private *priv)
+{
+	struct pcap_file_header fh;
+
+	priv->dst = fopen(dst, "w");
+	assert(priv->dst);
+
+	fh.magic = PCAP_MAGIC;
+	fh.sigfigs = 0;
+	fh.version_major = 2;
+	fh.version_minor = 8;
+	fh.snaplen = USHRT_MAX;
+	fh.thiszone = 0;
+	fh.linktype = DLT_EN10MB;
+	
+	fwrite(&fh, sizeof(fh), 1, priv->dst);
+}
+
+struct netdev *pcapdev_create(const char *srcfile, const char *dstfile, uint32_t ip, const uint8_t *hwaddr, uint16_t mtu)
 {
 	struct pcapdev_private *priv;
 	struct netdev *dev;
@@ -178,6 +189,7 @@ struct netdev *pcapdev_create(const char *srcfile, uint32_t ip, const uint8_t *h
 	priv->src = z_alloc(len + 1);
 	memcpy(priv->src, srcfile, len);
 
+	pcapdev_setup_output(dstfile, priv);
 	priv->cap = pcapdev_open_file(srcfile);
 	dev = &priv->dev;
 	pcapdev_init(dev, "dbg0", hwaddr, mtu);

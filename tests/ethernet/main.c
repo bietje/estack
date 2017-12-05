@@ -16,6 +16,7 @@
 #include <estack/ethernet.h>
 #include <estack/netdev.h>
 #include <estack/pcapdev.h>
+#include <estack/error.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -41,6 +42,26 @@ static int err_exit(int code, const char *fmt, ...)
 #define IPV4_ADDR 0x9130CD1B
 #define HW_ADDR {0xF4, 0x6D, 0x04, 0x18, 0xD6, 0x5D}
 
+static struct netbuf *build_dummy_frame(const char *data, struct netdev *dev)
+{
+	struct netbuf *nb;
+	int len;
+
+	len = strlen(data);
+
+	nb = netbuf_alloc(NBAF_NETWORK, strlen(data));
+	netbuf_set_dev(nb, dev);
+
+	memcpy(nb->network.data, data, len);
+	nb->network.size = len;
+	nb->protocol = ETH_TYPE_IP;
+
+	return nb;
+}
+
+#define SAMPLE_DATA "This is some sample data. This data is used in a dummy packet " \
+                    "for testing purposes."
+
 int main(int argc, char **argv)
 {
 	char *input;
@@ -54,8 +75,10 @@ int main(int argc, char **argv)
 	}
 
 	estack_init(NULL);
-	dev = pcapdev_create(input, IPV4_ADDR, hwaddr, 1500);
-	dev->read(dev, -1);
+
+	dev = pcapdev_create(input, "ethernet-output.pcap", IPV4_ADDR, hwaddr, 1500);
+	ethernet_output(build_dummy_frame(SAMPLE_DATA, dev), dev->hwaddr);
+	netdev_poll(dev);
 	printf("Backlog size: %i\n", dev->backlog.size);
 
 	getchar();
