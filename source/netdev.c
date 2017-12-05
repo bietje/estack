@@ -1,5 +1,5 @@
 /*
- * E/Stack network device's
+ * E/STACK network device's
  *
  * Author: Michel Megens
  * Date: 03/12/2017
@@ -25,6 +25,7 @@ void netdev_init(struct netdev *dev)
 {
 	list_head_init(&dev->entry);
 	list_head_init(&dev->backlog.head);
+	list_head_init(&dev->protocols);
 	dev->backlog.size = 0;
 
 	list_add(&dev->entry, &devices);
@@ -75,6 +76,29 @@ static inline void netdev_dropped_stats_inc(struct netdev *dev, struct netbuf *n
 
 	stats = &dev->stats;
 	stats->dropped++;
+}
+
+void netdev_add_protocol(struct netdev *dev, struct protocol *proto)
+{
+	list_head_init(&proto->entry);
+	list_add_tail(&proto->entry, &dev->protocols);
+}
+
+bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto)
+{
+	struct list_head *entry;
+	struct protocol *pentry;
+
+	list_for_each(entry, &dev->protocols) {
+		pentry = list_entry(entry, struct protocol, entry);
+
+		if (proto == pentry) {
+			list_del(entry);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 static int netdev_process_backlog(struct netdev *dev, int weight)
@@ -142,4 +166,25 @@ int netdev_poll(struct netdev *dev)
 		dev->read(dev, netdev_rx_max);
 
 	return netdev_process_backlog(dev, netdev_processing_weight);
+}
+
+static void __netdev_demux_handle(struct netbuf *nb)
+{
+	struct netdev *dev;
+	struct list_head *entry;
+	struct protocol *proto;
+
+	dev = nb->dev;
+	list_for_each(entry, &dev->protocols) {
+		if (proto->protocol == nb->protocol)
+			proto->rx(nb);
+	}
+}
+
+void netdev_demux_handle(struct netbuf *nb)
+{
+	assert(nb);
+	
+	if (nb->protocol != 0)
+		__netdev_demux_handle(nb);
 }

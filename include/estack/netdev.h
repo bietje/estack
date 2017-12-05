@@ -35,9 +35,16 @@ struct netif {
 struct netbuf;
 typedef void(*xmit_handle)(struct netbuf *nb);
 
+struct protocol {
+	struct list_head entry;
+	uint16_t protocol;
+	xmit_handle rx;
+};
+
 struct DLL_EXPORT netdev {	
 	const char *name;
 	struct list_head entry;
+	struct list_head protocols;
 
 	uint16_t mtu;
 	struct netdev_backlog backlog;
@@ -57,6 +64,8 @@ CDECL
 extern DLL_EXPORT void netdev_add_backlog(struct netdev *dev, struct netbuf *nb);
 extern DLL_EXPORT void netdev_init(struct netdev *dev);
 extern DLL_EXPORT int netdev_poll(struct netdev *dev);
+extern DLL_EXPORT void netdev_demux_handle(struct netbuf *nb);
+extern DLL_EXPORT bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto);
 CDECL_END
 
 #define backlog_for_each_safe(bl, e, p) \

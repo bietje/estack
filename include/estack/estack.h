@@ -76,6 +76,13 @@ typedef unsigned char u_char;
 #define CDECL_END
 #endif
 
+#ifndef __cplusplus
+typedef unsigned char bool;
+
+#define false 0
+#define true !false
+#endif
+
 CDECL
 extern DLL_EXPORT void *z_alloc(size_t size);
 extern DLL_EXPORT time_t estack_utime(void);
