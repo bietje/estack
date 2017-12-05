@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <estack/estack.h>
 #include <estack/netbuf.h>
@@ -26,6 +27,7 @@ void netdev_init(struct netdev *dev)
 	list_head_init(&dev->entry);
 	list_head_init(&dev->backlog.head);
 	list_head_init(&dev->protocols);
+	list_head_init(&dev->destinations);
 	dev->backlog.size = 0;
 }
 
@@ -99,7 +101,8 @@ bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto)
 	return false;
 }
 
-void netdev_add_destination(const uint8_t *dst, uint8_t daddrlen , const uint8_t *src, uint8_t saddrlen)
+void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t daddrlen ,
+	                        const uint8_t *src, uint8_t saddrlen)
 {
 	struct dst_cache_entry *centry;
 
@@ -116,15 +119,16 @@ void netdev_add_destination(const uint8_t *dst, uint8_t daddrlen , const uint8_t
 	memcpy(centry->hwaddr, dst, daddrlen);
 
 	list_head_init(&centry->entry);
-	list_add(&centry->entry, &dst_cache);
+	list_add(&centry->entry, &dev->destinations);
 }
 
-bool netdev_update_destination(const uint8_t *dst, uint8_t dlength, const uint8_t *src, uint8_t slength)
+bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t dlength,
+	                           const uint8_t *src, uint8_t slength)
 {
 	struct list_head *entry;
 	struct dst_cache_entry *centry;
 
-	list_for_each(entry, &dst_cache) {
+	list_for_each(entry, &dev->destinations) {
 		centry = list_entry(entry, struct dst_cache_entry, entry);
 		if (!memcmp(centry->saddr, src, slength)) {
 			if (dlength != centry->hwaddr_length)
@@ -138,12 +142,12 @@ bool netdev_update_destination(const uint8_t *dst, uint8_t dlength, const uint8_
 	return false;
 }
 
-bool netdev_remove_destination(const uint8_t *src, uint8_t length)
+bool netdev_remove_destination(struct netdev *dev, const uint8_t *src, uint8_t length)
 {
 	struct list_head *entry;
 	struct dst_cache_entry *centry;
 
-	list_for_each(entry, &dst_cache)
+	list_for_each(entry, &dev->destinations)
 	{
 		centry = list_entry(entry, struct dst_cache_entry, entry);
 		if (!memcmp(centry->saddr, src, length)) {
@@ -158,12 +162,12 @@ bool netdev_remove_destination(const uint8_t *src, uint8_t length)
 	return false;
 }
 
-struct dst_cache_entry *netdev_find_destination(const uint8_t *src, uint8_t length)
+struct dst_cache_entry *netdev_find_destination(struct netdev *dev, const uint8_t *src, uint8_t length)
 {
 	struct list_head *entry;
 	struct dst_cache_entry *centry;
 
-	list_for_each(entry, &dst_cache)
+	list_for_each(entry, &dev->destinations)
 	{
 		centry = list_entry(entry, struct dst_cache_entry, entry);
 		if (!memcmp(centry->saddr, src, length))

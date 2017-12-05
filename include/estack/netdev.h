@@ -77,10 +77,14 @@ extern DLL_EXPORT void netdev_init(struct netdev *dev);
 extern DLL_EXPORT int netdev_poll(struct netdev *dev);
 extern DLL_EXPORT void netdev_demux_handle(struct netbuf *nb);
 extern DLL_EXPORT bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto);
-extern DLL_EXPORT void netdev_add_destination(const uint8_t *dst, uint8_t daddrlen, const uint8_t *src, uint8_t saddrlen);
-extern DLL_EXPORT struct dst_cache_entry *netdev_find_destination(const uint8_t *src, uint8_t length);
-extern DLL_EXPORT bool netdev_remove_destination(const uint8_t *src, uint8_t length);
-extern DLL_EXPORT bool netdev_update_destination(const uint8_t *dst, uint8_t dlength, const uint8_t *src, uint8_t slength);
+extern DLL_EXPORT void netdev_add_destination(struct netdev *dev, const uint8_t *dst,
+	uint8_t daddrlen, const uint8_t *src, uint8_t saddrlen);
+extern DLL_EXPORT struct dst_cache_entry *netdev_find_destination(struct netdev *dev,
+	const uint8_t *src, uint8_t length);
+extern DLL_EXPORT bool netdev_remove_destination(struct netdev *dev, const uint8_t *src,
+	uint8_t length);
+extern DLL_EXPORT bool netdev_update_destination(struct netdev *dev, const uint8_t *dst,
+	uint8_t dlength, const uint8_t *src, uint8_t slength);
 CDECL_END
 
 #define backlog_for_each_safe(bl, e, p) \
