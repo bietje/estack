@@ -26,6 +26,8 @@ struct DLL_EXPORT ethernet_header {
 };
 #pragma pack(pop)
 
+#define ETHERNET_MAC_LENGTH 6
+
 CDECL
 extern DLL_EXPORT void ethernet_input(struct netbuf *nb);
 extern DLL_EXPORT void ethernet_output(struct netbuf *nb, uint8_t *hw);

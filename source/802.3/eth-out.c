@@ -17,8 +17,6 @@
 #include <estack/ethernet.h>
 #include <estack/inet.h>
 
-#define ETHERNET_MAC_LENGTH 6
-
 void ethernet_output(struct netbuf *nb, uint8_t *hw)
 {
 	struct ethernet_header *hdr;
