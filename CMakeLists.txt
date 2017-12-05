@@ -41,6 +41,7 @@ CHECK_INCLUDE_FILES (arpa/inet.h HAVE_INET_H)
 
 add_subdirectory(source)
 add_subdirectory(resources)
+add_subdirectory(tools)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
 add_subdirectory(tests)
