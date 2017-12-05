@@ -11,9 +11,22 @@ project(estack)
 include(CheckIncludeFiles)
 
 if(UNIX)
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall")
+	if(CMAKE_BUILD_TYPE MATCHES Debug)
+		SET(CFLAGS_EXTRA "-Og -ggdb -g3")
+	endif()
+
+	if(BUILD_TYPE MATCHES Native)
+		SET(CFLAGS_EXTRA "-march=native -mtune=native")
+	endif()
+
+	if(CMAKE_BUILD_TYPE MATCHES Release)
+		set(CFLAGS_EXTRA "${CFLAGS_EXTRA} -O3 -ffast-math")
+	endif()
+
+		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CFLAGS_EXTRA} -std=gnu11 -Wall")
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CFLAGS_EXTRA} -std=gnu++11 -Wall")
 endif(UNIX)
+
 
 # Check header files
 CHECK_INCLUDE_FILES (stdlib.h HAVE_STDLIB_H)
