@@ -11,6 +11,8 @@ netdev.c
 802.3/eth-in.c
 802.3/eth-out.c
 log.c
+addrutil.c
+ipv4/arp.c
 )
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -43,6 +45,7 @@ netdev.h
 ethernet.h
 pcapdev.h
 log.h
+arp.h
 )
 
 SET(BASE_HDRS

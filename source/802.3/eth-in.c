@@ -16,6 +16,7 @@
 #include <estack/ethernet.h>
 #include <estack/inet.h>
 #include <estack/log.h>
+#include <estack/arp.h>
 
 void ethernet_input(struct netbuf *nb)
 {
@@ -28,7 +29,7 @@ void ethernet_input(struct netbuf *nb)
 
 	switch (nb->protocol) {
 	case ETH_TYPE_ARP:
-		print_dbg("Received ARP packet in an ethernet (802.3) frame\n");
+		arp_input(nb);
 		break;
 
 	case ETH_TYPE_IP:

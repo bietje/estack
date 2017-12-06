@@ -104,6 +104,8 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	if (nb->application.size > 0)
 		fwrite(nb->application.data, nb->application.size, 1, fp);
 
+	fflush(fp);
+
 	return -EOK;
 }
 

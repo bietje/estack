@@ -91,6 +91,9 @@ typedef unsigned char bool;
 CDECL
 extern DLL_EXPORT void *z_alloc(size_t size);
 extern DLL_EXPORT time_t estack_utime(void);
+
+extern DLL_EXPORT char *ipv4_ntoa(uint32_t addr, char *buf, size_t length);
+extern DLL_EXPORT char *ethernet_mac_ntoa(uint8_t *addr, char *buf, size_t length);
 CDECL_END
 
 #endif // !__ESTACK_H__
