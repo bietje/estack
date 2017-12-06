@@ -24,10 +24,10 @@
 #include <estack/inet.h>
 
 static struct list_head dst_cache = STATIC_INIT_LIST_HEAD(dst_cache);
+static struct list_head devices = STATIC_INIT_LIST_HEAD(devices);
 
  /**
   * @brief	Initialize a network device.
-  *
   * @param	dev	Device to initialise.
   */
 void netdev_init(struct netdev *dev)
@@ -36,10 +36,47 @@ void netdev_init(struct netdev *dev)
 	list_head_init(&dev->backlog.head);
 	list_head_init(&dev->protocols);
 	list_head_init(&dev->destinations);
-	dev->backlog.size = 0;
 
+	dev->backlog.size = 0;
 	dev->processing_weight = 15000;
 	dev->rx_max = 10;
+	list_add(&dev->entry, &devices);
+}
+
+/**
+ * @brief Search the global device list.
+ * @param name Device name to search for.
+ * @return A device with name \p name or \p NULL.
+ */
+struct netdev *netdev_find(const char *name)
+{
+	struct list_head *entry;
+	struct netdev *dev;
+
+	list_for_each(entry, &devices) {
+		dev = list_entry(entry, struct netdev, entry);
+		if (!strcmp(dev->name, name))
+			return dev;
+	}
+
+	return NULL;
+}
+
+/**
+ * @brief Find and remove a given device.
+ * @param name Name to search for.
+ * @return The device that was removed or \p NULL.
+ */
+struct netdev *netdev_remove(const char *name)
+{
+	struct netdev *dev;
+
+	dev = netdev_find(name);
+	if (!dev)
+		return NULL;
+
+	list_del(&dev->entry);
+	return dev;
 }
 
 /**
