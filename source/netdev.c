@@ -24,15 +24,12 @@
 #include <estack/inet.h>
 
 static struct list_head dst_cache = STATIC_INIT_LIST_HEAD(dst_cache);
-static int netdev_processing_weight = 15000;
-static int netdev_rx_max = 10;
 
  /**
   * @brief	Initialize a network device.
   *
   * @param	dev	Device to initialise.
   */
-
 void netdev_init(struct netdev *dev)
 {
 	list_head_init(&dev->entry);
@@ -40,6 +37,9 @@ void netdev_init(struct netdev *dev)
 	list_head_init(&dev->protocols);
 	list_head_init(&dev->destinations);
 	dev->backlog.size = 0;
+
+	dev->processing_weight = 15000;
+	dev->rx_max = 10;
 }
 
 /**
@@ -315,9 +315,9 @@ int netdev_poll(struct netdev *dev)
 	available = dev->available(dev);
 
 	if (available > 0)
-		dev->read(dev, netdev_rx_max);
+		dev->read(dev, dev->rx_max);
 
-	return netdev_process_backlog(dev, netdev_processing_weight);
+	return netdev_process_backlog(dev, dev->processing_weight);
 }
 
 static void __netdev_demux_handle(struct netbuf *nb)

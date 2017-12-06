@@ -80,6 +80,9 @@ struct DLL_EXPORT netdev {
 
 	xmit_handle rx; //!< Receive handler.
 
+	int processing_weight;
+	int rx_max;
+
 	/**
 	 * @brief PHY write handle.
 	 * @param dev Device pointer.
@@ -131,6 +134,12 @@ extern DLL_EXPORT bool netdev_remove_destination(struct netdev *dev, const uint8
 	uint8_t length);
 extern DLL_EXPORT bool netdev_update_destination(struct netdev *dev, const uint8_t *dst,
 	uint8_t dlength, const uint8_t *src, uint8_t slength);
+
+static inline void netdev_config_params(struct netdev *dev, int maxrx, int maxweight)
+{
+	dev->rx_max = maxrx;
+	dev->processing_weight = maxweight;
+}
 CDECL_END
 
 /**
