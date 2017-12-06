@@ -1,0 +1,9 @@
+/**
+ * @defgroup netdev Network device core
+ * @brief Networking (device) core for the E/STACK network stack.
+ *
+ * This piece of software can be viewed as as an additional (purely softwarematic) layer
+ * in the OSI model, right on top of the PHY-layer. It offloads data from the PHY-drivers
+ * and pushes them into the datalink layer for receiving packets. Packets that are to be
+ * transmitted are pushed into the PHY-layer.
+ */

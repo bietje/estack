@@ -6,6 +6,11 @@
  * Email: dev@bietje.net
  */
 
+/**
+ * @addtogroup netdev
+ * @{
+ */
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -22,6 +27,12 @@ static struct list_head dst_cache = STATIC_INIT_LIST_HEAD(dst_cache);
 static int netdev_processing_weight = 15000;
 static int netdev_rx_max = 10;
 
+ /**
+  * @brief	Initialize a network device.
+  *
+  * @param	dev	Device to initialise.
+  */
+
 void netdev_init(struct netdev *dev)
 {
 	list_head_init(&dev->entry);
@@ -31,6 +42,11 @@ void netdev_init(struct netdev *dev)
 	dev->backlog.size = 0;
 }
 
+/**
+ * @brief Add a packet buffer to the backlog of \p dev.
+ * @param dev Device to add \p nb to.
+ * @param nb Packet buffer to add.
+ */
 void netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
 {
 	assert(dev);
@@ -40,12 +56,22 @@ void netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
 	dev->backlog.size += 1;
 }
 
+/**
+ * @brief Remove a backlog entry.
+ * @param dev Device to remove \p nb from.
+ * @param nb Packet buffer to remove.
+ */
 static inline void netdev_remove_backlog_entry(struct netdev *dev, struct netbuf *nb)
 {
 	list_del(&nb->bl_entry);
 	dev->backlog.size -= 1;
 }
 
+/**
+ * @brief Getter for the backlog length.
+ * @param dev Device to get the backlog length for.
+ * @return The length of the backlog for \p dev.
+ */
 int netdev_backlog_length(struct netdev *dev)
 {
 	assert(dev);
@@ -78,12 +104,23 @@ static inline void netdev_dropped_stats_inc(struct netdev *dev)
 	stats->dropped++;
 }
 
+/**
+ * @brief Add a protocol handler.
+ * @param dev Device to add \p proto to.
+ * @param proto Protocol handler to add to \p dev.
+ */
 void netdev_add_protocol(struct netdev *dev, struct protocol *proto)
 {
 	list_head_init(&proto->entry);
 	list_add_tail(&proto->entry, &dev->protocols);
 }
 
+/**
+ * @brief Remove a protocol from \p dev.
+ * @param dev Device to remove \p proto from.
+ * @param proto Protocol to remove.
+ * @return True of false based on whether the protocol was removed or not.
+ */
 bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto)
 {
 	struct list_head *entry;
@@ -101,6 +138,14 @@ bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto)
 	return false;
 }
 
+/**
+ * @brief Add a destination cache entry to \p dev.
+ * @param dev Device to add the destination cache entry to.
+ * @param dst Datalink layer address.
+ * @param daddrlen Length of \p dst.
+ * @param src Network layer address.
+ * @param saddrlen Length of \p saddrlen.
+ */
 void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t daddrlen ,
 	                        const uint8_t *src, uint8_t saddrlen)
 {
@@ -122,6 +167,15 @@ void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t dadd
 	list_add(&centry->entry, &dev->destinations);
 }
 
+/**
+ * @brief Update a destination cache entry.
+ * @param dev Device to update a destination cache entry for.
+ * @param dst Updated datalink layer address.
+ * @param dlength Length of \p dst.
+ * @param src Network layer address.
+ * @param slength Length of \p saddrlen.
+ * @return True of false based on whether the entry was updated or not.
+ */
 bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t dlength,
 	                           const uint8_t *src, uint8_t slength)
 {
@@ -142,6 +196,13 @@ bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t d
 	return false;
 }
 
+/**
+ * @brief Remove a destination cache entry.
+ * @param dev Device to remove the cache entry from.
+ * @param src Network layer address.
+ * @param length Length of \p saddrlen.
+ * @return True or false based on whether the entry was removed or not.
+ */
 bool netdev_remove_destination(struct netdev *dev, const uint8_t *src, uint8_t length)
 {
 	struct list_head *entry;
@@ -162,6 +223,13 @@ bool netdev_remove_destination(struct netdev *dev, const uint8_t *src, uint8_t l
 	return false;
 }
 
+/**
+ * @brief Perform a lookup on the destination cache of \p dev.
+ * @param dev Device to perform a dst cache lookup on.
+ * @param src Network layer address.
+ * @param length Length of \p saddrlen.
+ * @return The destination cache entry or \p NULL.
+ */
 struct dst_cache_entry *netdev_find_destination(struct netdev *dev, const uint8_t *src, uint8_t length)
 {
 	struct list_head *entry;
@@ -231,6 +299,14 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 	return netdev_backlog_length(dev);
 }
 
+/**
+ * @brief Poll a network device.
+ * @param dev Network device to poll.
+ * @return Number of entries remaining on the backlog of \p dev or an error code.
+ *
+ * This function will first poll the PHY-layer. If data is available, it will perform
+ * a read pushing new packets onto the backlog. Finally the backlog will be processed.
+ */
 int netdev_poll(struct netdev *dev)
 {
 	int available;
@@ -258,6 +334,12 @@ static void __netdev_demux_handle(struct netbuf *nb)
 	}
 }
 
+/**
+ * @brief Call external handler for the current protocol of \p nb.
+ * @param nb Packet buffer to call external handlers for.
+ *
+ * The external handlers will be selected based on the value of `struct netbuf::protocol`.
+ */
 void netdev_demux_handle(struct netbuf *nb)
 {
 	assert(nb);
@@ -265,3 +347,5 @@ void netdev_demux_handle(struct netbuf *nb)
 	if (nb->protocol != 0)
 		__netdev_demux_handle(nb);
 }
+
+/** @} */
