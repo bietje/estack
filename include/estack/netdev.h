@@ -149,6 +149,14 @@ extern DLL_EXPORT void ifconfig(struct netdev *dev, uint8_t *local, uint8_t *rem
 	uint8_t *mask, uint8_t length, nif_type_t type);
 extern DLL_EXPORT void netdev_print_nif(struct netdev *dev);
 
+extern DLL_EXPORT void netdev_write_stats(struct netdev *dev, FILE *file);
+extern DLL_EXPORT uint32_t netdev_get_dropped(struct netdev *dev);
+extern DLL_EXPORT uint32_t netdev_get_rx_bytes(struct netdev *dev);
+extern DLL_EXPORT uint32_t netdev_get_tx_bytes(struct netdev *dev);
+extern DLL_EXPORT uint32_t netdev_get_rx_packets(struct netdev *dev);
+extern DLL_EXPORT uint32_t netdev_get_tx_packets(struct netdev *dev);
+extern DLL_EXPORT void netdev_print(struct netdev *dev, FILE *file);
+
 static inline void netdev_config_params(struct netdev *dev, int maxrx, int maxweight)
 {
 	dev->rx_max = maxrx;

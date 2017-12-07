@@ -56,4 +56,3 @@ time_t estack_utime(void)
 	return rv;
 }
 #endif // WIN32
-

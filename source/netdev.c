@@ -352,8 +352,9 @@ int netdev_poll(struct netdev *dev)
 	assert(dev);
 	available = dev->available(dev);
 
+	available = available > dev->rx_max ? dev->rx_max : available;
 	if (available > 0)
-		dev->read(dev, dev->rx_max);
+		dev->read(dev, available);
 
 	return netdev_process_backlog(dev, dev->processing_weight);
 }
@@ -385,5 +386,128 @@ void netdev_demux_handle(struct netbuf *nb)
 	if (nb->protocol != 0)
 		__netdev_demux_handle(nb);
 }
+
+static inline struct netdev_stats *netdev_get_stats(struct netdev *dev)
+{
+	return &dev->stats;
+}
+
+/**
+ * @brief Get the number of packets dropped by \p dev.
+ * @param dev Device to get stats for.
+ * @return The number of dropped packets.
+ */
+uint32_t netdev_get_dropped(struct netdev *dev)
+{
+	struct netdev_stats *stats;
+
+	assert(dev);
+	stats = netdev_get_stats(dev);
+	return stats->dropped;
+}
+
+/**
+ * @brief Get the number of received packets.
+ * @param dev Device to get stats for.
+ * @return Number of received bytes.
+ */
+uint32_t netdev_get_rx_bytes(struct netdev *dev)
+{
+	struct netdev_stats *stats;
+
+	assert(dev);
+	stats = netdev_get_stats(dev);
+	return stats->rx_bytes;
+}
+
+/**
+ * @brief Get the number of transmitted bytes.
+ * @param dev Device to get stats for.
+ * @return Number of transmitted bytes.
+ */
+uint32_t netdev_get_tx_bytes(struct netdev *dev)
+{
+	struct netdev_stats *stats;
+
+	assert(dev);
+	stats = netdev_get_stats(dev);
+	return stats->tx_bytes;
+}
+
+/**
+ * @brief Get the number of received packets.
+ * @param dev Device to get stats for.
+ * @return The number of received packets.
+ */
+uint32_t netdev_get_rx_packets(struct netdev *dev)
+{
+	struct netdev_stats *stats;
+
+	assert(dev);
+	stats = netdev_get_stats(dev);
+	return stats->rx_packets;
+}
+
+/**
+ * @brief Get the number of transmitted packets.
+ * @param dev Device to get stats for.
+ * @return The number of transmitted packets.
+ */
+uint32_t netdev_get_tx_packets(struct netdev *dev)
+{
+	struct netdev_stats *stats;
+
+	assert(dev);
+	stats = netdev_get_stats(dev);
+	return stats->tx_packets;
+}
+
+/**
+ * @brief Write device statistics to a file.
+ * @param dev Device to get stats from.
+ * @param file File handle to write statistics to.
+ */
+void netdev_write_stats(struct netdev *dev, FILE *file)
+{
+	struct netdev_stats *stats;
+
+	assert(file);
+	assert(dev);
+	stats = netdev_get_stats(dev);
+
+	fprintf(file, "Stats for: %s\n", dev->name);
+	fprintf(file, "\tReceived: %u bytes in %u packets\n", stats->rx_bytes, stats->rx_packets);
+	fprintf(file, "\tTransmit: %u bytes in %u packets\n", stats->tx_bytes, stats->tx_packets);
+	fprintf(file, "\t%u packets have been dropped\n", stats->dropped);
+	fprintf(file, "\tBacklog size %u\n", dev->backlog.size);
+}
+
+#ifdef HAVE_DEBUG
+/**
+ * @brief Print informatation known about a network device.
+ * @param dev Network device to print.
+ * @param file File to write to.
+ */
+void netdev_print(struct netdev *dev, FILE *file)
+{
+	char hwbuf[18];
+	char ipbuf[16];
+	struct netif *nif = &dev->nif;
+
+	fprintf(file, "Info for %s:\n", dev->name);
+	ethernet_mac_ntoa(dev->hwaddr, hwbuf, 18);
+	fprintf(file, "\tHardware address %s\n", hwbuf);
+	ipv4_ntoa(ipv4atoi(nif->local_ip), ipbuf, 16);
+	fprintf(file, "\tLocal IP: %s\n", ipbuf);
+	ipv4_ntoa(ipv4atoi(nif->ip_mask), ipbuf, 16);
+	fprintf(file, "\tLocal IP: %s\n", ipbuf);
+
+	netdev_write_stats(dev, file);
+}
+#else
+void netdev_print(FILE *file)
+{
+}
+#endif
 
 /** @} */
