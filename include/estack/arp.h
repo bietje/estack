@@ -34,8 +34,17 @@ struct DLL_EXPORT arp_ipv4_header {
 };
 #pragma pack(pop)
 
+typedef enum {
+	ARP_OP_RESERVED = 0,
+	ARP_OP_REQUEST,
+	ARP_OP_REPLY,
+} arp_opcode_t;
+
 CDECL
 extern DLL_EXPORT void arp_input(struct netbuf *nb);
+extern DLL_EXPORT void arp_output(struct netdev *dev, struct netbuf *nb);
+extern DLL_EXPORT struct netbuf *arp_alloc_nb(uint16_t type, uint32_t ip, uint8_t *mac);
+extern DLL_EXPORT void arp_print_info(struct arp_header *hdr, struct arp_ipv4_header *ip4hdr);
 CDECL_END
 
 #endif // !__ARP_H__

@@ -10,10 +10,12 @@ util.c
 netdev.c
 802.3/eth-in.c
 802.3/eth-out.c
+802.3/addr.c
 log.c
 nif.c
 addrutil.c
-ipv4/arp.c
+ipv4/arp-in.c
+ipv4/arp-out.c
 )
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)

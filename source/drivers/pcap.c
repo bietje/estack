@@ -217,6 +217,7 @@ struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
 	dev->available = pcapdev_available;
 
 	dev->rx = ethernet_input;
+	dev->tx = ethernet_output;
 
 	return dev;
 }

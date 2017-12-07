@@ -31,6 +31,7 @@ struct DLL_EXPORT ethernet_header {
 CDECL
 extern DLL_EXPORT void ethernet_input(struct netbuf *nb);
 extern DLL_EXPORT void ethernet_output(struct netbuf *nb, uint8_t *hw);
+extern DLL_EXPORT bool ethernet_addr_is_broadcast(const uint8_t *addr);
 
 static inline struct ethernet_header *ethernet_nb_to_hdr(struct netbuf *nb)
 {
