@@ -1,8 +1,8 @@
 /*
- * Ethernet unit test
+ * ARP unit test
  *
  * Author: Michel Megens
- * Date:   29/11/2017
+ * Date:   07/12/2017
  * Email:  dev@bietje.net
  */
 
@@ -18,6 +18,7 @@
 #include <estack/netdev.h>
 #include <estack/pcapdev.h>
 #include <estack/error.h>
+#include <estack/list.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -39,28 +40,25 @@ static int err_exit(int code, const char *fmt, ...)
 	exit(code);
 }
 
-#define IPV4_ADDR 0xC0A83268
-#define HW_ADDR {0x48, 0x5D, 0x60, 0xBF, 0x51, 0xA1}
-
-static struct netbuf *build_dummy_frame(const char *data, struct netdev *dev)
+static void print_dst_cache(struct netdev *dev)
 {
-	struct netbuf *nb;
-	int len;
+	struct dst_cache_entry *e;
+	struct list_head *entry;
+	char ipbuf[16];
+	char hwbuf[18];
 
-	len = strlen(data);
+	printf("Destination cache entries:\n");
+	list_for_each(entry, &dev->destinations) {
+		e = list_entry(entry, struct dst_cache_entry, entry);
 
-	nb = netbuf_alloc(NBAF_NETWORK, strlen(data));
-	netbuf_set_dev(nb, dev);
-
-	memcpy(nb->network.data, data, len);
-	nb->network.size = len;
-	nb->protocol = ETH_TYPE_IP;
-
-	return nb;
+		printf("\tEntry:\n");
+		printf("\t\tSource IP: %s\n", ipv4_ntoa(ipv4atoi(e->saddr), ipbuf, 16));
+		printf("\t\tHardware address: %s\n", ethernet_mac_ntoa(e->hwaddr, hwbuf, 18));
+	}
 }
 
-#define SAMPLE_DATA "This is some sample data. This data is used in a dummy packet " \
-                    "for testing purposes."
+#define IPV4_ADDR 0xC0A83268
+#define HW_ADDR {0x48, 0x5D, 0x60, 0xBF, 0x51, 0xA1}
 
 int main(int argc, char **argv)
 {
@@ -76,16 +74,17 @@ int main(int argc, char **argv)
 
 	estack_init(NULL);
 
-	dev = pcapdev_create(input, "ethernet-output.pcap", hwaddr, 1500);
+	dev = pcapdev_create(input, "arp-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
 
-	ethernet_output(build_dummy_frame(SAMPLE_DATA, dev), dev->hwaddr);
 	netdev_poll(dev);
-	
 	putchar('\n');
 	netdev_print(dev, stdout);
+	putchar('\n');
+	print_dst_cache(dev);
 
 	getchar();
 	return 0;
 }
+
