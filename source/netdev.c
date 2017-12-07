@@ -334,7 +334,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 		}
 	}
 
-	return netdev_backlog_length(dev);
+	return weight;
 }
 
 /**
@@ -347,7 +347,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
  */
 int netdev_poll(struct netdev *dev)
 {
-	int available;
+	int available, weight;
 
 	assert(dev);
 	available = dev->available(dev);
@@ -356,7 +356,12 @@ int netdev_poll(struct netdev *dev)
 	if (available > 0)
 		dev->read(dev, available);
 
-	return netdev_process_backlog(dev, dev->processing_weight);
+	weight = dev->processing_weight;
+	while (weight > 0 && netdev_backlog_length(dev) != 0) {
+		weight = netdev_process_backlog(dev, weight);
+	}
+
+	return netdev_backlog_length(dev);
 }
 
 static void __netdev_demux_handle(struct netbuf *nb)
