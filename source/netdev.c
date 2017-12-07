@@ -288,7 +288,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 	struct netbuf *nb;
 	struct list_head *entry,
 		             *tmp;
-	int rc;
+	int rc, arrived;
 
 	if (list_empty(&dev->backlog.head))
 		return -EOK;
@@ -307,20 +307,17 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			nb->size = netbuf_get_size(nb);
 
 			dev->rx(nb);
-			if(netbuf_test_flag(nb, NBUF_ARRIVED))
+			if ((arrived = netbuf_test_flag(nb, NBUF_ARRIVED)) != 0)
 				netdev_rx_stats_inc(dev, nb);
 		} else {
 			if (!nb->size)
 				nb->size = netbuf_get_size(nb);
 
 			rc = dev->write(dev, nb);
+			arrived = !rc;
 
-			if (!rc) {
+			if (!rc)
 				netdev_tx_stats_inc(dev, nb);
-				weight -= nb->size;
-				netbuf_free(nb);
-				continue;
-			}
 		}
 
 		if (netbuf_test_flag(nb, NBUF_AGAIN)) {
@@ -331,7 +328,10 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			continue;
 		}
 
-		weight -= nb->size;
+		if (arrived) {
+			weight -= nb->size;
+			netbuf_free(nb);
+		}
 	}
 
 	return netdev_backlog_length(dev);

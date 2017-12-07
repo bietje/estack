@@ -61,7 +61,8 @@ struct netif {
 };
 
 struct netbuf;
-typedef void(*xmit_handle)(struct netbuf *nb);
+typedef void(*rx_handle)(struct netbuf *nb);
+typedef void(*tx_handle)(struct netbuf *nb, uint8_t *target);
 
 /**
  * @brief Wrapper datastructure for (external) protocol handlers.
@@ -69,7 +70,7 @@ typedef void(*xmit_handle)(struct netbuf *nb);
 struct protocol {
 	struct list_head entry; //!< List entry.
 	uint16_t protocol; //!< Protocol identifier.
-	xmit_handle rx; //!< Receive handle.
+	rx_handle rx; //!< Receive handle.
 };
 
 /**
@@ -89,7 +90,8 @@ struct DLL_EXPORT netdev {
 	uint8_t hwaddr[MAX_ADDR_LEN]; //!< Datalink layer address.
 	uint8_t addrlen; //!< Length of \p hwaddr.
 
-	xmit_handle rx; //!< Receive handler.
+	rx_handle rx; //!< Receive handler.
+	tx_handle tx; //!< Transmit handler.
 
 	int processing_weight;
 	int rx_max;
