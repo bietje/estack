@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include <estack/estack.h>
 #include <estack/list.h>
@@ -42,11 +43,21 @@ struct DLL_EXPORT netdev_backlog {
 #define MAX_ADDR_LEN 8 //!< Maximum device hardware address length.
 #define MAX_LOCAL_ADDRESS_LENGTH 16 //!< Maximum network layer address length.
 
+typedef enum {
+	NIF_TYPE_IP4,
+	NIF_TYPE_IP6,
+} nif_type_t;
+
+#define NIF_MAX_ADDR_LENGTH MAX_LOCAL_ADDRESS_LENGTH
 /**
  * @brief Network interface datastructure.
  */
 struct netif {
-	uint8_t dummy;
+	uint8_t iftype;
+	uint8_t local_ip[NIF_MAX_ADDR_LENGTH];
+	uint8_t remote_ip[NIF_MAX_ADDR_LENGTH];
+	uint8_t ip_mask[NIF_MAX_ADDR_LENGTH];
+	uint16_t pkt_id;
 };
 
 struct netbuf;
@@ -74,7 +85,7 @@ struct DLL_EXPORT netdev {
 	struct netdev_backlog backlog; //!< Device backlog head.
 	struct netdev_stats stats; //!< Device statistics.
 
-	struct netif netif; //!< Network interface reprenting this device on the transport layer and up.
+	struct netif nif; //!< Network interface reprenting this device on the transport layer and up.
 	uint8_t hwaddr[MAX_ADDR_LEN]; //!< Datalink layer address.
 	uint8_t addrlen; //!< Length of \p hwaddr.
 
@@ -134,6 +145,9 @@ extern DLL_EXPORT bool netdev_remove_destination(struct netdev *dev, const uint8
 	uint8_t length);
 extern DLL_EXPORT bool netdev_update_destination(struct netdev *dev, const uint8_t *dst,
 	uint8_t dlength, const uint8_t *src, uint8_t slength);
+extern DLL_EXPORT void ifconfig(struct netdev *dev, uint8_t *local, uint8_t *remote,
+	uint8_t *mask, uint8_t length, nif_type_t type);
+extern DLL_EXPORT void netdev_print_nif(struct netdev *dev);
 
 static inline void netdev_config_params(struct netdev *dev, int maxrx, int maxweight)
 {

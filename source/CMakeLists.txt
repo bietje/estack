@@ -11,6 +11,7 @@ netdev.c
 802.3/eth-in.c
 802.3/eth-out.c
 log.c
+nif.c
 addrutil.c
 ipv4/arp.c
 )

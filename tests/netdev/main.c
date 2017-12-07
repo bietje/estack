@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 		input = argv[1];
 	}
 
-	dev = pcapdev_create(input, "ethernet-output.pcap", IPV4_ADDR, hwaddr, 1500);
+	dev = pcapdev_create(input, "ethernet-output.pcap", hwaddr, 1500);
 	setup_dst_cache();
 	test_dst_cache();
 

@@ -14,6 +14,7 @@
 
 #include <estack/estack.h>
 #include <estack/ethernet.h>
+#include <estack/inet.h>
 
 char *ethernet_mac_ntoa(uint8_t *addr, char *buf, size_t length)
 {
@@ -31,37 +32,23 @@ char *ethernet_mac_ntoa(uint8_t *addr, char *buf, size_t length)
 	return buf;
 }
 
-char *ipv4_ntoa(uint32_t addr, char *buf, size_t length)
+char *ipv4_ntoa(uint32_t ip, char *buf, size_t length)
 {
-	char inv[3];
-	char *rp;
-	uint8_t *ap;
-	uint8_t rem; 
-	uint8_t n;
-	uint8_t i;
-	size_t len = 0;
+	uint8_t bytes[4];
 
-	rp = buf;
-	ap = (uint8_t *)&addr;
-	for (n = 0; n < 4; n++) {
-		i = 0;
-		do {
-			rem = *ap % (uint8_t)10;
-			*ap /= (uint8_t)10;
-			inv[i++] = (char)('0' + rem);
-		} while (*ap);
-		while (i--) {
-			if (len++ >= length) {
-				return NULL;
-			}
-			*rp++ = inv[i];
-		}
-		if (len++ >= length) {
-			return NULL;
-		}
-		*rp++ = '.';
-		ap++;
-	}
-	*--rp = 0;
+	bytes[0] = ip & 0xFF;
+	bytes[1] = (ip >> 8) & 0xFF;
+	bytes[2] = (ip >> 16) & 0xFF;
+	bytes[3] = (ip >> 24) & 0xFF;
+
+	snprintf(buf, length, "%d.%d.%d.%d", bytes[3], bytes[2], bytes[1], bytes[0]);
 	return buf;
+}
+
+uint32_t ipv4atoi(const uint8_t *ary)
+{
+	uint32_t *num;
+
+	num = (void*)ary;
+	return *num;
 }

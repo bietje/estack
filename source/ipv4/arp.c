@@ -50,6 +50,10 @@ static void arp_input_ipv4(struct netbuf *nb, struct arp_header *hdr)
 	struct arp_ipv4_header *ip4hdr;
 
 	ip4hdr = (void*)(hdr + 1);
+	ip4hdr->ip_src_addr = ntohl(ip4hdr->ip_src_addr);
+	ip4hdr->ip_target_addr = ntohl(ip4hdr->ip_target_addr);
+
+	netbuf_set_flag(nb, NBUF_ARRIVED);
 	arp_print_info(hdr, ip4hdr);
 }
 

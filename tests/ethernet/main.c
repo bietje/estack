@@ -39,7 +39,7 @@ static int err_exit(int code, const char *fmt, ...)
 	exit(code);
 }
 
-#define IPV4_ADDR 0x9130CD1B
+#define IPV4_ADDR 0xC0A83268
 #define HW_ADDR {0xF4, 0x6D, 0x04, 0x18, 0xD6, 0x5D}
 
 static struct netbuf *build_dummy_frame(const char *data, struct netdev *dev)
@@ -76,10 +76,13 @@ int main(int argc, char **argv)
 
 	estack_init(NULL);
 
-	dev = pcapdev_create(input, "ethernet-output.pcap", IPV4_ADDR, hwaddr, 1500);
+	dev = pcapdev_create(input, "ethernet-output.pcap", hwaddr, 1500);
+	pcapdev_create_link_ip4(dev, 0xC0A83268, 0, 0xFFFFFF00);
+	netdev_print_nif(dev);
 	ethernet_output(build_dummy_frame(SAMPLE_DATA, dev), dev->hwaddr);
 	netdev_poll(dev);
 	printf("Backlog size: %i\n", dev->backlog.size);
+	putchar('\n');
 
 	getchar();
 	return 0;

@@ -22,6 +22,7 @@
 #include <estack/netdev.h>
 #include <estack/error.h>
 #include <estack/inet.h>
+#include <estack/log.h>
 
 static struct list_head dst_cache = STATIC_INIT_LIST_HEAD(dst_cache);
 static struct list_head devices = STATIC_INIT_LIST_HEAD(devices);

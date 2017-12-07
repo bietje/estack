@@ -177,13 +177,23 @@ static void pcapdev_setup_output(const char *dst, struct pcapdev_private *priv)
 	fwrite(&fh, sizeof(fh), 1, priv->dst);
 }
 
-struct netdev *pcapdev_create(const char *srcfile, const char *dstfile, uint32_t ip, const uint8_t *hwaddr, uint16_t mtu)
+void pcapdev_create_link_ip4(struct netdev *dev, uint32_t local, uint32_t remote, uint32_t mask)
+{
+	uint8_t *_local, *_remote, *_mask;
+
+	_local = (void*)&local;
+	_remote = (void*)&remote;
+	_mask = (void*)&mask;
+	ifconfig(dev, _local, _remote, _mask, 4, NIF_TYPE_IP4);
+}
+
+struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
+	const uint8_t *hwaddr, uint16_t mtu)
 {
 	struct pcapdev_private *priv;
 	struct netdev *dev;
 	int len;
 
-	(void)ip;
 	priv = z_alloc(sizeof(*priv));
 	assert(srcfile != NULL);
 	assert(priv != NULL);
@@ -210,4 +220,3 @@ struct netdev *pcapdev_create(const char *srcfile, const char *dstfile, uint32_t
 
 	return dev;
 }
-
