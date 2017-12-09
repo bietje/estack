@@ -27,6 +27,10 @@
 static struct list_head dst_cache = STATIC_INIT_LIST_HEAD(dst_cache);
 static struct list_head devices = STATIC_INIT_LIST_HEAD(devices);
 
+static uint32_t dst_resolve_tmo = 3000000;
+static uint32_t dst_retry_tmo = 1000000;
+static int dst_retries = 4;
+
  /**
   * @brief	Initialize a network device.
   * @param	dev	Device to initialise.
@@ -84,6 +88,9 @@ struct netdev *netdev_remove(const char *name)
  * @brief Add a packet buffer to the backlog of \p dev.
  * @param dev Device to add \p nb to.
  * @param nb Packet buffer to add.
+ *
+ * Adds a netbuf to the the backlog and increments the backlog size by one. All
+ * packets on the backlog are expected to have a valid output device set.
  */
 void netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
 {
@@ -192,6 +199,7 @@ void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t dadd
 	centry = z_alloc(sizeof(*centry));
 	assert(centry);
 
+	centry->state = DST_RESOLVED;
 	centry->saddr_length = saddrlen;
 	centry->hwaddr_length = daddrlen;
 	
@@ -202,7 +210,41 @@ void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t dadd
 	memcpy(centry->hwaddr, dst, daddrlen);
 
 	list_head_init(&centry->entry);
+	list_head_init(&centry->packets);
 	list_add(&centry->entry, &dev->destinations);
+}
+
+/**
+ * @brief Add a partially comlete cache entry.
+ * @param dev Device to add the cache entry to.
+ * @param src Destination network layer IP address.
+ * @param length Length of \p src in bytes.
+ * @param handler Handler to retry resolving the entry.
+ * @return The created destination cache entry.
+ */
+struct dst_cache_entry *netdev_add_destination_unresolved(struct netdev *dev,
+	const uint8_t *src, uint8_t length, resolve_handle handler)
+{
+	struct dst_cache_entry *centry;
+
+	centry = z_alloc(sizeof(*centry));
+	assert(centry);
+
+	centry->state = DST_UNFINISHED;
+	centry->saddr_length = length;
+	
+	centry->saddr = malloc(length);
+	memcpy(centry->saddr, src, length);
+
+	list_head_init(&centry->entry);
+	list_head_init(&centry->packets);
+
+	centry->timeout = estack_utime() + dst_resolve_tmo;
+	centry->retry = dst_retries;
+	centry->translate = handler;
+	list_add(&centry->entry, &dev->destinations);
+
+	return centry;
 }
 
 /**
@@ -222,16 +264,31 @@ bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t d
 
 	list_for_each(entry, &dev->destinations) {
 		centry = list_entry(entry, struct dst_cache_entry, entry);
+		if (centry->saddr_length != slength)
+			continue;
+
 		if (!memcmp(centry->saddr, src, slength)) {
 			if (dlength != centry->hwaddr_length)
 				centry->hwaddr = realloc(centry->hwaddr, dlength);
 
 			memcpy(centry->hwaddr, dst, dlength);
+			centry->state = DST_RESOLVED;
 			return true;
 		}
 	}
 
 	return false;
+}
+
+static inline void netdev_free_dst_entry(struct dst_cache_entry *e)
+{
+	if (e->saddr)
+		free(e->saddr);
+
+	if (e->hwaddr)
+		free(e->hwaddr);
+
+	free(e);
 }
 
 /**
@@ -249,11 +306,12 @@ bool netdev_remove_destination(struct netdev *dev, const uint8_t *src, uint8_t l
 	list_for_each(entry, &dev->destinations)
 	{
 		centry = list_entry(entry, struct dst_cache_entry, entry);
+		if (centry->saddr_length != length)
+			continue;
+
 		if (!memcmp(centry->saddr, src, length)) {
 			list_del(entry);
-			free(centry->hwaddr);
-			free(centry->saddr);
-			free(centry);
+			netdev_free_dst_entry(centry);
 			return true;
 		}
 	}
@@ -276,11 +334,69 @@ struct dst_cache_entry *netdev_find_destination(struct netdev *dev, const uint8_
 	list_for_each(entry, &dev->destinations)
 	{
 		centry = list_entry(entry, struct dst_cache_entry, entry);
+		if (centry->saddr_length != length)
+			continue;
+
 		if (!memcmp(centry->saddr, src, length))
 			return centry;
 	}
 
 	return NULL;
+}
+
+static bool netdev_dst_timeout(struct dst_cache_entry *e)
+{
+	time_t time;
+
+	time = estack_utime();
+	return time > e->timeout;
+}
+
+static void netdev_drop_dst(struct dst_cache_entry *e)
+{
+	struct list_head *entry, *tmp;
+	struct netbuf *nb;
+
+	list_for_each_safe(entry, tmp, &e->packets) {
+		nb = list_entry(entry, struct netbuf, bl_entry);
+		list_del(entry);
+		netbuf_free(nb);
+	}
+}
+
+static void netdev_try_translate_cache(struct netdev *dev)
+{
+	struct list_head *dst, *dsttmp, *entry, *tmp;
+	struct dst_cache_entry *e;
+	struct netbuf *nb;
+
+	list_for_each_safe(dst, dsttmp, &dev->destinations) {
+		e = list_entry(dst, struct dst_cache_entry, entry);
+
+		if (e->state == DST_UNFINISHED) {
+			if (netdev_dst_timeout(e) || !e->translate ||
+				e->retry <= 0 || list_empty(&e->packets)) {
+				netdev_drop_dst(e);
+				list_del(dst);
+				netdev_free_dst_entry(e);
+				continue;
+			}
+
+			if (e->last_attempt + dst_retry_tmo < estack_utime()) {
+				e->translate(dev, e->saddr);
+				e->retry--;
+				e->last_attempt = estack_utime();
+			}
+			continue;
+		}
+
+		list_for_each_safe(entry, tmp, &e->packets) {
+			nb = list_entry(entry, struct netbuf, bl_entry);
+			list_del(entry);
+			netbuf_set_dev(nb, dev);
+			dev->tx(nb, e->hwaddr);
+		}
+	}
 }
 
 static int netdev_process_backlog(struct netdev *dev, int weight)
@@ -334,6 +450,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 		}
 	}
 
+	netdev_try_translate_cache(dev);
 	return weight;
 }
 
@@ -357,6 +474,7 @@ int netdev_poll(struct netdev *dev)
 		dev->read(dev, available);
 
 	weight = dev->processing_weight;
+	netdev_try_translate_cache(dev);
 	while (weight > 0 && netdev_backlog_length(dev) != 0) {
 		weight = netdev_process_backlog(dev, weight);
 	}
@@ -376,6 +494,21 @@ static void __netdev_demux_handle(struct netbuf *nb)
 		if (proto->protocol == nb->protocol)
 			proto->rx(nb);
 	}
+}
+
+/**
+ * @brief Configure various core parameters.
+ * @param retry_tmo Time out (in us) between attempts to resolve a cache entry.
+ * @param resolv_tmo Time out for packets on an unresolved cache.
+ * @param retries Number of resolv attempts before the cache entry is deemed unresolvable.
+ * @note If resolve timeout expires, the cache is deemed unrsolvable and all packets assosiated with
+ *       said packets will be dropped.
+ */
+void netdev_config_core_params(uint32_t retry_tmo, uint32_t resolv_tmo, int retries)
+{
+	dst_retries = retries;
+	dst_resolve_tmo = resolv_tmo;
+	dst_retry_tmo = retry_tmo;
 }
 
 /**

@@ -121,6 +121,13 @@ struct DLL_EXPORT netdev {
 	int(*available)(struct netdev *dev);
 };
 
+typedef enum {
+	DST_RESOLVED,
+	DST_UNFINISHED,
+} dst_cache_state_t;
+
+typedef void(*resolve_handle)(struct netdev *dev, uint8_t *addr);
+
 /**
  * @brief Destination cache data structure.
  */
@@ -131,6 +138,12 @@ struct DLL_EXPORT dst_cache_entry {
 	uint8_t saddr_length; //!< Length of \p saddr.
 	uint8_t *hwaddr; //!< Hardware address that \p saddr is mapped to.
 	uint8_t hwaddr_length; //!< Length of \p hwaddr.
+
+	dst_cache_state_t state;
+	struct list_head packets;
+	time_t timeout, last_attempt;
+	int retry;
+	resolve_handle translate;
 };
 
 CDECL
@@ -158,6 +171,9 @@ extern DLL_EXPORT uint32_t netdev_get_tx_bytes(struct netdev *dev);
 extern DLL_EXPORT uint32_t netdev_get_rx_packets(struct netdev *dev);
 extern DLL_EXPORT uint32_t netdev_get_tx_packets(struct netdev *dev);
 extern DLL_EXPORT void netdev_print(struct netdev *dev, FILE *file);
+extern struct dst_cache_entry *netdev_add_destination_unresolved(struct netdev *dev,
+	const uint8_t *src, uint8_t length, resolve_handle handle);
+extern DLL_EXPORT void netdev_config_core_params(uint32_t retry_tmo, uint32_t resolv_tmo, int retries);
 
 static inline void netdev_config_params(struct netdev *dev, int maxrx, int maxweight)
 {
