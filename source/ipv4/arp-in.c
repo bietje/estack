@@ -53,10 +53,10 @@ static void arp_handle_request_ipv4(struct netbuf *nb, struct arp_header *hdr)
 	struct netbuf *nbr;
 
 	ip4hdr = (void*)(hdr + 1);
-	nbr = arp_alloc_nb(ARP_OP_REPLY, ip4hdr->ip_src_addr, ip4hdr->hw_src_addr);
+	nbr = arp_alloc_nb_ipv4(ARP_OP_REPLY, ip4hdr->ip_src_addr, ip4hdr->hw_src_addr);
 
 	assert(nbr);
-	arp_output(nb->dev, nbr);
+	arp_output(nb->dev, nbr, ip4hdr->hw_src_addr);
 }
 
 static void arp_input_ipv4(struct netbuf *nb, struct arp_header *hdr)

@@ -21,7 +21,7 @@
 #define IP_ADDR_BYTE_LENGTH 4
 #define IP4_ARP_SIZE sizeof(struct arp_header) + sizeof(struct arp_ipv4_header)
 
-struct netbuf *arp_alloc_nb(uint16_t type, uint32_t ip, uint8_t *mac)
+struct netbuf *arp_alloc_nb_ipv4(uint16_t type, uint32_t ip, uint8_t *mac)
 {
 	struct netbuf *nb;
 	struct arp_ipv4_header *ip4hdr;
@@ -43,7 +43,7 @@ struct netbuf *arp_alloc_nb(uint16_t type, uint32_t ip, uint8_t *mac)
 	if (mac)
 		memcpy(ip4hdr->hw_target_addr, mac, ETHERNET_MAC_LENGTH);
 	else
-		memset(ip4hdr->hw_target_addr, 0xFF, ETHERNET_MAC_LENGTH);
+		memset(ip4hdr->hw_target_addr, 0x0, ETHERNET_MAC_LENGTH);
 	ip4hdr->ip_target_addr = htonl(ip);
 
 	return nb;
@@ -57,7 +57,7 @@ static void arp_print_info_nwo(struct arp_header *hdr, struct arp_ipv4_header *i
 
 	UNUSED(hdr);
 
-	print_dbg("ARP packet data:\n");
+	print_dbg("ARP TX packet data:\n");
 
 	ipv4_ntoa(ntohl(ip4hdr->ip_src_addr), buf, 16);
 	ethernet_mac_ntoa(ip4hdr->hw_src_addr, hwbuf, 18);
@@ -75,7 +75,7 @@ static inline void arp_print_info_nwo(struct arp_header *hdr, struct arp_ipv4_he
 }
 #endif
 
-void arp_output(struct netdev *dev, struct netbuf *nb)
+void arp_output(struct netdev *dev, struct netbuf *nb, uint8_t *addr)
 {
 	struct arp_ipv4_header *ip4hdr;
 	struct arp_header *hdr;
@@ -95,5 +95,13 @@ void arp_output(struct netdev *dev, struct netbuf *nb)
 	nb->protocol = ETH_TYPE_ARP;
 	netbuf_set_dev(nb, dev);
 
-	dev->tx(nb, ip4hdr->hw_target_addr);
+	dev->tx(nb, addr);
+}
+
+void arp_ipv4_request(struct netdev *dev, uint32_t addr)
+{
+	struct netbuf *nb;
+
+	nb = arp_alloc_nb_ipv4(ARP_OP_REQUEST, addr, NULL);
+	arp_output(dev, nb, NULL);
 }
