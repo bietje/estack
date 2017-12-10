@@ -19,6 +19,7 @@
 #include <estack/pcapdev.h>
 #include <estack/error.h>
 #include <estack/list.h>
+#include <estack/arp.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -77,6 +78,9 @@ int main(int argc, char **argv)
 	dev = pcapdev_create(input, "arp-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
+
+	/* Lets ask where 145.49.6.13 is */
+	arp_ipv4_request(dev, 0x9131060D);
 
 	netdev_poll(dev);
 	putchar('\n');

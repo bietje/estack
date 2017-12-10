@@ -46,6 +46,7 @@ extern DLL_EXPORT void arp_output(struct netdev *dev, struct netbuf *nb, uint8_t
 extern DLL_EXPORT struct netbuf *arp_alloc_nb_ipv4(uint16_t type, uint32_t ip, uint8_t *mac);
 extern DLL_EXPORT void arp_print_info(struct arp_header *hdr, struct arp_ipv4_header *ip4hdr);
 extern DLL_EXPORT void arp_ipv4_request(struct netdev *dev, uint32_t addr);
+extern DLL_EXPORT struct dst_cache_entry *arp_resolve_ipv4(struct netdev *dev, uint32_t ip);
 CDECL_END
 
 #endif // !__ARP_H__

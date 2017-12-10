@@ -14,6 +14,7 @@ nif.c
 addrutil.c
 ipv4/arp-in.c
 ipv4/arp-out.c
+ipv4/arp.c
 802.3/eth-in.c
 802.3/eth-out.c
 802.3/addr.c
