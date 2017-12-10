@@ -160,6 +160,7 @@ extern DLL_EXPORT bool netdev_remove_destination(struct netdev *dev, const uint8
 	uint8_t length);
 extern DLL_EXPORT bool netdev_update_destination(struct netdev *dev, const uint8_t *dst,
 	uint8_t dlength, const uint8_t *src, uint8_t slength);
+extern bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb);
 extern DLL_EXPORT void ifconfig(struct netdev *dev, uint8_t *local, uint8_t *remote,
 	uint8_t *mask, uint8_t length, nif_type_t type);
 extern DLL_EXPORT void netdev_print_nif(struct netdev *dev);

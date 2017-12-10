@@ -247,6 +247,21 @@ struct dst_cache_entry *netdev_add_destination_unresolved(struct netdev *dev,
 	return centry;
 }
 
+bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb)
+{
+	assert(e);
+	assert(nb);
+
+	if (e->state != DST_UNFINISHED)
+		return false;
+
+	assert(nb->dev);
+	e->timeout = estack_utime() + dst_resolve_tmo;
+	list_add(&nb->bl_entry, &e->packets);
+
+	return true;
+}
+
 /**
  * @brief Update a destination cache entry.
  * @param dev Device to update a destination cache entry for.
@@ -360,6 +375,7 @@ static void netdev_drop_dst(struct dst_cache_entry *e)
 	list_for_each_safe(entry, tmp, &e->packets) {
 		nb = list_entry(entry, struct netbuf, bl_entry);
 		list_del(entry);
+		netdev_dropped_stats_inc(nb->dev);
 		netbuf_free(nb);
 	}
 }
