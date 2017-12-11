@@ -73,13 +73,13 @@ static void arp_input_ipv4(struct netbuf *nb, struct arp_header *hdr)
 	/*
 	 * Discard packets that aren't ment for us
 	 */
-	if (ipv4atoi(nif->local_ip) != ip4hdr->ip_target_addr) {
+	if (ipv4_ptoi(nif->local_ip) != ip4hdr->ip_target_addr) {
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	}
 
 	/* Discard packets with our own source address */
-	if (ipv4atoi(nif->local_ip) == ip4hdr->ip_src_addr) {
+	if (ipv4_ptoi(nif->local_ip) == ip4hdr->ip_src_addr) {
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	}

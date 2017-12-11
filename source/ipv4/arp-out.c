@@ -88,7 +88,7 @@ void arp_output(struct netdev *dev, struct netbuf *nb, uint8_t *addr)
 	ip4hdr = (void*)(hdr + 1);
 	nif = &dev->nif;
 
-	ip4hdr->ip_src_addr = htonl(ipv4atoi(nif->local_ip));
+	ip4hdr->ip_src_addr = htonl(ipv4_ptoi(nif->local_ip));
 	memcpy(ip4hdr->hw_src_addr, dev->hwaddr, dev->addrlen);
 	arp_print_info_nwo(hdr, ip4hdr);
 

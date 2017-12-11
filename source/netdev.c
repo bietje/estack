@@ -247,6 +247,12 @@ struct dst_cache_entry *netdev_add_destination_unresolved(struct netdev *dev,
 	return centry;
 }
 
+/**
+ * @brief Add a packet buffer to a destination cache entry.
+ * @param e Destination cache entry to add \p nb to.
+ * @param nb Packet buff to add to \p e.
+ * @return True or false based on whether the packet buffer was added or not.
+ */
 bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb)
 {
 	assert(e);
@@ -433,6 +439,10 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			break;
 
 		if (likely(netbuf_test_flag(nb, NBUF_RX))) {
+			/*
+			 * Push arriving packets into the network stack through the
+			 * receive handle: struct netdev:rx().
+			 */
 			netbuf_set_dev(nb, dev);
 			netbuf_set_timestamp(nb);
 			nb->protocol = ntohs(nb->protocol);
@@ -466,6 +476,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 		}
 	}
 
+	/* Attempt to resolve any unresolved destination cache entries. */
 	netdev_try_translate_cache(dev);
 	return weight;
 }
@@ -651,9 +662,9 @@ void netdev_print(struct netdev *dev, FILE *file)
 	fprintf(file, "Info for %s:\n", dev->name);
 	ethernet_mac_ntoa(dev->hwaddr, hwbuf, 18);
 	fprintf(file, "\tHardware address %s\n", hwbuf);
-	ipv4_ntoa(ipv4atoi(nif->local_ip), ipbuf, 16);
+	ipv4_ntoa(ipv4_ptoi(nif->local_ip), ipbuf, 16);
 	fprintf(file, "\tLocal IP: %s\n", ipbuf);
-	ipv4_ntoa(ipv4atoi(nif->ip_mask), ipbuf, 16);
+	ipv4_ntoa(ipv4_ptoi(nif->ip_mask), ipbuf, 16);
 	fprintf(file, "\tLocal IP: %s\n", ipbuf);
 
 	netdev_write_stats(dev, file);

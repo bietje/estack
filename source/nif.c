@@ -43,9 +43,9 @@ void netdev_print_nif(struct netdev *dev)
 
 	if (nif->iftype == NIF_TYPE_IP4) {
 		print_dbg("Network interface: %s\n", dev->name);
-		ipv4_ntoa(ipv4atoi(nif->local_ip), buf, 16);
+		ipv4_ntoa(ipv4_ptoi(nif->local_ip), buf, 16);
 		print_dbg("\tSource IP %s\n", buf);
-		ipv4_ntoa(ipv4atoi(nif->ip_mask), buf, 16);
+		ipv4_ntoa(ipv4_ptoi(nif->ip_mask), buf, 16);
 		print_dbg("\tIP mask %s\n", buf);
 		return;
 	}

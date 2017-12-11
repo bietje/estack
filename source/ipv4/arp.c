@@ -32,4 +32,3 @@ struct dst_cache_entry *arp_resolve_ipv4(struct netdev *dev, uint32_t ip)
 	e = netdev_add_destination_unresolved(dev, addr, IP4_ADDR_LENGTH, translate_ipv4_to_mac);
 	return e;
 }
-

@@ -45,7 +45,7 @@ char *ipv4_ntoa(uint32_t ip, char *buf, size_t length)
 	return buf;
 }
 
-uint32_t ipv4atoi(const uint8_t *ary)
+uint32_t ipv4_ptoi(const uint8_t *ary)
 {
 	uint32_t *num;
 
