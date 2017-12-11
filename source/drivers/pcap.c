@@ -77,7 +77,6 @@ static int pcapdev_available(struct netdev *dev)
 	return count;
 }
 
-#define OUTPUT_FILE_NAME "outputframes.pcap"
 #define PCAP_MAGIC 0xa1b2c3d4
 
 static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
@@ -85,13 +84,16 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	FILE *fp;
 	struct pcap_pkthdr hdr;
 	struct pcapdev_private *priv;
+	time_t tstamp;
 
 	priv = container_of(dev, struct pcapdev_private, dev);
 	fp = priv->dst;
 	assert(fp);
 
 	hdr.caplen = hdr.len = nb->size;
-	hdr.ts.tv_sec = (long)(estack_utime() / 1e6L);
+	tstamp = estack_utime();
+	hdr.ts.tv_sec = (long)(tstamp / 1e6L);
+	hdr.ts.tv_usec = tstamp % 1000000ULL;
 
 	fwrite(&hdr, sizeof(hdr), 1, fp);
 
