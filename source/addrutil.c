@@ -6,6 +6,8 @@
  * Email: dev@bietje.net
  */
 
+#define _CRT_SECURE_NO_WARNINGS 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -43,6 +45,16 @@ char *ipv4_ntoa(uint32_t ip, char *buf, size_t length)
 
 	snprintf(buf, length, "%d.%d.%d.%d", bytes[3], bytes[2], bytes[1], bytes[0]);
 	return buf;
+}
+
+uint32_t ipv4_atoi(char *addr)
+{
+	uint8_t bytes[4];
+	uint32_t ip;
+
+	sscanf(addr, "%hhu.%hhu.%hhu.%hhu", &bytes[3], &bytes[2], &bytes[1], &bytes[0]);
+	ip = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
+	return ip;
 }
 
 uint32_t ipv4_ptoi(const uint8_t *ary)
