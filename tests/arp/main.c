@@ -53,7 +53,7 @@ static void print_dst_cache(struct netdev *dev)
 		e = list_entry(entry, struct dst_cache_entry, entry);
 
 		printf("\tEntry:\n");
-		printf("\t\tSource IP: %s\n", ipv4_ntoa(ipv4atoi(e->saddr), ipbuf, 16));
+		printf("\t\tSource IP: %s\n", ipv4_ntoa(ipv4_ptoi(e->saddr), ipbuf, 16));
 		printf("\t\tHardware address: %s\n", ethernet_mac_ntoa(e->hwaddr, hwbuf, 18));
 	}
 }

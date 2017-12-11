@@ -19,7 +19,8 @@
 #include <estack/pcapdev.h>
 #include <estack/inet.h>
 #include <estack/translate.h>
-#include <estack/arp.h>
+#include <estack/neighbour.h>
+#include <estack/prototype.h>
 
 static int err_exit(int code, const char *fmt, ...)
 {
@@ -55,11 +56,8 @@ static uint32_t addr1 = IPV4_ADDR1,
 static struct netdev *dev;
 
 /* Remote address definitions */
-#define DESTINATION_IP 0x9131060D 
-static uint32_t dst_ip = DESTINATION_IP; /* 145.49.6.13 */
-static uint32_t dst_ip2 = DESTINATION_IP + 1; /* 145.49.6.14 */
 
-/* dst_ip will eventually resolv to this MAC address */
+/* 145.49.6.13 will eventually resolv to this MAC address */
 #define DESTINATION_MAC {0xF4, 0x6D, 0x4, 0x18, 0xD1, 0x10}
 
 #pragma pack(push, 1)
@@ -88,7 +86,6 @@ static void generate_ip_datagram(uint32_t ip)
 	struct netif *nif;
 	struct netbuf *nb;
 	struct iphdr *hdr;
-	struct dst_cache_entry *e;
 
 	nif = &dev->nif;
 	nb = netbuf_alloc(NBAF_NETWORK, sizeof(struct iphdr));
@@ -100,7 +97,7 @@ static void generate_ip_datagram(uint32_t ip)
 	hdr->len = 20;
 	hdr->id = 0;
 	hdr->proto = 0xFE;
-	hdr->saddr = ipv4atoi(nif->local_ip);
+	hdr->saddr = ipv4_ptoi(nif->local_ip);
 	hdr->daddr = ip;
 	hdr->csum = 0xb71;
 	hdr->frag_offset = 0x4000;
@@ -113,17 +110,15 @@ static void generate_ip_datagram(uint32_t ip)
 	hdr->csum = htons(hdr->csum);
 	hdr->frag_offset = htons(hdr->frag_offset);
 
-	e = arp_resolve_ipv4(dev, ip);
-	nb->protocol = 0x800;
-	nb->dev = dev;
-	list_add(&nb->bl_entry, &e->packets);
+	nb->protocol = PROTO_IPV4;
+	neighbour_output(dev, nb, &ip, 4 /* address length */, translate_ipv4_to_mac);
 }
 
-static void test_cache_timeout(void)
+static void test_cache_timeout(uint32_t ip)
 {
 	time_t time;
 
-	generate_ip_datagram(dst_ip2);
+	generate_ip_datagram(ip);
 	time = estack_utime();
 	while (time + 3700000 > estack_utime())
 		netdev_poll(dev);
@@ -141,16 +136,18 @@ static void complete_dst_entry(uint32_t ip)
 	netdev_poll(dev);
 }
 
-static void test_cache_notimeout(void)
+static void test_cache_notimeout(uint32_t ip)
 {
 	time_t time;
 
-	generate_ip_datagram(dst_ip);
+	generate_ip_datagram(ip);
 	time = estack_utime();
 	while (time + 1500000 > estack_utime())
 		netdev_poll(dev);
 
-	complete_dst_entry(dst_ip);
+	complete_dst_entry(ip);
+	netdev_poll(dev);
+	generate_ip_datagram(ip);
 	netdev_poll(dev);
 }
 
@@ -159,8 +156,6 @@ static void setup_dst_cache(void)
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr1, 4);
 	netdev_add_destination(dev, hw2, ETHERNET_MAC_LENGTH, (void*)&addr2, 4);
 	netdev_add_destination(dev, hw3, ETHERNET_MAC_LENGTH, (void*)&addr3, 4);
-
-	/* Add partian destination to 145.49.6.13, MAC address not yet known */
 }
 
 static void test_dst_cache(void)
@@ -187,6 +182,7 @@ int main(int argc, char **argv)
 {
 	const uint8_t hwaddr[] = HW_ADDR;
 	const char *input;
+	uint32_t ip1, ip2;
 
 	if (argc < 2) {
 		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);
@@ -202,8 +198,10 @@ int main(int argc, char **argv)
 	setup_dst_cache();
 	test_dst_cache();
 
-	test_cache_timeout();
-	test_cache_notimeout();
+	ip1 = ipv4_atoi("145.49.6.14");
+	ip2 = ipv4_atoi("145.49.6.13");
+	test_cache_timeout(ip1);
+	test_cache_notimeout(ip2);
 
 	putchar('\n');
 	netdev_print(dev, stdout);
