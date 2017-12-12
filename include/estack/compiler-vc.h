@@ -1,5 +1,5 @@
 /*
- * E/STACK - Compiler header
+ * E/STACK - Visual C/C++ compiler definitions
  *
  * Author: Michel Megens
  * Date: 12/12/2017

@@ -3,6 +3,7 @@
 #
 
 include( ${PROJECT_SOURCE_DIR}/cmake/pcap.cmake )
+include (TestBigEndian)
 
 SET(ESTACK_SRCS
 netbuf.c
@@ -65,6 +66,13 @@ ${PROJECT_SOURCE_DIR}/include/estack.h)
 
 # Append include dir to header files
 prepend_path(GENERIC_HEADERS ${INCLUDE_DIR}/estack)
+
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+if(IS_BIG_ENDIAN)
+SET(HAVE_BIG_ENDIAN True)
+else()
+SET(HAVE_BIG_ENDIAN False)
+endif()
 
 # Compile the configure file
 CONFIGURE_FILE(${INCLUDE_DIR}/estack/config.h.in ${CMAKE_BINARY_DIR}/config.h)
