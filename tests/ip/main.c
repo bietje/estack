@@ -41,10 +41,6 @@ static int err_exit(int code, const char *fmt, ...)
 	exit(code);
 }
 
-static void print_dst_cache(struct netdev *dev)
-{
-}
-
 #define HW_ADDR1 {0xf0, 0xf7, 0x55, 0xbd, 0xbe, 0x40}
 static const uint8_t hw1[] = HW_ADDR1;
 
@@ -73,6 +69,7 @@ int main(int argc, char **argv)
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 
 	netdev_poll(dev);
+	pcapdev_destroy(dev);
 
 	getchar();
 	return 0;

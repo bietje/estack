@@ -128,10 +128,8 @@ static void test_cache_timeout(uint32_t ip)
 
 static void complete_dst_entry(uint32_t ip)
 {
-	struct dst_cache_entry *e;
 	const uint8_t hwaddr[] = DESTINATION_MAC;
 
-	e = netdev_find_destination(dev, (void*)&ip, 4);
 	netdev_update_destination(dev, hwaddr, 6, (void*)&ip, 4);
 	netdev_poll(dev);
 }
@@ -205,6 +203,7 @@ int main(int argc, char **argv)
 
 	putchar('\n');
 	netdev_print(dev, stdout);
+	pcapdev_destroy(dev);
 	getchar();
 
 	return -EXIT_SUCCESS;
