@@ -27,7 +27,7 @@
 static struct list_head dst_cache = STATIC_INIT_LIST_HEAD(dst_cache);
 static struct list_head devices = STATIC_INIT_LIST_HEAD(devices);
 
-static uint32_t dst_resolve_tmo = 3000000;
+static uint32_t dst_resolve_tmo = 4500000;
 static uint32_t dst_retry_tmo = 1000000;
 static int dst_retries = 4;
 
