@@ -156,6 +156,7 @@ struct DLL_EXPORT dst_cache_entry {
 CDECL
 extern DLL_EXPORT void netdev_add_backlog(struct netdev *dev, struct netbuf *nb);
 extern DLL_EXPORT void netdev_init(struct netdev *dev);
+extern DLL_EXPORT void netdev_destroy(struct netdev *dev);
 extern DLL_EXPORT int netdev_poll(struct netdev *dev);
 extern DLL_EXPORT void netdev_demux_handle(struct netbuf *nb);
 extern DLL_EXPORT bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto);

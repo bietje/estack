@@ -31,23 +31,6 @@ static uint32_t dst_resolve_tmo = 3000000;
 static uint32_t dst_retry_tmo = 1000000;
 static int dst_retries = 4;
 
- /**
-  * @brief	Initialize a network device.
-  * @param	dev	Device to initialise.
-  */
-void netdev_init(struct netdev *dev)
-{
-	list_head_init(&dev->entry);
-	list_head_init(&dev->backlog.head);
-	list_head_init(&dev->protocols);
-	list_head_init(&dev->destinations);
-
-	dev->backlog.size = 0;
-	dev->processing_weight = 15000;
-	dev->rx_max = 10;
-	list_add(&dev->entry, &devices);
-}
-
 /**
  * @brief Search the global device list.
  * @param name Device name to search for.
@@ -674,5 +657,52 @@ void netdev_print(FILE *file)
 {
 }
 #endif
+
+ /**
+  * @brief	Initialize a network device.
+  * @param	dev	Device to initialise.
+  */
+void netdev_init(struct netdev *dev)
+{
+	list_head_init(&dev->entry);
+	list_head_init(&dev->backlog.head);
+	list_head_init(&dev->protocols);
+	list_head_init(&dev->destinations);
+
+	dev->backlog.size = 0;
+	dev->processing_weight = 15000;
+	dev->rx_max = 10;
+	list_add(&dev->entry, &devices);
+}
+
+/**
+ * @brief Network device destructor.
+ * @param dev Network device to destroy.
+ * @note All memory associated with \p dev will be destroyed.
+ */
+void netdev_destroy(struct netdev *dev)
+{
+	struct list_head *entry, *tmp;
+	struct dst_cache_entry *e;
+	struct netbuf *nb;
+	struct protocol *proto;
+
+	assert(dev);
+	list_for_each_safe(entry, tmp, &dev->destinations) {
+		e = list_entry(entry, struct dst_cache_entry, entry);
+		netdev_drop_dst(e);
+		netdev_free_dst_entry(e);
+	}
+
+	backlog_for_each_safe(&dev->backlog, entry, tmp) {
+		nb = list_entry(entry, struct netbuf, bl_entry);
+		netbuf_free(nb);
+	}
+
+	list_for_each_safe(entry, tmp, &dev->protocols) {
+		proto = list_entry(entry, struct protocol, entry);
+		free(proto);
+	}
+}
 
 /** @} */
