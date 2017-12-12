@@ -13,9 +13,12 @@ log.c
 nif.c
 addrutil.c
 neighbour.c
+ip.c
 ipv4/arp-in.c
 ipv4/arp-out.c
 ipv4/arp.c
+ipv4/ip-output.c
+ipv4/ip-input.c
 802.3/eth-in.c
 802.3/eth-out.c
 802.3/addr.c
@@ -53,6 +56,8 @@ pcapdev.h
 log.h
 arp.h
 neighbour.h
+prototype.h
+ip.h
 )
 
 SET(BASE_HDRS
