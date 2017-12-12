@@ -43,9 +43,12 @@ struct DLL_EXPORT netdev_backlog {
 #define MAX_ADDR_LEN 8 //!< Maximum device hardware address length.
 #define MAX_LOCAL_ADDRESS_LENGTH 16 //!< Maximum network layer address length.
 
+/**
+ * @brief Interface type
+ */
 typedef enum {
-	NIF_TYPE_IP4,
-	NIF_TYPE_IP6,
+	NIF_TYPE_IP4, //!< Interface is IPv4
+	NIF_TYPE_IP6, //!< Interface is IPv6
 } nif_type_t;
 
 #define NIF_MAX_ADDR_LENGTH MAX_LOCAL_ADDRESS_LENGTH
@@ -53,11 +56,11 @@ typedef enum {
  * @brief Network interface datastructure.
  */
 struct netif {
-	uint8_t iftype;
-	uint8_t local_ip[NIF_MAX_ADDR_LENGTH];
-	uint8_t remote_ip[NIF_MAX_ADDR_LENGTH];
-	uint8_t ip_mask[NIF_MAX_ADDR_LENGTH];
-	uint16_t pkt_id;
+	uint8_t iftype; //!< Interface type.
+	uint8_t local_ip[NIF_MAX_ADDR_LENGTH]; //!< Local address.
+	uint8_t remote_ip[NIF_MAX_ADDR_LENGTH]; //!< Remote for Point to Point.
+	uint8_t ip_mask[NIF_MAX_ADDR_LENGTH]; //!< Address mask.
+	uint16_t pkt_id; //!< Packet ID generator.
 };
 
 struct netbuf;
@@ -121,9 +124,12 @@ struct DLL_EXPORT netdev {
 	int(*available)(struct netdev *dev);
 };
 
+/**
+ * @brief Destination cache state.
+ */
 typedef enum {
-	DST_RESOLVED,
-	DST_UNFINISHED,
+	DST_RESOLVED, //!< Destination is fully resolved to a hardware address.
+	DST_UNFINISHED, //!< Destination is not fully resolved.
 } dst_cache_state_t;
 
 typedef void(*resolve_handle)(struct netdev *dev, uint8_t *addr);
@@ -139,11 +145,12 @@ struct DLL_EXPORT dst_cache_entry {
 	uint8_t *hwaddr; //!< Hardware address that \p saddr is mapped to.
 	uint8_t hwaddr_length; //!< Length of \p hwaddr.
 
-	dst_cache_state_t state;
-	struct list_head packets;
-	time_t timeout, last_attempt;
-	int retry;
-	resolve_handle translate;
+	dst_cache_state_t state; //!< Cache state.
+	struct list_head packets; //!< Packets waiting for the cache to fully resolve.
+	time_t timeout, //!< Resolve time out. The cache is dropped if \p timeout expires.
+		   last_attempt; //!< Last time the cache was attempted to be resolved.
+	int retry; //!< Number of resolve attempts.
+	resolve_handle translate; //!< Handle to resolve an unfinished entry.
 };
 
 CDECL
