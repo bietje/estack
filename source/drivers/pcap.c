@@ -223,3 +223,18 @@ struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
 
 	return dev;
 }
+
+void pcapdev_destroy(struct netdev *dev)
+{
+	struct pcapdev_private *priv;
+
+	priv = container_of(dev, struct pcapdev_private, dev);
+	netdev_destroy(dev);
+
+	pcap_close(priv->cap);
+	if (priv->dst)
+		fclose(priv->dst);
+	free(priv->src);
+	free((void*)dev->name);
+	free(priv);
+}
