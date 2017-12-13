@@ -1,0 +1,9 @@
+estack:
+  script:
+    - cd apps/estack
+    - mkdir build
+    - cd build
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True
+    - make
+    - make run_netdev
+    - make run_ip
