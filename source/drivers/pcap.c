@@ -29,7 +29,8 @@
 struct pcapdev_private {
 	pcap_t *cap;
 	char *src;
-	FILE *dst;
+	pcap_t *dst;
+	pcap_dumper_t *dumper;
 	struct netdev dev;
 	int available;
 };
@@ -81,32 +82,44 @@ static int pcapdev_available(struct netdev *dev)
 
 static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 {
-	FILE *fp;
 	struct pcap_pkthdr hdr;
 	struct pcapdev_private *priv;
-	time_t tstamp;
+	void *data;
+	int index;
+	time_t timestamp;
+
+	assert(dev);
+	assert(nb);
 
 	priv = container_of(dev, struct pcapdev_private, dev);
-	fp = priv->dst;
-	assert(fp);
 
-	hdr.caplen = hdr.len = nb->size;
-	tstamp = estack_utime();
-	hdr.ts.tv_sec = (long)(tstamp / 1e6L);
-	hdr.ts.tv_usec = tstamp % 1000000ULL;
+	hdr.caplen = nb->datalink.size + nb->network.size + nb->transport.size + nb->application.size;
+	hdr.len = hdr.caplen;
+	timestamp = estack_utime();
+	hdr.ts.tv_sec = (long) timestamp / 1e6L;
+	hdr.ts.tv_usec = timestamp % (long)1e6L;
 
-	fwrite(&hdr, sizeof(hdr), 1, fp);
+	data = malloc(hdr.len);
+	index = 0;
 
-	if (nb->datalink.size > 0)
-		fwrite(nb->datalink.data, nb->datalink.size, 1, fp);
-	if (nb->network.size > 0)
-		fwrite(nb->network.data, nb->network.size, 1, fp);
-	if (nb->transport.size > 0)
-		fwrite(nb->transport.data, nb->transport.size, 1, fp);
-	if (nb->application.size > 0)
-		fwrite(nb->application.data, nb->application.size, 1, fp);
+	if (nb->datalink.size > 0) {
+		memcpy(data + index, nb->datalink.data, nb->datalink.size);
+		index += nb->datalink.size;
+	}
+	if (nb->network.size > 0) {
+		memcpy(data + index, nb->network.data, nb->network.size);
+		index += nb->network.size;
+	}
+	if (nb->transport.size > 0) {
+		memcpy(data + index, nb->transport.data, nb->transport.size);
+		index += nb->transport.size;
+	}
+	if (nb->application.size > 0) {
+		memcpy(data + index, nb->application.data, nb->application.size);
+		index += nb->application.size;
+	}
 
-	fflush(fp);
+	pcap_dump((u_char*)priv->dumper, &hdr, data);
 
 	return -EOK;
 }
@@ -163,20 +176,8 @@ static void pcapdev_init(struct netdev *dev, const char *name, const uint8_t *hw
 
 static void pcapdev_setup_output(const char *dst, struct pcapdev_private *priv)
 {
-	struct pcap_file_header fh;
-
-	priv->dst = fopen(dst, "w");
-	assert(priv->dst);
-
-	fh.magic = PCAP_MAGIC;
-	fh.sigfigs = 0;
-	fh.version_major = 2;
-	fh.version_minor = 8;
-	fh.snaplen = USHRT_MAX;
-	fh.thiszone = 0;
-	fh.linktype = DLT_EN10MB;
-	
-	fwrite(&fh, sizeof(fh), 1, priv->dst);
+	priv->dst = pcap_open_dead(DLT_EN10MB, (1 << 16) - 1);
+	priv->dumper = pcap_dump_open(priv->dst, dst);
 }
 
 void pcapdev_create_link_ip4(struct netdev *dev, uint32_t local, uint32_t remote, uint32_t mask)
@@ -232,8 +233,11 @@ void pcapdev_destroy(struct netdev *dev)
 	netdev_destroy(dev);
 
 	pcap_close(priv->cap);
-	if (priv->dst)
-		fclose(priv->dst);
+	if (priv->dumper) {
+		pcap_dump_close(priv->dumper);
+		pcap_close(priv->dst);
+	}
+
 	free(priv->src);
 	free((void*)dev->name);
 	free(priv);
