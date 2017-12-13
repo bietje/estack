@@ -12,6 +12,7 @@
 #include <pcap.h>
 #include <estack.h>
 #include <string.h>
+#include <assert.h>
 
 #include <estack/netbuf.h>
 #include <estack/ethernet.h>
@@ -70,6 +71,10 @@ int main(int argc, char **argv)
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 
 	netdev_poll(dev);
+	netdev_print(dev, stdout);
+
+	assert(netdev_get_dropped(dev) == 0);
+	assert(netdev_get_rx_packets(dev) == 1);
 	pcapdev_destroy(dev);
 
 	wait_close();

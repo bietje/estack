@@ -204,6 +204,10 @@ int main(int argc, char **argv)
 
 	putchar('\n');
 	netdev_print(dev, stdout);
+
+	assert(netdev_get_rx_packets(dev) == 1);
+	assert(netdev_get_tx_packets(dev) == 9);
+	assert(netdev_get_dropped(dev) == 1);
 	pcapdev_destroy(dev);
 	wait_close();
 

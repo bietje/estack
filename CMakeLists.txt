@@ -8,6 +8,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(estack)
 
+include(CMakeToolsHelpers)
 include(CheckIncludeFiles)
 
 if(UNIX)
