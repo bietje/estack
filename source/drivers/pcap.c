@@ -93,8 +93,7 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 
 	priv = container_of(dev, struct pcapdev_private, dev);
 
-	hdr.caplen = nb->datalink.size + nb->network.size + nb->transport.size + nb->application.size;
-	hdr.len = hdr.caplen;
+	hdr.caplen = hdr.len = nb->size;
 	timestamp = estack_utime();
 	hdr.ts.tv_sec = (long) timestamp / 1e6L;
 	hdr.ts.tv_usec = timestamp % (long)1e6L;

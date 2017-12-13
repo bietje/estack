@@ -435,9 +435,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			if ((arrived = netbuf_test_flag(nb, NBUF_ARRIVED)) != 0)
 				netdev_rx_stats_inc(dev, nb);
 		} else {
-			if (!nb->size)
-				nb->size = netbuf_get_size(nb);
-
+			nb->size = netbuf_calc_size(nb);
 			rc = dev->write(dev, nb);
 			arrived = !rc;
 

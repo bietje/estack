@@ -148,3 +148,15 @@ size_t netbuf_get_size(struct netbuf *nb)
 	totals += __netbuf_pkt_size(nb);
 	return totals;
 }
+
+size_t netbuf_calc_size(struct netbuf *nb)
+{
+	size_t totals;
+
+	totals = nb->datalink.size;
+	totals += nb->network.size;
+	totals += nb->transport.size;
+	totals += nb->application.size;
+
+	return totals;
+}
