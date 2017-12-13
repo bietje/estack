@@ -34,6 +34,14 @@ struct ipv4_header {
 
 #define INADDR_BCAST 0xFFFFFFFF
 
+typedef enum {
+	IP_PROTO_ICMP = 1,
+	IP_PROTO_IGMP,
+	IP_PROTO_TCP = 6,
+	IP_PROTO_UDP = 7,
+	IP_PROTO_RAW = 255
+} ipproto_type_t;
+
 CDECL
 extern DLL_EXPORT void ip_input(struct netbuf *nb);
 extern DLL_EXPORT void ipv4_input(struct netbuf *nb);

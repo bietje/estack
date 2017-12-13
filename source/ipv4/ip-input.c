@@ -32,7 +32,6 @@ void ipv4_input(struct netbuf *nb)
 	struct ipv4_header *hdr;
 	uint8_t hdrlen, version;
 	struct netif *nif;
-	int bcast;
 	uint32_t localmask;
 	uint32_t localip;
 
@@ -71,25 +70,44 @@ void ipv4_input(struct netbuf *nb)
 	if (unlikely(hdr->daddr == INADDR_BCAST ||
 		(localip && localmask != INADDR_BCAST && (hdr->daddr | localmask) == INADDR_BCAST))) {
 		/* Datagram is a broadcast */
-		bcast = 1;
+		netbuf_set_flag(nb, NBUF_BCAST);
 	} else if (unlikely(IS_MULTICAST(hdr->daddr))) {
 		/* TODO: implement multicast */
 		print_dbg("Multicast not supported, dropping IP datagram.\n");
+		netbuf_set_flag(nb, NBUF_MULTICAST);
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	} else {
-		bcast = 0;
+		netbuf_set_flag(nb, NBUF_UNICAST);
 
 		if (localip && (hdr->daddr == 0 || hdr->daddr != localip)) {
 			print_dbg("Dropping IP packet that isn't ment for us..\n");
 			netbuf_set_flag(nb, NBUF_DROPPED);
 		}
-		netbuf_set_flag(nb, NBUF_UNICAST);
 	}
 
-	/* TODO: handle IP packets */
+	nb->transport.size = htons(hdr->length);
+	if (nb->transport.size < hdrlen || nb->transport.size > nb->network.size) {
+		netbuf_set_flag(nb, NBUF_DROPPED);
+		return;
+	}
 
-	print_dbg("Received an IPv4 packet!\n");
-	print_dbg("\tIP version: %u :: Header length: %u\n", version, hdrlen);
-	netbuf_set_flag(nb, NBUF_ARRIVED);
+	nb->network.size = hdrlen;
+	nb->transport.size -= hdrlen;
+
+	if (nb->transport.size)
+		nb->transport.data = ((uint8_t*)hdr) + hdrlen;
+
+	switch (hdr->protocol) {
+	case IP_PROTO_ICMP:
+		print_dbg("Received an IPv4 packet!\n");
+		print_dbg("\tIP version: %u :: Header length: %u\n", version, hdrlen);
+		netbuf_set_flag(nb, NBUF_ARRIVED);
+		break;
+
+	case IP_PROTO_IGMP:
+	default:
+		netbuf_set_flag(nb, NBUF_DROPPED);
+		break;
+	}
 }
