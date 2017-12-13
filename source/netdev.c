@@ -43,7 +43,7 @@ struct netdev *netdev_find(const char *name)
 
 	list_for_each(entry, &devices) {
 		dev = list_entry(entry, struct netdev, entry);
-		if (!strcmp(dev->name, name))
+		if(!strcmp(dev->name, name))
 			return dev;
 	}
 
@@ -60,7 +60,7 @@ struct netdev *netdev_remove(const char *name)
 	struct netdev *dev;
 
 	dev = netdev_find(name);
-	if (!dev)
+	if(!dev)
 		return NULL;
 
 	list_del(&dev->entry);
@@ -157,7 +157,7 @@ bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto)
 	list_for_each(entry, &dev->protocols) {
 		pentry = list_entry(entry, struct protocol, entry);
 
-		if (proto == pentry) {
+		if(proto == pentry) {
 			list_del(entry);
 			return true;
 		}
@@ -174,8 +174,8 @@ bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto)
  * @param src Network layer address.
  * @param saddrlen Length of \p saddrlen.
  */
-void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t daddrlen ,
-	                        const uint8_t *src, uint8_t saddrlen)
+void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t daddrlen,
+	const uint8_t *src, uint8_t saddrlen)
 {
 	struct dst_cache_entry *centry;
 
@@ -185,7 +185,7 @@ void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t dadd
 	centry->state = DST_RESOLVED;
 	centry->saddr_length = saddrlen;
 	centry->hwaddr_length = daddrlen;
-	
+
 	centry->saddr = malloc(saddrlen);
 	memcpy(centry->saddr, src, saddrlen);
 
@@ -215,7 +215,7 @@ struct dst_cache_entry *netdev_add_destination_unresolved(struct netdev *dev,
 
 	centry->state = DST_UNFINISHED;
 	centry->saddr_length = length;
-	
+
 	centry->saddr = malloc(length);
 	memcpy(centry->saddr, src, length);
 
@@ -241,7 +241,7 @@ bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb)
 	assert(e);
 	assert(nb);
 
-	if (e->state != DST_UNFINISHED)
+	if(e->state != DST_UNFINISHED)
 		return false;
 
 	assert(nb->dev);
@@ -261,18 +261,18 @@ bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb)
  * @return True of false based on whether the entry was updated or not.
  */
 bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t dlength,
-	                           const uint8_t *src, uint8_t slength)
+	const uint8_t *src, uint8_t slength)
 {
 	struct list_head *entry;
 	struct dst_cache_entry *centry;
 
 	list_for_each(entry, &dev->destinations) {
 		centry = list_entry(entry, struct dst_cache_entry, entry);
-		if (centry->saddr_length != slength)
+		if(centry->saddr_length != slength)
 			continue;
 
-		if (!memcmp(centry->saddr, src, slength)) {
-			if (dlength != centry->hwaddr_length)
+		if(!memcmp(centry->saddr, src, slength)) {
+			if(dlength != centry->hwaddr_length)
 				centry->hwaddr = realloc(centry->hwaddr, dlength);
 
 			memcpy(centry->hwaddr, dst, dlength);
@@ -286,10 +286,10 @@ bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t d
 
 static inline void netdev_free_dst_entry(struct dst_cache_entry *e)
 {
-	if (e->saddr)
+	if(e->saddr)
 		free(e->saddr);
 
-	if (e->hwaddr)
+	if(e->hwaddr)
 		free(e->hwaddr);
 
 	free(e);
@@ -307,13 +307,12 @@ bool netdev_remove_destination(struct netdev *dev, const uint8_t *src, uint8_t l
 	struct list_head *entry;
 	struct dst_cache_entry *centry;
 
-	list_for_each(entry, &dev->destinations)
-	{
+	list_for_each(entry, &dev->destinations) {
 		centry = list_entry(entry, struct dst_cache_entry, entry);
-		if (centry->saddr_length != length)
+		if(centry->saddr_length != length)
 			continue;
 
-		if (!memcmp(centry->saddr, src, length)) {
+		if(!memcmp(centry->saddr, src, length)) {
 			list_del(entry);
 			netdev_free_dst_entry(centry);
 			return true;
@@ -335,13 +334,12 @@ struct dst_cache_entry *netdev_find_destination(struct netdev *dev, const uint8_
 	struct list_head *entry;
 	struct dst_cache_entry *centry;
 
-	list_for_each(entry, &dev->destinations)
-	{
+	list_for_each(entry, &dev->destinations) {
 		centry = list_entry(entry, struct dst_cache_entry, entry);
-		if (centry->saddr_length != length)
+		if(centry->saddr_length != length)
 			continue;
 
-		if (!memcmp(centry->saddr, src, length))
+		if(!memcmp(centry->saddr, src, length))
 			return centry;
 	}
 
@@ -378,8 +376,8 @@ static void netdev_try_translate_cache(struct netdev *dev)
 	list_for_each_safe(dst, dsttmp, &dev->destinations) {
 		e = list_entry(dst, struct dst_cache_entry, entry);
 
-		if (e->state == DST_UNFINISHED) {
-			if (netdev_dst_timeout(e) || !e->translate ||
+		if(e->state == DST_UNFINISHED) {
+			if(netdev_dst_timeout(e) || !e->translate ||
 				e->retry <= 0 || list_empty(&e->packets)) {
 				netdev_drop_dst(e);
 				list_del(dst);
@@ -387,7 +385,7 @@ static void netdev_try_translate_cache(struct netdev *dev)
 				continue;
 			}
 
-			if (e->last_attempt + dst_retry_tmo < estack_utime()) {
+			if(e->last_attempt + dst_retry_tmo < estack_utime()) {
 				e->translate(dev, e->saddr);
 				e->retry--;
 				e->last_attempt = estack_utime();
@@ -408,20 +406,20 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 {
 	struct netbuf *nb;
 	struct list_head *entry,
-		             *tmp;
+		*tmp;
 	int rc, arrived;
 
-	if (list_empty(&dev->backlog.head))
+	if(list_empty(&dev->backlog.head))
 		return -EOK;
 
 	backlog_for_each_safe(&dev->backlog, entry, tmp) {
 		nb = list_entry(entry, struct netbuf, bl_entry);
 		netdev_remove_backlog_entry(dev, nb);
 
-		if (weight < 0)
+		if(weight < 0)
 			break;
 
-		if (likely(netbuf_test_flag(nb, NBUF_RX))) {
+		if(likely(netbuf_test_flag(nb, NBUF_RX))) {
 			/*
 			 * Push arriving packets into the network stack through the
 			 * receive handle: struct netdev:rx().
@@ -432,26 +430,26 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			nb->size = netbuf_get_size(nb);
 
 			dev->rx(nb);
-			if ((arrived = netbuf_test_flag(nb, NBUF_ARRIVED)) != 0)
+			if((arrived = netbuf_test_flag(nb, NBUF_ARRIVED)) != 0)
 				netdev_rx_stats_inc(dev, nb);
 		} else {
 			nb->size = netbuf_calc_size(nb);
 			rc = dev->write(dev, nb);
 			arrived = !rc;
 
-			if (!rc)
+			if(!rc)
 				netdev_tx_stats_inc(dev, nb);
 		}
 
-		if (netbuf_test_flag(nb, NBUF_AGAIN)) {
+		if(netbuf_test_flag(nb, NBUF_AGAIN)) {
 			netdev_add_backlog(dev, nb);
-		} else if (netbuf_test_flag(nb, NBUF_DROPPED)) {
+		} else if(netbuf_test_flag(nb, NBUF_DROPPED)) {
 			netdev_dropped_stats_inc(dev);
 			netbuf_free(nb);
 			continue;
 		}
 
-		if (arrived) {
+		if(arrived) {
 			weight -= nb->size;
 			netbuf_free(nb);
 		}
@@ -478,12 +476,12 @@ int netdev_poll(struct netdev *dev)
 	available = dev->available(dev);
 
 	available = available > dev->rx_max ? dev->rx_max : available;
-	if (available > 0)
+	if(available > 0)
 		dev->read(dev, available);
 
 	weight = dev->processing_weight;
 	netdev_try_translate_cache(dev);
-	while (weight > 0 && netdev_backlog_length(dev) != 0) {
+	while(weight > 0 && netdev_backlog_length(dev) != 0) {
 		weight = netdev_process_backlog(dev, weight);
 	}
 
@@ -499,7 +497,7 @@ static void __netdev_demux_handle(struct netbuf *nb)
 	dev = nb->dev;
 	list_for_each(entry, &dev->protocols) {
 		proto = list_entry(entry, struct protocol, entry);
-		if (proto->protocol == nb->protocol)
+		if(proto->protocol == nb->protocol)
 			proto->rx(nb);
 	}
 }
@@ -528,8 +526,8 @@ void netdev_config_core_params(uint32_t retry_tmo, uint32_t resolv_tmo, int retr
 void netdev_demux_handle(struct netbuf *nb)
 {
 	assert(nb);
-	
-	if (nb->protocol != 0)
+
+	if(nb->protocol != 0)
 		__netdev_demux_handle(nb);
 }
 
@@ -656,10 +654,10 @@ void netdev_print(FILE *file)
 }
 #endif
 
- /**
-  * @brief	Initialize a network device.
-  * @param	dev	Device to initialise.
-  */
+/**
+ * @brief	Initialize a network device.
+ * @param	dev	Device to initialise.
+ */
 void netdev_init(struct netdev *dev)
 {
 	list_head_init(&dev->entry);

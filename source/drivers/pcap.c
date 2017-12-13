@@ -43,7 +43,7 @@ static pcap_t *pcapdev_open_file(const char *src)
 	memset(errb, 0, PCAP_ERRBUF_SIZE);
 	cap = pcap_open_offline(src, errb);
 
-	if (!cap) {
+	if(!cap) {
 		fprintf(stderr, "[PCAP DEV]: %s\n", errb);
 		return NULL;
 	}
@@ -60,16 +60,16 @@ static int pcapdev_available(struct netdev *dev)
 	const u_char *data;
 
 	priv = container_of(dev, struct pcapdev_private, dev);
-	if (priv->available >= 0)
+	if(priv->available >= 0)
 		return priv->available;
 
 	cap = pcapdev_open_file(priv->src);
 
-	if (!cap)
+	if(!cap)
 		return -1;
 
 	count = 0;
-	while ((rv = pcap_next_ex(cap, &hdr, &data)) >= 0)
+	while((rv = pcap_next_ex(cap, &hdr, &data)) >= 0)
 		count += 1;
 
 	priv->available = count;
@@ -84,7 +84,7 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 {
 	struct pcap_pkthdr hdr;
 	struct pcapdev_private *priv;
-	void *data;
+	uint8_t *data;
 	int index;
 	time_t timestamp;
 
@@ -95,25 +95,25 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 
 	hdr.caplen = hdr.len = nb->size;
 	timestamp = estack_utime();
-	hdr.ts.tv_sec = (long) timestamp / 1e6L;
+	hdr.ts.tv_sec = (long)(timestamp / 1e6L);
 	hdr.ts.tv_usec = timestamp % (long)1e6L;
 
 	data = malloc(hdr.len);
 	index = 0;
 
-	if (nb->datalink.size > 0) {
+	if(nb->datalink.size > 0) {
 		memcpy(data + index, nb->datalink.data, nb->datalink.size);
 		index += nb->datalink.size;
 	}
-	if (nb->network.size > 0) {
+	if(nb->network.size > 0) {
 		memcpy(data + index, nb->network.data, nb->network.size);
 		index += nb->network.size;
 	}
-	if (nb->transport.size > 0) {
+	if(nb->transport.size > 0) {
 		memcpy(data + index, nb->transport.data, nb->transport.size);
 		index += nb->transport.size;
 	}
-	if (nb->application.size > 0) {
+	if(nb->application.size > 0) {
 		memcpy(data + index, nb->application.data, nb->application.size);
 		index += nb->application.size;
 	}
@@ -136,10 +136,10 @@ static int pcapdev_read(struct netdev *dev, int num)
 	priv = container_of(dev, struct pcapdev_private, dev);
 	tmp = 0;
 
-	if (num < 0)
+	if(num < 0)
 		num = INT_MAX;
 
-	while ((rv = pcap_next_ex(priv->cap, &hdr, &data)) >= 0 && num > 0) {
+	while((rv = pcap_next_ex(priv->cap, &hdr, &data)) >= 0 && num > 0) {
 		length = hdr->len;
 		nb = netbuf_alloc(NBAF_DATALINK, length);
 		netbuf_cpy_data(nb, data, length, NBAF_DATALINK);
@@ -209,7 +209,7 @@ struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
 	dev = &priv->dev;
 	pcapdev_init(dev, "dbg0", hwaddr, mtu);
 
-	if (!priv->cap) {
+	if(!priv->cap) {
 		return NULL;
 	}
 
@@ -232,7 +232,7 @@ void pcapdev_destroy(struct netdev *dev)
 	netdev_destroy(dev);
 
 	pcap_close(priv->cap);
-	if (priv->dumper) {
+	if(priv->dumper) {
 		pcap_dump_close(priv->dumper);
 		pcap_close(priv->dst);
 	}

@@ -41,7 +41,7 @@ void netdev_print_nif(struct netdev *dev)
 	assert(dev);
 	nif = &dev->nif;
 
-	if (nif->iftype == NIF_TYPE_IP4) {
+	if(nif->iftype == NIF_TYPE_IP4) {
 		print_dbg("Network interface: %s\n", dev->name);
 		ipv4_ntoa(ipv4_ptoi(nif->local_ip), buf, 16);
 		print_dbg("\tSource IP %s\n", buf);

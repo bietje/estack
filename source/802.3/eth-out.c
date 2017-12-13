@@ -28,7 +28,7 @@ void ethernet_output(struct netbuf *nb, uint8_t *hw)
 	dev = nb->dev;
 
 	memcpy(hdr->src_mac, dev->hwaddr, ETHERNET_MAC_LENGTH);
-	if (hw)
+	if(hw)
 		memcpy(hdr->dest_mac, hw, ETHERNET_MAC_LENGTH);
 	else
 		memset(hdr->dest_mac, 0xFF, ETHERNET_MAC_LENGTH);

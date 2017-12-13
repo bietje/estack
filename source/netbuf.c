@@ -22,7 +22,7 @@ struct netbuf *netbuf_realloc(struct netbuf *nb, netbuf_type_t type, size_t size
 	assert(nb);
 	assert(size > 0);
 
-	switch (type) {
+	switch(type) {
 	case NBAF_DATALINK:
 		nbd = &nb->datalink;
 		netbuf_set_flag(nb, NBUF_DATALINK_ALLOC);
@@ -62,7 +62,7 @@ struct netbuf *netbuf_alloc(netbuf_type_t type, size_t size)
 	list_head_init(&nb->bl_entry);
 	list_head_init(&nb->entry);
 
-	if (netbuf_realloc(nb, type, size) == NULL) {
+	if(netbuf_realloc(nb, type, size) == NULL) {
 		free(nb);
 		return NULL;
 	}
@@ -74,16 +74,16 @@ void netbuf_free(struct netbuf *nb)
 {
 	assert(nb);
 
-	if (netbuf_test_flag(nb, NBUF_DATALINK_ALLOC))
+	if(netbuf_test_flag(nb, NBUF_DATALINK_ALLOC))
 		free(nb->datalink.data);
 
-	if (netbuf_test_flag(nb, NBUF_NETWORK_ALLOC))
+	if(netbuf_test_flag(nb, NBUF_NETWORK_ALLOC))
 		free(nb->network.data);
 
-	if (netbuf_test_flag(nb, NBUF_TRANSPORT_ALLOC))
+	if(netbuf_test_flag(nb, NBUF_TRANSPORT_ALLOC))
 		free(nb->transport.data);
 
-	if (netbuf_test_flag(nb, NBUF_APPLICATION_ALLOC))
+	if(netbuf_test_flag(nb, NBUF_APPLICATION_ALLOC))
 		free(nb->application.data);
 
 	free(nb);
@@ -97,7 +97,7 @@ void netbuf_cpy_data(struct netbuf *nb, const void *src, size_t length, netbuf_t
 	assert(src);
 	assert(length > 0);
 
-	switch (type) {
+	switch(type) {
 	case NBAF_DATALINK:
 		nbd = &nb->datalink;
 		break;
@@ -139,8 +139,7 @@ size_t netbuf_get_size(struct netbuf *nb)
 	size_t totals;
 
 	totals = 0UL;
-	list_for_each(entry, &nb->entry)
-	{
+	list_for_each(entry, &nb->entry) {
 		_nb = list_entry(entry, struct netbuf, entry);
 		totals += __netbuf_pkt_size(_nb);
 	}

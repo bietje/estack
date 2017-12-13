@@ -18,7 +18,7 @@
 
 void ip_input(struct netbuf *nb)
 {
-	switch (nb->protocol) {
+	switch(nb->protocol) {
 	case PROTO_IPV4:
 		ipv4_input(nb);
 		break;

@@ -6,7 +6,7 @@
  * Email: dev@bietje.net
  */
 
- /**
+/**
  * @addtogroup netdev
  * @{
  */
@@ -21,14 +21,14 @@
 #include <estack/estack.h>
 #include <estack/list.h>
 
-/**
- * @brief Network device statistics.
- */
+ /**
+  * @brief Network device statistics.
+  */
 struct DLL_EXPORT netdev_stats {
 	uint32_t rx_bytes, //!< Number of received bytes.
-		     rx_packets; //!< Number of received packets.
+		rx_packets; //!< Number of received packets.
 	uint32_t tx_bytes,  //!< Number of transmitted bytes.
-		     tx_packets; //!< Number of received packets.
+		tx_packets; //!< Number of received packets.
 	uint32_t dropped; //!< Number of dropped packets.
 };
 
@@ -79,7 +79,7 @@ struct protocol {
 /**
  * @brief Network device datastructure.
  */
-struct DLL_EXPORT netdev {	
+struct DLL_EXPORT netdev {
 	const char *name; //!< Device name.
 	struct list_head entry; //!< Entry into the global device list.
 	struct list_head protocols; //!< Protocol handler list head.
@@ -115,7 +115,7 @@ struct DLL_EXPORT netdev {
 	* Instead of returning the packet buffers, the packet buffers are enqued on the backlog
 	* of \p dev by the PHY-layer drivers.
 	*/
-	int (*read)(struct netdev *dev, int num);
+	int(*read)(struct netdev *dev, int num);
 	/**
 	 * @brief Get the number of bytes available in the network cards internal buffers.
 	 * @param dev Network device strcuture pointer.
@@ -148,7 +148,7 @@ struct DLL_EXPORT dst_cache_entry {
 	dst_cache_state_t state; //!< Cache state.
 	struct list_head packets; //!< Packets waiting for the cache to fully resolve.
 	time_t timeout, //!< Resolve time out. The cache is dropped if \p timeout expires.
-		   last_attempt; //!< Last time the cache was attempted to be resolved.
+		last_attempt; //!< Last time the cache was attempted to be resolved.
 	int retry; //!< Number of resolve attempts.
 	resolve_handle translate; //!< Handle to resolve an unfinished entry.
 };
@@ -201,4 +201,4 @@ CDECL_END
 			list_for_each_safe(e, p, &((bl)->head))
 #endif // !__NETDEV_H__
 
-/** @} */
+ /** @} */

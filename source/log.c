@@ -44,7 +44,7 @@ void panic(const char *fmt, ...)
 
 void log_init(FILE *file)
 {
-	if (file)
+	if(file)
 		dbg_file = file;
 	else
 		dbg_file = stdout;

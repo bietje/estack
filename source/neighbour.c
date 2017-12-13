@@ -29,8 +29,8 @@ bool neighbour_output(struct netdev *dev, struct netbuf *nb, void *addr, uint8_t
 	netbuf_set_dev(nb, dev);
 	e = netdev_find_destination(dev, addr, length);
 
-	if (likely(e)) {
-		if (e->state == DST_RESOLVED) {
+	if(likely(e)) {
+		if(e->state == DST_RESOLVED) {
 			dev->tx(nb, e->hwaddr);
 			return true;
 		}

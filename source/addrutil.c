@@ -23,7 +23,7 @@ char *ethernet_mac_ntoa(uint8_t *addr, char *buf, size_t length)
 	assert(addr);
 	assert(buf);
 
-	if (length < 18)
+	if(length < 18)
 		return NULL;
 
 	snprintf(buf, length, "%02x:%02x:%02x:%02x:%02x:%02x",

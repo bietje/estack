@@ -35,7 +35,8 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 #endif
 
 	header->tos = 0;
-	header->length = htons(nb->network.size + nb->transport.size + nb->application.size);
+	header->length = htons((uint16_t)(nb->network.size +
+		nb->transport.size + nb->application.size));
 	header->offset = 0;
 
 	if(proto == IP_PROTO_IGMP)

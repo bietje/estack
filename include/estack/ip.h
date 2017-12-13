@@ -22,9 +22,9 @@
 struct ipv4_header {
 	uint8_t ihl_version;
 	uint8_t tos;
-	short length;
+	uint16_t length;
 	uint16_t id;
-	short offset;
+	uint16_t offset;
 	uint8_t ttl;
 	uint8_t protocol;
 	uint16_t chksum;
