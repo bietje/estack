@@ -34,6 +34,8 @@ struct ipv4_header {
 
 #define INADDR_BCAST 0xFFFFFFFF
 
+#define IPV4_TTL 0x40
+
 typedef enum {
 	IP_PROTO_ICMP = 1,
 	IP_PROTO_IGMP,

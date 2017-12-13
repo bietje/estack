@@ -21,6 +21,7 @@
 #include <estack/translate.h>
 #include <estack/neighbour.h>
 #include <estack/prototype.h>
+#include <estack/test.h>
 
 static int err_exit(int code, const char *fmt, ...)
 {
@@ -30,7 +31,7 @@ static int err_exit(int code, const char *fmt, ...)
 	vfprintf(stderr, fmt, va);
 	va_end(va);
 
-	getchar();
+	wait_close();
 	exit(code);
 }
 
@@ -204,7 +205,7 @@ int main(int argc, char **argv)
 	putchar('\n');
 	netdev_print(dev, stdout);
 	pcapdev_destroy(dev);
-	getchar();
+	wait_close();
 
 	return -EXIT_SUCCESS;
 }

@@ -74,6 +74,8 @@ else()
 SET(HAVE_BIG_ENDIAN False)
 endif()
 
+SET(HAVE_CI ${CMAKE_CI})
+
 # Compile the configure file
 CONFIGURE_FILE(${INCLUDE_DIR}/estack/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 
