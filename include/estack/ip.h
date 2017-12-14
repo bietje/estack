@@ -15,6 +15,9 @@
 #include <estack/estack.h>
 #include <estack/netbuf.h>
 
+#define IPV4_ADDR_SIZE 4
+#define IPV6_ADDR_SIZE 16
+
 #pragma pack(push, 1)
 struct ipv4_header {
 	uint8_t ihl_version;

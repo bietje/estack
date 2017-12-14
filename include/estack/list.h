@@ -152,6 +152,17 @@ typedef int(*list_comparator_t)(struct list_head *lh1, struct list_head *lh2);
  */
 #define list_entry(ptr, type, member) container_of(ptr, type, member)
 
+/**
+ * @brief Get the first entry from a list.
+ * @param ptr the list head to take the element from.
+ * @param type the type of the struct this is embedded in.
+ * @param member the name of the list_struct within the struct.
+ *
+ * Note, that list is expected to be not empty.
+ */
+#define list_first_entry(ptr, type, member) \
+	list_entry((ptr)->next, type, member)
+
 #define list_next_entry(pos, member) \
 	list_entry((pos)->member.next, typeof(*(pos)), member)
 

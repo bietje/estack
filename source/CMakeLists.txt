@@ -15,6 +15,7 @@ nif.c
 addrutil.c
 neighbour.c
 ip.c
+route.c
 ipv4/arp-in.c
 ipv4/arp-out.c
 ipv4/arp.c
@@ -59,6 +60,14 @@ arp.h
 neighbour.h
 prototype.h
 ip.h
+compiler.h
+compiler-vc.h
+compiler-gcc.h
+route.h
+test.h
+error.h
+inet.h
+translate.h
 )
 
 SET(BASE_HDRS
