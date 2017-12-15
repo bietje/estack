@@ -674,7 +674,7 @@ void netdev_print(struct netdev *dev, FILE *file)
 	ipv4_ntoa(ipv4_ptoi(nif->local_ip), ipbuf, 16);
 	fprintf(file, "\tLocal IP: %s\n", ipbuf);
 	ipv4_ntoa(ipv4_ptoi(nif->ip_mask), ipbuf, 16);
-	fprintf(file, "\tLocal IP: %s\n", ipbuf);
+	fprintf(file, "\tIP mask: %s\n", ipbuf);
 
 	netdev_write_stats(dev, file);
 }
