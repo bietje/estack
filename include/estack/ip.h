@@ -51,6 +51,9 @@ CDECL
 extern DLL_EXPORT void ip_input(struct netbuf *nb);
 extern DLL_EXPORT void ipv4_input(struct netbuf *nb);
 extern DLL_EXPORT void ipv4_output(struct netbuf *nb, uint32_t dst);
+
+extern DLL_EXPORT uint16_t ip_checksum_partial(uint16_t start, const void *buf, int len);
+uint16_t DLL_EXPORT ip_checksum(uint16_t start, const void *buf, int len);
 CDECL_END
 
 #endif /* !__IP_H__ */

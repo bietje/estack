@@ -15,6 +15,10 @@
 #include <estack/ip.h>
 #include <estack/log.h>
 #include <estack/inet.h>
+#include <estack/route.h>
+#include <estack/neighbour.h>
+#include <estack/translate.h>
+#include <estack/ethernet.h>
 
 #include <config.h>
 
@@ -24,6 +28,9 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 {
 	struct ipv4_header *header;
 	uint8_t proto;
+	struct netdev *dev;
+	struct netif *nif;
+	uint32_t gw, saddr;
 
 	proto = nb->protocol & 0xFF;
 	nb = netbuf_realloc(nb, NBAF_NETWORK, sizeof(*header));
@@ -54,7 +61,28 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 	}
 
 	/* Unicast */
-	/* TODO: lookup the route */
-	netbuf_free(nb);
+	dev = route4_lookup(dst, &gw);
+	if(!dev) {
+		netbuf_free(nb);
+		return;
+	}
+
+	nif = &dev->nif;
+	header->id = netif_get_id(nif);
+	saddr = ipv4_ptoi(nif->local_ip);
+	header->saddr = htonl(saddr);
+	header->chksum = ip_checksum(0, nb->network.data, nb->network.size);
+
+	switch(nif->iftype) {
+	case NIF_TYPE_ETHER:
+		nb->protocol = ETH_TYPE_IP;
+		neighbour_output(dev, nb, &dst, IPV4_ADDR_SIZE, translate_ipv4_to_mac);
+		break;
+
+	default:
+		netbuf_free(nb);
+		return;
+	}
+
 	return;
 }

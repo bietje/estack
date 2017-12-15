@@ -47,8 +47,7 @@ struct DLL_EXPORT netdev_backlog {
  * @brief Interface type
  */
 typedef enum {
-	NIF_TYPE_IP4, //!< Interface is IPv4
-	NIF_TYPE_IP6, //!< Interface is IPv6
+	NIF_TYPE_ETHER,
 } nif_type_t;
 
 #define NIF_MAX_ADDR_LENGTH MAX_LOCAL_ADDRESS_LENGTH
@@ -172,6 +171,7 @@ extern DLL_EXPORT bool netdev_update_destination(struct netdev *dev, const uint8
 extern bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb);
 extern DLL_EXPORT void ifconfig(struct netdev *dev, uint8_t *local, uint8_t *remote,
 	uint8_t *mask, uint8_t length, nif_type_t type);
+extern DLL_EXPORT uint16_t netif_get_id(struct netif *nif);
 extern DLL_EXPORT void netdev_print_nif(struct netdev *dev);
 
 extern DLL_EXPORT void netdev_write_stats(struct netdev *dev, FILE *file);

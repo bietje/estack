@@ -119,6 +119,7 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	}
 
 	pcap_dump((u_char*)priv->dumper, &hdr, data);
+	free(data);
 
 	return -EOK;
 }
@@ -186,7 +187,7 @@ void pcapdev_create_link_ip4(struct netdev *dev, uint32_t local, uint32_t remote
 	_local = (void*)&local;
 	_remote = (void*)&remote;
 	_mask = (void*)&mask;
-	ifconfig(dev, _local, _remote, _mask, 4, NIF_TYPE_IP4);
+	ifconfig(dev, _local, _remote, _mask, 4, NIF_TYPE_ETHER);
 }
 
 struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,

@@ -32,6 +32,15 @@ void ifconfig(struct netdev *dev, uint8_t *local, uint8_t *remote,
 	nif->iftype = type;
 }
 
+uint16_t netif_get_id(struct netif *nif)
+{
+	uint16_t rv;
+
+	rv = nif->pkt_id;
+	nif->pkt_id++;
+	return rv;
+}
+
 #ifdef HAVE_DEBUG
 void netdev_print_nif(struct netdev *dev)
 {
@@ -41,7 +50,7 @@ void netdev_print_nif(struct netdev *dev)
 	assert(dev);
 	nif = &dev->nif;
 
-	if(nif->iftype == NIF_TYPE_IP4) {
+	if(nif->iftype == NIF_TYPE_ETHER) {
 		print_dbg("Network interface: %s\n", dev->name);
 		ipv4_ntoa(ipv4_ptoi(nif->local_ip), buf, 16);
 		print_dbg("\tSource IP %s\n", buf);
