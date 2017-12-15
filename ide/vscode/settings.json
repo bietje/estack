@@ -4,7 +4,8 @@
 		"netbuf.h": "c",
 		"estack.h": "c",
 		"ip.h": "c",
-		"string.h": "c"
+		"string.h": "c",
+		"config.h": "c"
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False"
