@@ -1,8 +1,8 @@
 /*
- * ARP unit test
+ * IP routing test
  *
  * Author: Michel Megens
- * Date:   07/12/2017
+ * Date:   15/12/2017
  * Email:  dev@bietje.net
  */
 
@@ -22,6 +22,7 @@
 #include <estack/list.h>
 #include <estack/arp.h>
 #include <estack/test.h>
+#include <estack/route.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -53,7 +54,8 @@ int main(int argc, char **argv)
 	char *input;
 	struct netdev *dev;
 	const uint8_t hwaddr[] = HW_ADDR;
-	uint32_t addr;
+	uint32_t addr, mask, gw, gwlookup;
+	struct netdev *lookup;
 
 	if (argc < 2) {
 		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);
@@ -65,19 +67,27 @@ int main(int argc, char **argv)
 
 	dev = pcapdev_create(input, "ip-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
+	/* Link 145.49.6.12, mask 255.255.192.0 */
 	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
 
 	addr = ipv4_atoi("145.49.63.254");
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 
-	netdev_poll(dev);
+	addr = ipv4_atoi("145.49.6.12");
+	mask = ipv4_atoi("255.255.192.0");
+	gw = ipv4_atoi("145.49.6.254");
+	route4_add(addr & mask, mask, 0, dev);
+	route4_add(0, 0, gw, dev);
+
+	lookup = route4_lookup(ipv4_atoi("8.8.8.8"), &gwlookup);
+
+	assert(gw == gwlookup);
+	assert(lookup);
 	netdev_print(dev, stdout);
 
-	assert(netdev_get_dropped(dev) == 0);
-	assert(netdev_get_rx_packets(dev) == 1);
+	route4_clear();
 	pcapdev_destroy(dev);
 
 	wait_close();
 	return 0;
 }
-
