@@ -11,7 +11,7 @@ project(estack)
 include(CMakeToolsHelpers OPTIONAL)
 include(CheckIncludeFiles)
 
-if(UNIX)
+if(UNIX OR CMAKE_SYSTEM_NAME MATCHES Generic)
 	if(CMAKE_BUILD_TYPE MATCHES Debug)
 		SET(CFLAGS_EXTRA "-Og -ggdb -g3")
 	endif()
@@ -21,7 +21,7 @@ if(UNIX)
 	endif()
 
 	if(CMAKE_BUILD_TYPE MATCHES Release)
-		set(CFLAGS_EXTRA "${CFLAGS_EXTRA} -O3 -ffast-math")
+		set(CFLAGS_EXTRA "${CFLAGS_EXTRA} -ffast-math")
 	endif()
 
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CFLAGS_EXTRA} -std=gnu11 -Wall")
@@ -49,9 +49,16 @@ CHECK_INCLUDE_FILES (time.h HAVE_TIME_H)
 CHECK_INCLUDE_FILES (Winsock2.h HAVE_WINSOCK_H)
 CHECK_INCLUDE_FILES (arpa/inet.h HAVE_INET_H)
 
+if(CMAKE_SYSTEM_NAME MATCHES Generic)
+SET(HAVE_GENERIC_SYS True)
+endif()
+
 add_subdirectory(source)
 add_subdirectory(resources)
+
+if( NOT CMAKE_SYSTEM_NAME MATCHES Generic )
 add_subdirectory(tools)
+endif()
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
 add_subdirectory(tests)

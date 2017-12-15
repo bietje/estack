@@ -27,6 +27,7 @@ void *z_alloc(size_t size)
 	return vp;
 }
 
+#ifndef HAVE_GENERIC_SYS
 #ifdef WIN32
 #define WIN32_EPOCH_ADJUSTMENT 11644473600000000ULL
 #include <Windows.h>
@@ -56,3 +57,4 @@ time_t estack_utime(void)
 	return rv;
 }
 #endif // WIN32
+#endif

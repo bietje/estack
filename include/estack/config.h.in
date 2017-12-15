@@ -14,3 +14,4 @@
 #cmakedefine HAVE_DEBUG
 #cmakedefine HAVE_BIG_ENDIAN
 #cmakedefine HAVE_CI
+#cmakedefine HAVE_GENERIC_SYS

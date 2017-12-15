@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
-#include <time.h>
 
 #include <estack/estack.h>
 #include <estack/list.h>

@@ -34,6 +34,12 @@ drivers/pcap.c
 SET(HAVE_DEBUG True)
 ENDIF()
 
+IF(CMAKE_SYSTEM_NAME MATCHES Generic)
+SET(ESTACK_SRCS
+${ESTACK_SRCS}
+sys.c)
+ENDIF()
+
 SET(${ESTACK_SRCS}
 ${ESTACK_SRCS}
 )
@@ -92,11 +98,14 @@ CONFIGURE_FILE(${INCLUDE_DIR}/estack/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 include_directories(${PROJECT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
 
 # Shared and static library definitions
-add_library(estack SHARED ${ESTACK_SRCS} ${GENERIC_HEADERS} ${BASE_HDRS})
+if(CMAKE_LIBTYPE MATCHES Shared)
+  add_library(estack SHARED ${ESTACK_SRCS} ${GENERIC_HEADERS} ${BASE_HDRS})
+	target_link_libraries(estack ${PCAP_LIBRARY})
+endif()
+
 add_library(estack-static STATIC ${ESTACK_SRCS} ${GENERIC_HEADERS} ${BASE_HDRS})
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
-	target_link_libraries(estack ${PCAP_LIBRARY})
 	target_link_libraries(estack-static ${PCAP_LIBRARY})
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 

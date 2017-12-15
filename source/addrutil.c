@@ -53,7 +53,7 @@ uint32_t ipv4_atoi(char *addr)
 	uint32_t ip;
 
 	sscanf(addr, "%hhu.%hhu.%hhu.%hhu", &bytes[3], &bytes[2], &bytes[1], &bytes[0]);
-	ip = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
+	ip = ((uint32_t)bytes[3] << 24) | ((uint32_t)bytes[2] << 16) | ((uint32_t)bytes[1] << 8) | bytes[0];
 	return ip;
 }
 

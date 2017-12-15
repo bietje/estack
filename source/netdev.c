@@ -650,10 +650,10 @@ void netdev_write_stats(struct netdev *dev, FILE *file)
 	stats = netdev_get_stats(dev);
 
 	fprintf(file, "Stats for: %s\n", dev->name);
-	fprintf(file, "\tReceived: %u bytes in %u packets\n", stats->rx_bytes, stats->rx_packets);
-	fprintf(file, "\tTransmit: %u bytes in %u packets\n", stats->tx_bytes, stats->tx_packets);
-	fprintf(file, "\t%u packets have been dropped\n", stats->dropped);
-	fprintf(file, "\tBacklog size %u\n", dev->backlog.size);
+	fprintf(file, "\tReceived: %lu bytes in %lu packets\n", (unsigned long)stats->rx_bytes, (unsigned long)stats->rx_packets);
+	fprintf(file, "\tTransmit: %lu bytes in %lu packets\n", (unsigned long)stats->tx_bytes, (unsigned long)stats->tx_packets);
+	fprintf(file, "\t%lu packets have been dropped\n", (unsigned long)stats->dropped);
+	fprintf(file, "\tBacklog size %u\n", (unsigned int)dev->backlog.size);
 }
 
 #ifdef HAVE_DEBUG
@@ -679,7 +679,7 @@ void netdev_print(struct netdev *dev, FILE *file)
 	netdev_write_stats(dev, file);
 }
 #else
-void netdev_print(FILE *file)
+void netdev_print(struct netdev *dev, FILE *file)
 {
 }
 #endif
