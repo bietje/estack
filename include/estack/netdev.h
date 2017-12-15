@@ -159,7 +159,8 @@ extern DLL_EXPORT void netdev_init(struct netdev *dev);
 extern DLL_EXPORT void netdev_destroy(struct netdev *dev);
 extern DLL_EXPORT int netdev_poll(struct netdev *dev);
 extern DLL_EXPORT void netdev_demux_handle(struct netbuf *nb);
-extern DLL_EXPORT bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto);
+extern DLL_EXPORT bool netdev_add_protocol(struct netdev *dev, uint16_t proto, rx_handle handle);
+extern DLL_EXPORT bool netdev_remove_protocol(struct netdev *dev, uint16_t proto);
 extern DLL_EXPORT void netdev_add_destination(struct netdev *dev, const uint8_t *dst,
 	uint8_t daddrlen, const uint8_t *src, uint8_t saddrlen);
 extern DLL_EXPORT struct dst_cache_entry *netdev_find_destination(struct netdev *dev,

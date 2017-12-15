@@ -132,35 +132,65 @@ static inline void netdev_dropped_stats_inc(struct netdev *dev)
 	stats->dropped++;
 }
 
-/**
- * @brief Add a protocol handler.
- * @param dev Device to add \p proto to.
- * @param proto Protocol handler to add to \p dev.
- */
-void netdev_add_protocol(struct netdev *dev, struct protocol *proto)
+static struct protocol *netdev_find_protocol(struct netdev *dev, uint16_t proto)
 {
-	list_head_init(&proto->entry);
-	list_add_tail(&proto->entry, &dev->protocols);
+	struct list_head *entry;
+	struct protocol *p;
+
+	list_for_each(entry, &dev->protocols) {
+		p = list_entry(entry, struct protocol, entry);
+		if(p->protocol == proto)
+			return p;
+	}
+
+	return NULL;
 }
 
 /**
- * @brief Remove a protocol from \p dev.
- * @param dev Device to remove \p proto from.
- * @param proto Protocol to remove.
- * @return True of false based on whether the protocol was removed or not.
+ * @brief Add a protocol handler a to a netork device.
+ * @param dev Network device to add the protocol handler to.
+ * @param proto Protocol identifier.
+ * @param handle Handler function.
+ * @return True or false depending on whether or not the handler was added.
  */
-bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto)
+bool netdev_add_protocol(struct netdev *dev, uint16_t proto, rx_handle handle)
 {
-	struct list_head *entry;
-	struct protocol *pentry;
+	struct protocol *p;
 
-	list_for_each(entry, &dev->protocols) {
-		pentry = list_entry(entry, struct protocol, entry);
+	assert(dev);
+	p = netdev_find_protocol(dev, proto);
 
-		if(proto == pentry) {
-			list_del(entry);
-			return true;
-		}
+	if(p)
+		return false;
+
+	p = malloc(sizeof(*p));
+	assert(p);
+
+	list_head_init(&p->entry);
+	p->protocol = proto;
+	p->rx = handle;
+	list_add_tail(&p->entry, &dev->protocols);
+
+	return true;
+}
+
+/**
+ * @brief Remove a protocol handler from a network device.
+ * @param dev Network device to remove \p proto from.
+ * @param proto Protocol identifier.
+ * @return True or false depending on whether or not the handler was removed.
+ */
+bool netdev_remove_protocol(struct netdev *dev, uint16_t proto)
+{
+	struct protocol *p;
+
+	assert(dev);
+	p = netdev_find_protocol(dev, proto);
+
+	if(p) {
+		list_del(&p->entry);
+		free(p);
+		return true;
 	}
 
 	return false;
