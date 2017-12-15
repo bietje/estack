@@ -21,7 +21,9 @@
 #include <estack/error.h>
 #include <estack/list.h>
 #include <estack/arp.h>
+#include <estack/ip.h>
 #include <estack/test.h>
+#include <estack/route.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -48,6 +50,28 @@ static const uint8_t hw1[] = HW_ADDR1;
 
 #define HW_ADDR {0x48, 0x5D, 0x60, 0xBF, 0x51, 0xA9}
 
+static void test_ipout(struct netdev *ndev, uint32_t addr)
+{
+	struct netbuf *nb;
+
+	nb = netbuf_alloc(NBAF_TRANSPORT, 10);
+	memset(nb->transport.data, 0x99, nb->transport.size);
+	nb->protocol = 0xFE;
+	ipv4_output(nb, addr);
+	netdev_poll(ndev);
+}
+
+static void test_setup_routes(struct netdev *dev)
+{
+	uint32_t addr, mask, gw;
+
+	addr = ipv4_atoi("145.49.6.12");
+	mask = ipv4_atoi("255.255.192.0");
+	gw = ipv4_atoi("145.49.6.254");
+	route4_add(addr & mask, mask, 0, dev);
+	route4_add(0, 0, gw, dev);
+}
+
 int main(int argc, char **argv)
 {
 	char *input;
@@ -69,12 +93,15 @@ int main(int argc, char **argv)
 
 	addr = ipv4_atoi("145.49.63.254");
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
+	test_setup_routes(dev);
+	test_ipout(dev, addr);
 
 	netdev_poll(dev);
 	netdev_print(dev, stdout);
 
 	assert(netdev_get_dropped(dev) == 0);
 	assert(netdev_get_rx_packets(dev) == 1);
+	route4_clear();
 	pcapdev_destroy(dev);
 
 	wait_close();
