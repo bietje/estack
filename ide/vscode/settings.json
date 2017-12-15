@@ -8,5 +8,6 @@
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False"
-	]
+	],
+	"cmake.useCMakeServer": true
 }
