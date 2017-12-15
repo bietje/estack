@@ -24,6 +24,10 @@ if(UNIX OR CMAKE_SYSTEM_NAME MATCHES Generic)
 		set(CFLAGS_EXTRA "${CFLAGS_EXTRA} -ffast-math")
 	endif()
 
+	if(CMAKE_BUILD_TYPE MATCHES RelSize)
+		set(CFLAGS_EXTRA "${CFLAGS_EXTRA} -Os")
+	endif()
+
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CFLAGS_EXTRA} -std=gnu11 -Wall")
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CFLAGS_EXTRA} -std=gnu++11 -Wall")
 elseif(WIN32)
