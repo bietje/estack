@@ -77,6 +77,28 @@ void route4_clear(void)
 	}
 }
 
+bool route4_delete(uint32_t ip, uint32_t mask, uint32_t gate, struct netdev *dev)
+{
+	struct iproute4_entry *entry;
+	struct list_head *e, *tmp;
+	struct iproute_head *head;
+	bool rv = false;
+
+	head = route4_get_head();
+	list_for_each_safe(e, tmp, &head->head) {
+		entry = list_entry(e, struct iproute4_entry, entry);
+
+		if(entry->ip == ip && entry->mask == mask &&
+				entry->gateway == gate && entry->dev == dev) {
+			list_del(e);
+			free(entry);
+			rv = true;
+		}
+	}
+
+	return rv;
+}
+
 #define LOOKUP_MAX_LEVEL 4
 static struct iproute4_entry *__route4_lookup(uint32_t ip, uint32_t *gw, uint8_t level)
 {

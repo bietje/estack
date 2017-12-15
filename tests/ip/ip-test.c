@@ -1,5 +1,5 @@
 /*
- * ARP unit test
+ * IP test unit test
  *
  * Author: Michel Megens
  * Date:   07/12/2017
