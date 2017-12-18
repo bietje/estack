@@ -51,6 +51,16 @@ struct netdev *netdev_find(const char *name)
 }
 
 /**
+ * @brief Get the global list of network devices.
+ * @return The list head to all registered network devices.
+ * @see netdev_find
+ */
+struct list_head *netdev_get_devices(void)
+{
+	return &devices;
+}
+
+/**
  * @brief Find and remove a given device.
  * @param name Name to search for.
  * @return The device that was removed or \p NULL.
@@ -449,7 +459,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 		if(weight < 0)
 			break;
 
-		if(likely(netbuf_test_flag(nb, NBUF_RX))) {
+		if(likely(netbuf_test_and_clear_flag(nb, NBUF_RX))) {
 			/*
 			 * Push arriving packets into the network stack through the
 			 * receive handle: struct netdev:rx().
@@ -458,10 +468,14 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			netbuf_set_timestamp(nb);
 			nb->protocol = ntohs(nb->protocol);
 			nb->size = netbuf_get_size(nb);
-
 			dev->rx(nb);
-			if((arrived = netbuf_test_flag(nb, NBUF_ARRIVED)) != 0)
+			
+			if(likely(netbuf_test_flag(nb, NBUF_ARRIVED) || netbuf_test_flag(nb, NBUF_REUSE))) {
 				netdev_rx_stats_inc(dev, nb);
+				arrived = !netbuf_test_and_clear_flag(nb, NBUF_REUSE);
+			} else {
+				arrived = 0;
+			}
 		} else {
 			nb->size = netbuf_calc_size(nb);
 			rc = dev->write(dev, nb);

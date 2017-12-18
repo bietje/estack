@@ -95,8 +95,8 @@ struct DLL_EXPORT netdev {
 	rx_handle rx; //!< Receive handler.
 	tx_handle tx; //!< Transmit handler.
 
-	int processing_weight;
-	int rx_max;
+	int processing_weight; //!< Processing bucket size.
+	int rx_max; //!< Receive bucket size.
 
 	/**
 	 * @brief PHY write handle.
@@ -153,6 +153,7 @@ struct DLL_EXPORT dst_cache_entry {
 };
 
 CDECL
+extern DLL_EXPORT struct list_head *netdev_get_devices(void);
 extern DLL_EXPORT void netdev_add_backlog(struct netdev *dev, struct netbuf *nb);
 extern DLL_EXPORT void netdev_init(struct netdev *dev);
 extern DLL_EXPORT void netdev_destroy(struct netdev *dev);

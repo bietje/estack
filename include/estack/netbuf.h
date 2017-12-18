@@ -31,10 +31,11 @@ struct DLL_EXPORT nbdata {
 #define NBUF_DROPPED           5
 #define NBUF_AGAIN             6
 #define NBUF_RX                7
+#define NBUF_REUSE             8
 
-#define NBUF_UNICAST           8
-#define NBUF_MULTICAST         9
-#define NBUF_BCAST            10
+#define NBUF_UNICAST           9
+#define NBUF_MULTICAST        10
+#define NBUF_BCAST            11
 
 typedef enum {
 	NBAF_DATALINK,
@@ -67,6 +68,26 @@ static inline int netbuf_test_flag(struct netbuf *nb, unsigned int num)
 	mask = nb->flags >> num;
 	mask &= 1UL;
 	return mask == 1UL;
+}
+
+static inline void netbuf_clear_flag(struct netbuf *nb, unsigned int num)
+{
+	register uint32_t mask;
+
+	mask = 1UL << num;
+	nb->flags &= ~mask;
+}
+
+static inline int netbuf_test_and_clear_flag(struct netbuf *nb, unsigned int num)
+{
+	register uint32_t mask;
+	register uint32_t old;
+
+	mask = 1UL << num;
+	old = nb->flags & mask;
+	nb->flags &= ~mask;
+
+	return old >> num;
 }
 
 static inline void netbuf_set_flag(struct netbuf *nb, unsigned int num)
