@@ -21,6 +21,7 @@ ipv4/arp-out.c
 ipv4/arp.c
 ipv4/ip-output.c
 ipv4/ip-input.c
+ipv4/icmp.c
 802.3/eth-in.c
 802.3/eth-out.c
 802.3/addr.c
@@ -74,6 +75,7 @@ test.h
 error.h
 inet.h
 translate.h
+icmp.h
 )
 
 SET(BASE_HDRS

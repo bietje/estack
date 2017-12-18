@@ -18,28 +18,61 @@
 struct netbuf *netbuf_realloc(struct netbuf *nb, netbuf_type_t type, size_t size)
 {
 	struct nbdata *nbd;
+	bool prealloc;
 
 	assert(nb);
 	assert(size > 0);
 
+	prealloc = false;
+
 	switch(type) {
 	case NBAF_DATALINK:
 		nbd = &nb->datalink;
+		if(nbd->size >= size) {
+			nbd->size = size;
+			return nb;
+		}
+
+		if(netbuf_test_flag(nb, NBUF_DATALINK_ALLOC))
+			prealloc = true;
+
 		netbuf_set_flag(nb, NBUF_DATALINK_ALLOC);
 		break;
 
 	case NBAF_NETWORK:
 		nbd = &nb->network;
+		if(nbd->size >= size) {
+			nbd->size = size;
+			return nb;
+		}
+
+		if(netbuf_test_flag(nb, NBUF_NETWORK_ALLOC))
+			prealloc = true;
 		netbuf_set_flag(nb, NBUF_NETWORK_ALLOC);
 		break;
 
 	case NBAF_TRANSPORT:
 		nbd = &nb->transport;
+		if(nbd->size >= size) {
+			nbd->size = size;
+			return nb;
+		}
+
+		if(netbuf_test_flag(nb, NBUF_TRANSPORT_ALLOC))
+			prealloc = true;
+
 		netbuf_set_flag(nb, NBUF_TRANSPORT_ALLOC);
 		break;
 
 	case NBAF_APPLICTION:
 		nbd = &nb->application;
+		if(nbd->size >= size) {
+			nbd->size = size;
+			return nb;
+		}
+
+		if(netbuf_test_flag(nb, NBUF_APPLICATION_ALLOC))
+			prealloc = true;
 		netbuf_set_flag(nb, NBUF_APPLICATION_ALLOC);
 		break;
 
@@ -47,7 +80,11 @@ struct netbuf *netbuf_realloc(struct netbuf *nb, netbuf_type_t type, size_t size
 		return NULL;
 	}
 
-	nbd->data = z_alloc(size);
+	if(prealloc)
+		nbd->data = realloc(nbd->data, size);
+	else
+		nbd->data = z_alloc(size);
+
 	nbd->size = size;
 	return nb;
 }

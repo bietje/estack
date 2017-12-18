@@ -18,6 +18,7 @@
 #include <estack/ip.h>
 #include <estack/log.h>
 #include <estack/inet.h>
+#include <estack/icmp.h>
 
 static inline struct ipv4_header *ipv4_nbuf_to_iphdr(struct netbuf *nb)
 {
@@ -34,6 +35,7 @@ void ipv4_input(struct netbuf *nb)
 	struct netif *nif;
 	uint32_t localmask;
 	uint32_t localip;
+	uint16_t csum;
 
 	hdr = ipv4_nbuf_to_iphdr(nb);
 #ifdef HAVE_BIG_ENDIAN
@@ -46,6 +48,14 @@ void ipv4_input(struct netbuf *nb)
 
 	if(version != 4) {
 		print_dbg("Dropping IPv4 packet with bogus version field (%u)!\n", version);
+		netbuf_set_flag(nb, NBUF_DROPPED);
+		return;
+	}
+
+	csum = ip_checksum(0, nb->network.data, sizeof(*hdr));
+	if(csum) {
+		print_dbg("Dropping IPv4 packet with bogus checksum (is %x, should be %x)\n",
+					hdr->chksum, csum);
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	}
@@ -102,7 +112,7 @@ void ipv4_input(struct netbuf *nb)
 	case IP_PROTO_ICMP:
 		print_dbg("Received an IPv4 packet!\n");
 		print_dbg("\tIP version: %u :: Header length: %u\n", version, hdrlen);
-		netbuf_set_flag(nb, NBUF_ARRIVED);
+		icmp_input(nb);
 		break;
 
 	case IP_PROTO_IGMP:

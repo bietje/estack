@@ -18,10 +18,15 @@
 
 #include "config.h"
 
+#define FOLD_U32(u) (((u) >> 16) + ((u) & 0x0000ffffUL))
+
 uint16_t ip_checksum_partial(uint16_t start, const void *buf, int len)
 {
 	register uint32_t sum;
 	register uint8_t *buffer = (uint8_t *)buf;
+
+	if(!buf || !len)
+		return start;
 
 	sum = start;
 	while(len > 1) {
@@ -43,9 +48,8 @@ uint16_t ip_checksum_partial(uint16_t start, const void *buf, int len)
 #endif
 	}
 
-	while(sum >> 16) {
-		sum = (uint16_t)sum + (sum >> 16);
-	}
+	sum = FOLD_U32(sum);
+	sum = FOLD_U32(sum);
 
 	return (uint16_t)sum & 0xFFFF;
 }

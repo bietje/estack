@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <estack/estack.h>
 #include <estack/netbuf.h>
@@ -24,6 +25,8 @@
 
 #define IPV4_VERSION 0x4
 
+#define IP4_TTL_MAX 0xFF
+
 void ipv4_output(struct netbuf *nb, uint32_t dst)
 {
 	struct ipv4_header *header;
@@ -34,7 +37,9 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 
 	proto = nb->protocol & 0xFF;
 	nb = netbuf_realloc(nb, NBAF_NETWORK, sizeof(*header));
+	memset(nb->network.data, 0, sizeof(*header));
 	header = nb->network.data;
+
 #ifdef HAVE_BIG_ENDIAN
 	header->ihl_version = IPV4_VERSION | ((sizeof(*header) / sizeof(uint32_t)) << 4);
 #else
@@ -49,7 +54,7 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 	if(proto == IP_PROTO_IGMP)
 		header->ttl = 1;
 	else
-		header->ttl = IPV4_TTL;
+		header->ttl = IP4_TTL_MAX;
 
 	header->protocol = proto;
 	header->daddr = htonl(dst);
@@ -68,10 +73,13 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 	}
 
 	nif = &dev->nif;
-	header->id = netif_get_id(nif);
+	header->id = ntohs(netif_get_id(nif));
 	saddr = ipv4_ptoi(nif->local_ip);
 	header->saddr = htonl(saddr);
 	header->chksum = ip_checksum(0, nb->network.data, nb->network.size);
+
+	if(gw)
+		dst = gw;
 
 	switch(nif->iftype) {
 	case NIF_TYPE_ETHER:
