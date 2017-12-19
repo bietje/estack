@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <estack/estack.h>
 #include <estack/log.h>
@@ -42,10 +43,39 @@ static void icmp_reflect(struct netbuf *nb, uint8_t type)
 	nif = &nb->dev->nif;
 	iphdr = nb->network.data;
 	dst = iphdr->saddr;
-	iphdr->saddr = htons(nif->local_ip);
+	iphdr->saddr = htons(ipv4_ptoi(nif->local_ip));
 
 	print_dbg("\tICMP ECHOREPLY sent\n");
 	icmp_output(type, dst, nb);
+}
+
+void icmp_reply(struct netbuf *nb, uint8_t type, uint8_t code, uint32_t spec, uint32_t dest)
+{
+	struct icmp_header *hdr;
+
+	nb = netbuf_realloc(nb, NBAF_TRANSPORT, sizeof(*hdr));
+	assert(nb);
+
+	hdr = nb->transport.data;
+	hdr->code = code;
+	hdr->spec = spec;
+	icmp_output(type, dest, nb);
+}
+
+void icmp_response(struct netbuf *nb, uint8_t type, uint8_t code, uint32_t spec)
+{
+	struct ipv4_header *ip;
+	uint32_t destination;
+
+	ip = nb->network.data;
+	destination = ip->saddr;
+
+	nb = netbuf_realloc(nb, NBAF_APPLICTION, sizeof(*ip) + 8);
+	assert(nb);
+
+	memcpy(nb->application.data, nb->network.data, sizeof(*ip));
+	memcpy((char*)nb->application.data + sizeof(*ip), nb->transport.data, 8);
+	icmp_reply(nb, type, code, spec, destination);
 }
 
 void icmp_input(struct netbuf *nb)

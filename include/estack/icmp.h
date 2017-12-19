@@ -46,8 +46,8 @@ typedef enum {
 CDECL
 extern DLL_EXPORT void icmp_input(struct netbuf *nb);
 extern DLL_EXPORT void icmp_output(uint8_t type, uint32_t dst, struct netbuf *nb);
-extern DLL_EXPORT int icmp_reply(uint8_t type, uint8_t code, uint32_t spec, uint32_t dst, struct netbuf *nb);
-extern DLL_EXPORT int icmp_response(uint8_t type, uint8_t code, uint32_t spec, struct netbuf *nb);
+extern DLL_EXPORT void icmp_reply(struct netbuf *nb, uint8_t type, uint8_t code, uint32_t spec, uint32_t dest);
+extern DLL_EXPORT void icmp_response(struct netbuf *nb, uint8_t type, uint8_t code, uint32_t spec);
 CDECL_END
 
 #endif

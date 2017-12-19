@@ -117,7 +117,9 @@ void ipv4_input(struct netbuf *nb)
 
 	case IP_PROTO_IGMP:
 	default:
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_flag(nb, NBUF_REUSE);
+		icmp_response(nb, ICMP_UNREACH, ICMP_UNREACH_PROTO, 0);
+		//netbuf_set_flag(nb, NBUF_DROPPED);
 		break;
 	}
 }
