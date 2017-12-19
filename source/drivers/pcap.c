@@ -132,6 +132,7 @@ static int pcapdev_read(struct netdev *dev, int num)
 	struct pcapdev_private *priv;
 	int rv, tmp;
 	size_t length;
+	time_t timestamp;
 
 	assert(dev != NULL);
 	priv = container_of(dev, struct pcapdev_private, dev);
@@ -150,6 +151,11 @@ static int pcapdev_read(struct netdev *dev, int num)
 
 		num -= 1;
 		tmp += 1;
+
+		timestamp = estack_utime();
+		hdr->ts.tv_sec = (long)(timestamp / 1e6L);
+		hdr->ts.tv_usec = timestamp % (long)1e6L;
+		pcap_dump((u_char*)priv->dumper, hdr, data);
 	}
 
 	return tmp;
