@@ -469,7 +469,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			nb->protocol = ntohs(nb->protocol);
 			nb->size = netbuf_get_size(nb);
 			dev->rx(nb);
-			
+
 			if(likely(netbuf_test_flag(nb, NBUF_ARRIVED) || netbuf_test_flag(nb, NBUF_REUSE))) {
 				netdev_rx_stats_inc(dev, nb);
 				arrived = !netbuf_test_and_clear_flag(nb, NBUF_REUSE);
@@ -530,6 +530,28 @@ int netdev_poll(struct netdev *dev)
 	}
 
 	return netdev_backlog_length(dev);
+}
+
+/**
+ * @brief Poll all available network devices.
+ * @return The total number of buffers remaining on the backlog.
+ * 
+ * Loop through the list of available devices, and keep track of how many entries
+ * there are left on the backlog.
+ */
+int netdev_poll_all(void)
+{
+	struct list_head *entry;
+	int num;
+	struct netdev *dev;
+
+	num = 0;
+	list_for_each(entry, &devices) {
+		dev = list_entry(entry, struct netdev, entry);
+		num += netdev_poll(dev);
+	}
+
+	return num;
 }
 
 static void __netdev_demux_handle(struct netbuf *nb)
