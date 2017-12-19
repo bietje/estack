@@ -67,7 +67,7 @@ static void test_setup_routes(struct netdev *dev)
 
 	addr = ipv4_atoi("145.49.6.12");
 	mask = ipv4_atoi("255.255.192.0");
-	gw = ipv4_atoi("145.49.6.254");
+	gw = ipv4_atoi("145.49.63.254");
 	route4_add(addr & mask, mask, 0, dev);
 	route4_add(0, 0, gw, dev);
 }
@@ -101,6 +101,7 @@ int main(int argc, char **argv)
 
 	assert(netdev_get_dropped(dev) == 0);
 	assert(netdev_get_rx_packets(dev) == 1);
+	assert(netdev_get_tx_packets(dev) == 2);
 	route4_clear();
 	pcapdev_destroy(dev);
 
