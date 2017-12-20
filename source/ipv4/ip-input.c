@@ -28,6 +28,17 @@ static inline struct ipv4_header *ipv4_nbuf_to_iphdr(struct netbuf *nb)
 	return nb->network.data;
 }
 
+static inline int ipv4_is_fragmented(struct ipv4_header *hdr)
+{
+	uint16_t offset;
+	uint8_t flags;
+
+	flags = ipv4_get_flags(hdr);
+	offset = ipv4_get_offset(hdr);
+
+	return (flags & (1UL << IP4_MORE_FRAGMENTS_FLAG)) != 0 || offset;
+}
+
 void ipv4_input(struct netbuf *nb)
 {
 	struct ipv4_header *hdr;
@@ -52,23 +63,31 @@ void ipv4_input(struct netbuf *nb)
 		return;
 	}
 
-	csum = ip_checksum(0, nb->network.data, sizeof(*hdr));
-	if(csum) {
-		print_dbg("Dropping IPv4 packet with bogus checksum (is %x, should be %x)\n",
-					hdr->chksum, csum);
-		netbuf_set_flag(nb, NBUF_DROPPED);
-		return;
+
+	if(!netbuf_test_and_clear_flag(nb, NBUF_NOCSUM)) {
+		csum = ip_checksum(0, nb->network.data, sizeof(*hdr));
+		if(csum) {
+			print_dbg("Dropping IPv4 packet with bogus checksum (is %x, should be %x)\n",
+						hdr->chksum, csum);
+			netbuf_set_flag(nb, NBUF_DROPPED);
+			return;
+		}
 	}
 
 	/* TODO: fragmentation */
 	hdrlen = hdrlen * sizeof(uint32_t);
+	nb->network.size = hdrlen;
+
 	if(hdrlen < sizeof(*hdr) || hdrlen > nb->network.size) {
 		print_dbg("Dropping IPv4 packet with bogus header length (%u)!\n", hdrlen);
-		print_dbg("\tHeader size: %u", hdrlen);
+		print_dbg("\tHeader size: %u\n", hdrlen);
 		print_dbg("\tsizeof(ipv4_header): %u :: Buffer size: %u\n", sizeof(*hdr), nb->network.size);
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	}
+
+	hdr->offset = ntohs(hdr->offset);
+	hdr->length = ntohs(hdr->length);
 
 	hdr->saddr = ntohl(hdr->saddr);
 	hdr->daddr = ntohl(hdr->daddr);
@@ -96,22 +115,32 @@ void ipv4_input(struct netbuf *nb)
 		}
 	}
 
-	nb->transport.size = htons(hdr->length);
-	if(nb->transport.size < hdrlen || nb->transport.size > nb->network.size) {
+	nb->transport.size = hdr->length - hdrlen;
+	if(nb->transport.size < hdrlen) {
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	}
 
-	nb->network.size = hdrlen;
-	nb->transport.size -= hdrlen;
-
 	if(nb->transport.size)
 		nb->transport.data = ((uint8_t*)hdr) + hdrlen;
 
+	if(ipv4_is_fragmented(hdr)) {
+		ipfrag4_add_packet(nb);
+		return;
+	}
+
+	ipv4_input_postfrag(nb);
+}
+
+void ipv4_input_postfrag(struct netbuf *nb)
+{
+	struct ipv4_header *hdr;
+
+	hdr = nb->network.data;
+
 	switch(hdr->protocol) {
 	case IP_PROTO_ICMP:
-		print_dbg("Received an IPv4 packet!\n");
-		print_dbg("\tIP version: %u :: Header length: %u\n", version, hdrlen);
+		print_dbg("Received an IPv4 ICMP packet!\n");
 		icmp_input(nb);
 		break;
 
@@ -119,7 +148,6 @@ void ipv4_input(struct netbuf *nb)
 	default:
 		netbuf_set_flag(nb, NBUF_REUSE);
 		icmp_response(nb, ICMP_UNREACH, ICMP_UNREACH_PROTO, 0);
-		//netbuf_set_flag(nb, NBUF_DROPPED);
 		break;
 	}
 }

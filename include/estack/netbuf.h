@@ -37,6 +37,8 @@ struct DLL_EXPORT nbdata {
 #define NBUF_MULTICAST        10
 #define NBUF_BCAST            11
 
+#define NBUF_NOCSUM           12
+
 typedef enum {
 	NBAF_DATALINK,
 	NBAF_NETWORK,
@@ -115,6 +117,7 @@ extern DLL_EXPORT void netbuf_cpy_data(struct netbuf *nb, const void *src,
 	size_t length, netbuf_type_t type);
 extern DLL_EXPORT size_t netbuf_get_size(struct netbuf *nb);
 extern DLL_EXPORT size_t netbuf_calc_size(struct netbuf *nb);
+extern DLL_EXPORT struct netbuf *netbuf_clone(struct netbuf *nb, uint32_t layers);
 CDECL_END
 
 #endif //!__NETBUF_H__

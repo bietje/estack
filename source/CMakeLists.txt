@@ -22,6 +22,7 @@ ipv4/arp.c
 ipv4/ip-output.c
 ipv4/ip-input.c
 ipv4/icmp.c
+ipv4/frag.c
 802.3/eth-in.c
 802.3/eth-out.c
 802.3/addr.c

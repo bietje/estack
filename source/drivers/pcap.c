@@ -147,6 +147,7 @@ static int pcapdev_read(struct netdev *dev, int num)
 		netbuf_cpy_data(nb, data, length, NBAF_DATALINK);
 		netbuf_set_flag(nb, NBUF_RX);
 		nb->protocol = ethernet_get_type(nb);
+		nb->size = length;
 		netdev_add_backlog(dev, nb);
 
 		num -= 1;

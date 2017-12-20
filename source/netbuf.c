@@ -158,6 +158,50 @@ void netbuf_cpy_data(struct netbuf *nb, const void *src, size_t length, netbuf_t
 	memcpy(nbd->data, src, length);
 }
 
+struct netbuf *netbuf_clone(struct netbuf *nb, uint32_t layers)
+{
+	struct netbuf *copy;
+
+	copy = z_alloc(sizeof(*nb));
+
+	list_head_init(&copy->bl_entry);
+	list_head_init(&copy->entry);
+
+	for(int i = 1; i < (1 << NBAF_APPLICTION); i <<= 1) {
+		switch(i) {
+		case NBAF_DATALINK:
+			copy = netbuf_realloc(copy, NBAF_DATALINK, nb->datalink.size);
+			netbuf_cpy_data(copy, nb->datalink.data, nb->datalink.size, NBAF_DATALINK);
+			break;
+
+		case NBAF_NETWORK:
+			copy = netbuf_realloc(copy, NBAF_NETWORK, nb->network.size);
+			netbuf_cpy_data(copy, nb->network.data, nb->network.size, NBAF_NETWORK);
+			break;
+
+		case NBAF_TRANSPORT:
+			copy = netbuf_realloc(copy, NBAF_TRANSPORT, nb->transport.size);
+			netbuf_cpy_data(copy, nb->transport.data, nb->transport.size, NBAF_TRANSPORT);
+			break;
+
+		case NBAF_APPLICTION:
+			copy = netbuf_realloc(copy, NBAF_APPLICTION, nb->application.size);
+			netbuf_cpy_data(copy, nb->application.data, nb->application.size, NBAF_APPLICTION);
+			break;
+		
+		default:
+			break;
+		}
+	}
+
+	copy->size = nb->size;
+	copy->protocol = nb->protocol;
+	copy->dev = nb->dev;
+	copy->timestamp = nb->timestamp;
+
+	return copy;
+}
+
 static size_t __netbuf_pkt_size(struct netbuf *nb)
 {
 	size_t bytes;

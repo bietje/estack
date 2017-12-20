@@ -18,6 +18,9 @@
 #define IPV4_ADDR_SIZE 4
 #define IPV6_ADDR_SIZE 16
 
+#define IP4_DONT_FRAGMENT_FLAG  1
+#define IP4_MORE_FRAGMENTS_FLAG 0
+
 #pragma pack(push, 1)
 struct ipv4_header {
 	uint8_t ihl_version;
@@ -43,7 +46,7 @@ typedef enum {
 	IP_PROTO_ICMP = 1,
 	IP_PROTO_IGMP,
 	IP_PROTO_TCP = 6,
-	IP_PROTO_UDP = 7,
+	IP_PROTO_UDP = 17,
 	IP_PROTO_RAW = 255
 } ipproto_type_t;
 
@@ -53,7 +56,27 @@ extern DLL_EXPORT void ipv4_input(struct netbuf *nb);
 extern DLL_EXPORT void ipv4_output(struct netbuf *nb, uint32_t dst);
 
 extern DLL_EXPORT uint16_t ip_checksum_partial(uint16_t start, const void *buf, int len);
-uint16_t DLL_EXPORT ip_checksum(uint16_t start, const void *buf, int len);
+extern uint16_t DLL_EXPORT ip_checksum(uint16_t start, const void *buf, int len);
+
+extern DLL_EXPORT void ipfrag4_add_packet(struct netbuf *nb);
+extern DLL_EXPORT void ipv4_input_postfrag(struct netbuf *nb);
+
+static inline uint8_t ipv4_get_flags(struct ipv4_header *hdr)
+{
+	uint16_t offset = hdr->offset;
+
+	offset &= 0xE000;
+	offset >>= 13;
+	return offset;
+}
+
+static inline uint16_t ipv4_get_offset(struct ipv4_header *hdr)
+{
+	uint16_t offset = hdr->offset;
+
+	offset &= ~0xE000;
+	return offset * 8; /* Offset i stored as 8-byte blocks */
+}
 CDECL_END
 
 #endif /* !__IP_H__ */
