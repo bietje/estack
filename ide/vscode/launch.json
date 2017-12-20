@@ -79,6 +79,25 @@
 					"ignoreFailures": true
 				}
 			]
+		},
+		{
+			"name": "(gdb) IP frag test",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/build/tests/ip/ipfrag-test",
+			"args": ["resources/ip-fragments.pcap"],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}/build",
+			"environment": [],
+			"externalConsole": true,
+			"MIMode": "gdb",
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				}
+			]
 		}
 	]
 }
