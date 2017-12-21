@@ -63,7 +63,6 @@ void ipv4_input(struct netbuf *nb)
 		return;
 	}
 
-
 	if(!netbuf_test_and_clear_flag(nb, NBUF_NOCSUM)) {
 		csum = ip_checksum(0, nb->network.data, sizeof(*hdr));
 		if(csum) {
@@ -127,6 +126,8 @@ void ipv4_input(struct netbuf *nb)
 	if(ipv4_is_fragmented(hdr)) {
 		ipfrag4_add_packet(nb);
 		return;
+	} else {
+		ipfrag4_tmo();
 	}
 
 	ipv4_input_postfrag(nb);
@@ -135,6 +136,7 @@ void ipv4_input(struct netbuf *nb)
 void ipv4_input_postfrag(struct netbuf *nb)
 {
 	struct ipv4_header *hdr;
+	uint8_t *udp;
 
 	hdr = nb->network.data;
 
@@ -142,6 +144,11 @@ void ipv4_input_postfrag(struct netbuf *nb)
 	case IP_PROTO_ICMP:
 		print_dbg("Received an IPv4 ICMP packet!\n");
 		icmp_input(nb);
+		break;
+
+	case IP_PROTO_UDP:
+		udp = nb->transport.data + 0xce8;
+		printf("Source: %x - Destination: %x\n", *udp, *(udp + 1));
 		break;
 
 	case IP_PROTO_IGMP:

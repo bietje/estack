@@ -27,7 +27,7 @@
 
 #define IP4_TTL_MAX 0xFF
 
-void ipv4_output(struct netbuf *nb, uint32_t dst)
+void __ipv4_output(struct netbuf *nb, uint32_t dst)
 {
 	struct ipv4_header *header;
 	uint8_t proto;
@@ -35,10 +35,8 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 	struct netif *nif;
 	uint32_t gw, saddr;
 
-	proto = nb->protocol & 0xFF;
-	nb = netbuf_realloc(nb, NBAF_NETWORK, sizeof(*header));
-	memset(nb->network.data, 0, sizeof(*header));
 	header = nb->network.data;
+	proto = nb->protocol & 0xFF;
 
 #ifdef HAVE_BIG_ENDIAN
 	header->ihl_version = IPV4_VERSION | ((sizeof(*header) / sizeof(uint32_t)) << 4);
@@ -49,7 +47,9 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 	header->tos = 0;
 	header->length = htons((uint16_t)(nb->network.size +
 		nb->transport.size + nb->application.size));
-	header->offset = 0;
+	
+	if(!header->offset)
+		header->offset = 0;
 
 	if(proto == IP_PROTO_IGMP)
 		header->ttl = 1;
@@ -73,7 +73,9 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 	}
 
 	nif = &dev->nif;
-	header->id = ntohs(netif_get_id(nif));
+	if(!header->id)
+		header->id = ntohs(netif_get_id(nif));
+
 	saddr = ipv4_ptoi(nif->local_ip);
 	header->saddr = htonl(saddr);
 	header->chksum = ip_checksum(0, nb->network.data, nb->network.size);
@@ -91,6 +93,20 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 		netbuf_free(nb);
 		return;
 	}
+}
 
-	return;
+void ipv4_output(struct netbuf *nb, uint32_t dst)
+{
+	struct ipv4_header *header;
+
+	nb = netbuf_realloc(nb, NBAF_NETWORK, sizeof(*header));
+	memset(nb->network.data, 0, sizeof(*header));
+	header = nb->network.data;
+
+	if(nb->transport.size > nb->dev->mtu - sizeof(*header)) {
+		ipfrag4_fragment(nb, dst);
+		return;
+	}
+
+	__ipv4_output(nb, dst);
 }

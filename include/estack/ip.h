@@ -54,12 +54,15 @@ CDECL
 extern DLL_EXPORT void ip_input(struct netbuf *nb);
 extern DLL_EXPORT void ipv4_input(struct netbuf *nb);
 extern DLL_EXPORT void ipv4_output(struct netbuf *nb, uint32_t dst);
+extern DLL_EXPORT void __ipv4_output(struct netbuf *nb, uint32_t dst);
 
 extern DLL_EXPORT uint16_t ip_checksum_partial(uint16_t start, const void *buf, int len);
 extern uint16_t DLL_EXPORT ip_checksum(uint16_t start, const void *buf, int len);
 
 extern DLL_EXPORT void ipfrag4_add_packet(struct netbuf *nb);
 extern DLL_EXPORT void ipv4_input_postfrag(struct netbuf *nb);
+extern DLL_EXPORT void ipfrag4_tmo(void);
+extern DLL_EXPORT void ipfrag4_fragment(struct netbuf *nb, uint32_t dst);
 
 static inline uint8_t ipv4_get_flags(struct ipv4_header *hdr)
 {

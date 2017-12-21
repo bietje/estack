@@ -24,6 +24,7 @@
 #include <estack/ip.h>
 #include <estack/test.h>
 #include <estack/route.h>
+#include <estack/inet.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -50,13 +51,29 @@ static const uint8_t hw1[] = HW_ADDR1;
 
 #define HW_ADDR {0x48, 0x5D, 0x60, 0xBF, 0x51, 0xA9}
 
+struct dummy_pkt {
+	uint16_t src, dst;
+	uint16_t length, csum;
+	uint8_t data[3400];
+};
+
 static void test_ipout(struct netdev *ndev, uint32_t addr)
 {
 	struct netbuf *nb;
+	struct dummy_pkt *dummy;
 
-	nb = netbuf_alloc(NBAF_TRANSPORT, 10);
-	memset(nb->transport.data, 0x99, nb->transport.size);
-	nb->protocol = 0xFE;
+
+	nb = netbuf_alloc(NBAF_TRANSPORT, sizeof(*dummy));
+	dummy = nb->transport.data;
+	dummy->src = htons(48720);
+	dummy->dst = htons(2100);
+	dummy->length = (htons(3408));
+
+	memset(dummy->data, 0xAD, 3400);
+	dummy->data[3399] = 0xBF;
+
+	nb->protocol = IP_PROTO_UDP;
+	nb->dev = ndev;
 	ipv4_output(nb, addr);
 	netdev_poll(ndev);
 }
@@ -96,7 +113,6 @@ int main(int argc, char **argv)
 	test_setup_routes(dev);
 	test_ipout(dev, addr);
 
-	netdev_poll(dev);
 	netdev_poll(dev);
 	netdev_print(dev, stdout);
 

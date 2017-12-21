@@ -30,6 +30,7 @@ void ifconfig(struct netdev *dev, uint8_t *local, uint8_t *remote,
 	memcpy(nif->remote_ip, remote, length);
 	memcpy(nif->ip_mask, mask, length);
 	nif->iftype = type;
+	nif->pkt_id = 1;
 }
 
 uint16_t netif_get_id(struct netif *nif)
