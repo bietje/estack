@@ -18,28 +18,61 @@
 struct netbuf *netbuf_realloc(struct netbuf *nb, netbuf_type_t type, size_t size)
 {
 	struct nbdata *nbd;
+	bool prealloc;
 
 	assert(nb);
 	assert(size > 0);
 
-	switch (type) {
+	prealloc = false;
+
+	switch(type) {
 	case NBAF_DATALINK:
 		nbd = &nb->datalink;
+		if(nbd->size >= size) {
+			nbd->size = size;
+			return nb;
+		}
+
+		if(netbuf_test_flag(nb, NBUF_DATALINK_ALLOC))
+			prealloc = true;
+
 		netbuf_set_flag(nb, NBUF_DATALINK_ALLOC);
 		break;
 
 	case NBAF_NETWORK:
 		nbd = &nb->network;
+		if(nbd->size >= size) {
+			nbd->size = size;
+			return nb;
+		}
+
+		if(netbuf_test_flag(nb, NBUF_NETWORK_ALLOC))
+			prealloc = true;
 		netbuf_set_flag(nb, NBUF_NETWORK_ALLOC);
 		break;
 
 	case NBAF_TRANSPORT:
 		nbd = &nb->transport;
+		if(nbd->size >= size) {
+			nbd->size = size;
+			return nb;
+		}
+
+		if(netbuf_test_flag(nb, NBUF_TRANSPORT_ALLOC))
+			prealloc = true;
+
 		netbuf_set_flag(nb, NBUF_TRANSPORT_ALLOC);
 		break;
 
 	case NBAF_APPLICTION:
 		nbd = &nb->application;
+		if(nbd->size >= size) {
+			nbd->size = size;
+			return nb;
+		}
+
+		if(netbuf_test_flag(nb, NBUF_APPLICATION_ALLOC))
+			prealloc = true;
 		netbuf_set_flag(nb, NBUF_APPLICATION_ALLOC);
 		break;
 
@@ -47,7 +80,11 @@ struct netbuf *netbuf_realloc(struct netbuf *nb, netbuf_type_t type, size_t size
 		return NULL;
 	}
 
-	nbd->data = z_alloc(size);
+	if(prealloc)
+		nbd->data = realloc(nbd->data, size);
+	else
+		nbd->data = z_alloc(size);
+
 	nbd->size = size;
 	return nb;
 }
@@ -62,7 +99,7 @@ struct netbuf *netbuf_alloc(netbuf_type_t type, size_t size)
 	list_head_init(&nb->bl_entry);
 	list_head_init(&nb->entry);
 
-	if (netbuf_realloc(nb, type, size) == NULL) {
+	if(netbuf_realloc(nb, type, size) == NULL) {
 		free(nb);
 		return NULL;
 	}
@@ -74,16 +111,16 @@ void netbuf_free(struct netbuf *nb)
 {
 	assert(nb);
 
-	if (netbuf_test_flag(nb, NBUF_DATALINK_ALLOC))
+	if(netbuf_test_flag(nb, NBUF_DATALINK_ALLOC))
 		free(nb->datalink.data);
 
-	if (netbuf_test_flag(nb, NBUF_NETWORK_ALLOC))
+	if(netbuf_test_flag(nb, NBUF_NETWORK_ALLOC))
 		free(nb->network.data);
 
-	if (netbuf_test_flag(nb, NBUF_TRANSPORT_ALLOC))
+	if(netbuf_test_flag(nb, NBUF_TRANSPORT_ALLOC))
 		free(nb->transport.data);
 
-	if (netbuf_test_flag(nb, NBUF_APPLICATION_ALLOC))
+	if(netbuf_test_flag(nb, NBUF_APPLICATION_ALLOC))
 		free(nb->application.data);
 
 	free(nb);
@@ -97,7 +134,7 @@ void netbuf_cpy_data(struct netbuf *nb, const void *src, size_t length, netbuf_t
 	assert(src);
 	assert(length > 0);
 
-	switch (type) {
+	switch(type) {
 	case NBAF_DATALINK:
 		nbd = &nb->datalink;
 		break;
@@ -121,6 +158,50 @@ void netbuf_cpy_data(struct netbuf *nb, const void *src, size_t length, netbuf_t
 	memcpy(nbd->data, src, length);
 }
 
+struct netbuf *netbuf_clone(struct netbuf *nb, uint32_t layers)
+{
+	struct netbuf *copy;
+
+	copy = z_alloc(sizeof(*nb));
+
+	list_head_init(&copy->bl_entry);
+	list_head_init(&copy->entry);
+
+	for(int i = 1; i < (1 << NBAF_APPLICTION); i <<= 1) {
+		switch(i) {
+		case NBAF_DATALINK:
+			copy = netbuf_realloc(copy, NBAF_DATALINK, nb->datalink.size);
+			netbuf_cpy_data(copy, nb->datalink.data, nb->datalink.size, NBAF_DATALINK);
+			break;
+
+		case NBAF_NETWORK:
+			copy = netbuf_realloc(copy, NBAF_NETWORK, nb->network.size);
+			netbuf_cpy_data(copy, nb->network.data, nb->network.size, NBAF_NETWORK);
+			break;
+
+		case NBAF_TRANSPORT:
+			copy = netbuf_realloc(copy, NBAF_TRANSPORT, nb->transport.size);
+			netbuf_cpy_data(copy, nb->transport.data, nb->transport.size, NBAF_TRANSPORT);
+			break;
+
+		case NBAF_APPLICTION:
+			copy = netbuf_realloc(copy, NBAF_APPLICTION, nb->application.size);
+			netbuf_cpy_data(copy, nb->application.data, nb->application.size, NBAF_APPLICTION);
+			break;
+		
+		default:
+			break;
+		}
+	}
+
+	copy->size = nb->size;
+	copy->protocol = nb->protocol;
+	copy->dev = nb->dev;
+	copy->timestamp = nb->timestamp;
+
+	return copy;
+}
+
 static size_t __netbuf_pkt_size(struct netbuf *nb)
 {
 	size_t bytes;
@@ -139,8 +220,7 @@ size_t netbuf_get_size(struct netbuf *nb)
 	size_t totals;
 
 	totals = 0UL;
-	list_for_each(entry, &nb->entry)
-	{
+	list_for_each(entry, &nb->entry) {
 		_nb = list_entry(entry, struct netbuf, entry);
 		totals += __netbuf_pkt_size(_nb);
 	}

@@ -6,7 +6,7 @@
  * Email: dev@bietje.net
  */
 
- /**
+/**
  * @addtogroup netdev
  * @{
  */
@@ -21,14 +21,14 @@
 #include <estack/estack.h>
 #include <estack/list.h>
 
-/**
- * @brief Network device statistics.
- */
+ /**
+  * @brief Network device statistics.
+  */
 struct DLL_EXPORT netdev_stats {
 	uint32_t rx_bytes, //!< Number of received bytes.
-		     rx_packets; //!< Number of received packets.
+		rx_packets; //!< Number of received packets.
 	uint32_t tx_bytes,  //!< Number of transmitted bytes.
-		     tx_packets; //!< Number of received packets.
+		tx_packets; //!< Number of received packets.
 	uint32_t dropped; //!< Number of dropped packets.
 };
 
@@ -47,8 +47,7 @@ struct DLL_EXPORT netdev_backlog {
  * @brief Interface type
  */
 typedef enum {
-	NIF_TYPE_IP4, //!< Interface is IPv4
-	NIF_TYPE_IP6, //!< Interface is IPv6
+	NIF_TYPE_ETHER,
 } nif_type_t;
 
 #define NIF_MAX_ADDR_LENGTH MAX_LOCAL_ADDRESS_LENGTH
@@ -79,7 +78,7 @@ struct protocol {
 /**
  * @brief Network device datastructure.
  */
-struct DLL_EXPORT netdev {	
+struct DLL_EXPORT netdev {
 	const char *name; //!< Device name.
 	struct list_head entry; //!< Entry into the global device list.
 	struct list_head protocols; //!< Protocol handler list head.
@@ -96,8 +95,8 @@ struct DLL_EXPORT netdev {
 	rx_handle rx; //!< Receive handler.
 	tx_handle tx; //!< Transmit handler.
 
-	int processing_weight;
-	int rx_max;
+	int processing_weight; //!< Processing bucket size.
+	int rx_max; //!< Receive bucket size.
 
 	/**
 	 * @brief PHY write handle.
@@ -115,7 +114,7 @@ struct DLL_EXPORT netdev {
 	* Instead of returning the packet buffers, the packet buffers are enqued on the backlog
 	* of \p dev by the PHY-layer drivers.
 	*/
-	int (*read)(struct netdev *dev, int num);
+	int(*read)(struct netdev *dev, int num);
 	/**
 	 * @brief Get the number of bytes available in the network cards internal buffers.
 	 * @param dev Network device strcuture pointer.
@@ -148,18 +147,21 @@ struct DLL_EXPORT dst_cache_entry {
 	dst_cache_state_t state; //!< Cache state.
 	struct list_head packets; //!< Packets waiting for the cache to fully resolve.
 	time_t timeout, //!< Resolve time out. The cache is dropped if \p timeout expires.
-		   last_attempt; //!< Last time the cache was attempted to be resolved.
+		last_attempt; //!< Last time the cache was attempted to be resolved.
 	int retry; //!< Number of resolve attempts.
 	resolve_handle translate; //!< Handle to resolve an unfinished entry.
 };
 
 CDECL
+extern DLL_EXPORT struct list_head *netdev_get_devices(void);
 extern DLL_EXPORT void netdev_add_backlog(struct netdev *dev, struct netbuf *nb);
 extern DLL_EXPORT void netdev_init(struct netdev *dev);
 extern DLL_EXPORT void netdev_destroy(struct netdev *dev);
 extern DLL_EXPORT int netdev_poll(struct netdev *dev);
+extern DLL_EXPORT int netdev_poll_all(void);
 extern DLL_EXPORT void netdev_demux_handle(struct netbuf *nb);
-extern DLL_EXPORT bool netdev_remove_protocol(struct netdev *dev, struct protocol *proto);
+extern DLL_EXPORT bool netdev_add_protocol(struct netdev *dev, uint16_t proto, rx_handle handle);
+extern DLL_EXPORT bool netdev_remove_protocol(struct netdev *dev, uint16_t proto);
 extern DLL_EXPORT void netdev_add_destination(struct netdev *dev, const uint8_t *dst,
 	uint8_t daddrlen, const uint8_t *src, uint8_t saddrlen);
 extern DLL_EXPORT struct dst_cache_entry *netdev_find_destination(struct netdev *dev,
@@ -171,6 +173,7 @@ extern DLL_EXPORT bool netdev_update_destination(struct netdev *dev, const uint8
 extern bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb);
 extern DLL_EXPORT void ifconfig(struct netdev *dev, uint8_t *local, uint8_t *remote,
 	uint8_t *mask, uint8_t length, nif_type_t type);
+extern DLL_EXPORT uint16_t netif_get_id(struct netif *nif);
 extern DLL_EXPORT void netdev_print_nif(struct netdev *dev);
 
 extern DLL_EXPORT void netdev_write_stats(struct netdev *dev, FILE *file);
@@ -201,4 +204,4 @@ CDECL_END
 			list_for_each_safe(e, p, &((bl)->head))
 #endif // !__NETDEV_H__
 
-/** @} */
+ /** @} */

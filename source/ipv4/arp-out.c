@@ -41,7 +41,7 @@ struct netbuf *arp_alloc_nb_ipv4(uint16_t type, uint32_t ip, uint8_t *mac)
 	hdr->opcode = htons(type);
 
 	/* Load addresses. If no address is given, set to broadcast */
-	if (mac)
+	if(mac)
 		memcpy(ip4hdr->hw_target_addr, mac, ETHERNET_MAC_LENGTH);
 	else
 		memset(ip4hdr->hw_target_addr, 0x0, ETHERNET_MAC_LENGTH);

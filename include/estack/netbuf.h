@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
-#include <time.h>
 
 #include <estack/estack.h>
 #include <estack/list.h>
@@ -32,10 +31,13 @@ struct DLL_EXPORT nbdata {
 #define NBUF_DROPPED           5
 #define NBUF_AGAIN             6
 #define NBUF_RX                7
+#define NBUF_REUSE             8
 
-#define NBUF_UNICAST           8
-#define NBUF_MULTICAST         9
-#define NBUF_BCAST            10
+#define NBUF_UNICAST           9
+#define NBUF_MULTICAST        10
+#define NBUF_BCAST            11
+
+#define NBUF_NOCSUM           12
 
 typedef enum {
 	NBAF_DATALINK,
@@ -70,6 +72,26 @@ static inline int netbuf_test_flag(struct netbuf *nb, unsigned int num)
 	return mask == 1UL;
 }
 
+static inline void netbuf_clear_flag(struct netbuf *nb, unsigned int num)
+{
+	register uint32_t mask;
+
+	mask = 1UL << num;
+	nb->flags &= ~mask;
+}
+
+static inline int netbuf_test_and_clear_flag(struct netbuf *nb, unsigned int num)
+{
+	register uint32_t mask;
+	register uint32_t old;
+
+	mask = 1UL << num;
+	old = nb->flags & mask;
+	nb->flags &= ~mask;
+
+	return old >> num;
+}
+
 static inline void netbuf_set_flag(struct netbuf *nb, unsigned int num)
 {
 	register uint32_t mask;
@@ -94,8 +116,8 @@ extern DLL_EXPORT void netbuf_free(struct netbuf *nb);
 extern DLL_EXPORT void netbuf_cpy_data(struct netbuf *nb, const void *src,
 	size_t length, netbuf_type_t type);
 extern DLL_EXPORT size_t netbuf_get_size(struct netbuf *nb);
-extern DLL_EXPORT void netdev_add_protocol(struct netdev *dev, struct protocol *proto);
 extern DLL_EXPORT size_t netbuf_calc_size(struct netbuf *nb);
+extern DLL_EXPORT struct netbuf *netbuf_clone(struct netbuf *nb, uint32_t layers);
 CDECL_END
 
 #endif //!__NETBUF_H__

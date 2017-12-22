@@ -13,9 +13,9 @@
 
 #include <estack/estack.h>
 
-/**
- * @brief List head structure.
- */
+ /**
+  * @brief List head structure.
+  */
 struct DLL_EXPORT list_head {
 	struct list_head *next; //!< Next pointer.
 	struct list_head *prev; //!< Previous pointer.
@@ -27,10 +27,10 @@ struct DLL_EXPORT list_head {
  */
 #define STATIC_INIT_LIST_HEAD(name) { &(name), &(name) }
 
-/**
- * @brief Dynamic list initialiser.
- * @param list List which has to be initialised.
- */
+ /**
+  * @brief Dynamic list initialiser.
+  * @param list List which has to be initialised.
+  */
 static inline void list_head_init(struct list_head *list)
 {
 	list->next = list;
@@ -99,58 +99,69 @@ typedef int(*list_comparator_t)(struct list_head *lh1, struct list_head *lh2);
 #define list_for_each(pos, head) \
 		for(pos = (head)->next; pos != (head); pos = pos->next)
 
-/**
- * @brief Loop reversed through a list.
- * @param pos Carriage pointer.
- * @param head Head pointer.
- */
+ /**
+  * @brief Loop reversed through a list.
+  * @param pos Carriage pointer.
+  * @param head Head pointer.
+  */
 #define list_for_each_prev(pos, head) \
 		for(pos = (head)->prev; pos != (head); pos = pos->prev)
 
-/**
- * @brief Loop safely through a list.
- * @param pos Carriage pointer.
- * @param n Temporary value.
- * @param head List head.
- *
- * Safe means that the current item (\p pos) can be deleted.
- */
+  /**
+   * @brief Loop safely through a list.
+   * @param pos Carriage pointer.
+   * @param n Temporary value.
+   * @param head List head.
+   *
+   * Safe means that the current item (\p pos) can be deleted.
+   */
 #define list_for_each_safe(pos, n, head) \
 		for(pos = (head)->next, n = pos->next; pos != (head); \
 				pos = n, n = pos->next)
 
-/**
- * @brief Loop backwards, in a safe manner through a list.
- * @param pos Carriage pointer.
- * @param n Temporary value.
- * @param head List head.
- * @see list_for_each_safe
- */
+   /**
+	* @brief Loop backwards, in a safe manner through a list.
+	* @param pos Carriage pointer.
+	* @param n Temporary value.
+	* @param head List head.
+	* @see list_for_each_safe
+	*/
 #define list_for_each_prev_safe(pos, n, head) \
 		for(pos = (head)->prev, n = pos->prev; pos != (head); \
 				pos = n, n = pos->prev)
 
-/**
- * @brief Add a new list node.
- * @param ___n Node to add.
- * @param ___h List head.
- */
+	/**
+	 * @brief Add a new list node.
+	 * @param ___n Node to add.
+	 * @param ___h List head.
+	 */
 #define list_add(___n, ___h) __list_add(___n, ___h, (___h)->next)
 
-/**
- * @brief Add a new entry to the tail.
- * @param __n New node.
- * @param __h List head.
- */
+	 /**
+	  * @brief Add a new entry to the tail.
+	  * @param __n New node.
+	  * @param __h List head.
+	  */
 #define list_add_tail(__n, __h) __list_add(__n, (__h)->prev, __h)
 
-/**
- * @brief Get the list container structure.
- * @param ptr Entry pointer.
- * @param type Container type.
- * @param member Container member name.
- */
+	  /**
+	   * @brief Get the list container structure.
+	   * @param ptr Entry pointer.
+	   * @param type Container type.
+	   * @param member Container member name.
+	   */
 #define list_entry(ptr, type, member) container_of(ptr, type, member)
+
+	   /**
+		* @brief Get the first entry from a list.
+		* @param ptr the list head to take the element from.
+		* @param type the type of the struct this is embedded in.
+		* @param member the name of the list_struct within the struct.
+		*
+		* Note, that list is expected to be not empty.
+		*/
+#define list_first_entry(ptr, type, member) \
+	list_entry((ptr)->next, type, member)
 
 #define list_next_entry(pos, member) \
 	list_entry((pos)->member.next, typeof(*(pos)), member)

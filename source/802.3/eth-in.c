@@ -29,7 +29,7 @@ void ethernet_input(struct netbuf *nb)
 	nb->network.size = nb->datalink.size - sizeof(struct ethernet_header);
 	nb->datalink.size = sizeof(struct ethernet_header);
 
-	switch (nb->protocol) {
+	switch(nb->protocol) {
 	case ETH_TYPE_ARP:
 		nb->protocol = PROTO_ARP;
 		arp_input(nb);

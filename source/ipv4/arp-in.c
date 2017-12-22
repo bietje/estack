@@ -73,19 +73,19 @@ static void arp_input_ipv4(struct netbuf *nb, struct arp_header *hdr)
 	/*
 	 * Discard packets that aren't ment for us
 	 */
-	if (ipv4_ptoi(nif->local_ip) != ip4hdr->ip_target_addr) {
+	if(ipv4_ptoi(nif->local_ip) != ip4hdr->ip_target_addr) {
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	}
 
 	/* Discard packets with our own source address */
-	if (ipv4_ptoi(nif->local_ip) == ip4hdr->ip_src_addr) {
+	if(ipv4_ptoi(nif->local_ip) == ip4hdr->ip_src_addr) {
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	}
 
 	/* Discard all packets that have have an ETHERNET broadcast address */
-	if (hdr->hwtype == ARP_TYPE_ETHERNET && ethernet_addr_is_broadcast(ip4hdr->hw_src_addr)) {
+	if(hdr->hwtype == ARP_TYPE_ETHERNET && ethernet_addr_is_broadcast(ip4hdr->hw_src_addr)) {
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	}
@@ -94,19 +94,19 @@ static void arp_input_ipv4(struct netbuf *nb, struct arp_header *hdr)
 
 	/*
 	 * Normally only ARP-reply packets are stored in the ARP cache. However, we are also
-	 * storing ARP-request packet addresses. This might save us a second or so in the 
+	 * storing ARP-request packet addresses. This might save us a second or so in the
 	 * future. The reasoning is that if somebody wants our hardware address, its probably
 	 * because they're going to want to talk to us. Proactive baby.
 	 */
 	dst = netdev_find_destination(nb->dev, (uint8_t*)&ip4hdr->ip_src_addr, IP_ADDR_BYTE_LENGTH);
-	if (!dst)
+	if(!dst)
 		netdev_add_destination(nb->dev, ip4hdr->hw_src_addr, ETHERNET_MAC_LENGTH,
-		                       (uint8_t*)&ip4hdr->ip_src_addr, IP_ADDR_BYTE_LENGTH);
+		(uint8_t*)&ip4hdr->ip_src_addr, IP_ADDR_BYTE_LENGTH);
 	else
 		netdev_update_destination(nb->dev, ip4hdr->hw_src_addr, ETHERNET_MAC_LENGTH,
-		                          (uint8_t*)&ip4hdr->ip_src_addr, IP_ADDR_BYTE_LENGTH);
+		(uint8_t*)&ip4hdr->ip_src_addr, IP_ADDR_BYTE_LENGTH);
 
-	if (hdr->opcode == ARP_OP_REQUEST) {
+	if(hdr->opcode == ARP_OP_REQUEST) {
 		arp_handle_request_ipv4(nb, hdr);
 	}
 
@@ -117,7 +117,7 @@ void arp_input(struct netbuf *nb)
 {
 	struct arp_header *hdr;
 
-	if (nb->network.size < sizeof(*hdr)) {
+	if(nb->network.size < sizeof(*hdr)) {
 		netbuf_set_flag(nb, NBUF_DROPPED);
 		return;
 	}
@@ -127,7 +127,7 @@ void arp_input(struct netbuf *nb)
 	hdr->protocol = ntohs(hdr->protocol);
 	hdr->opcode = ntohs(hdr->opcode);
 
-	switch (hdr->protocol) {
+	switch(hdr->protocol) {
 	case ARP_TYPE_IP:
 		arp_input_ipv4(nb, hdr);
 		break;
