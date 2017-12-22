@@ -454,11 +454,11 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 
 	backlog_for_each_safe(&dev->backlog, entry, tmp) {
 		nb = list_entry(entry, struct netbuf, bl_entry);
-		netdev_remove_backlog_entry(dev, nb);
 
 		if(weight < 0)
 			break;
 
+		netdev_remove_backlog_entry(dev, nb);
 		if(likely(netbuf_test_and_clear_flag(nb, NBUF_RX))) {
 			/*
 			 * Push arriving packets into the network stack through the
