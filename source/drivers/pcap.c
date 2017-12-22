@@ -63,6 +63,9 @@ static int pcapdev_available(struct netdev *dev)
 	if(priv->available >= 0)
 		return priv->available;
 
+	if(!priv->cap)
+		return 0;
+
 	cap = pcapdev_open_file(priv->src);
 
 	if(!cap)
@@ -141,6 +144,9 @@ static int pcapdev_read(struct netdev *dev, int num)
 	if(num < 0)
 		num = INT_MAX;
 
+	if(!priv->cap)
+		return 0;
+
 	while((rv = pcap_next_ex(priv->cap, &hdr, &data)) >= 0 && num > 0) {
 		length = hdr->len;
 		nb = netbuf_alloc(NBAF_DATALINK, length);
@@ -181,6 +187,15 @@ static void pcapdev_init(struct netdev *dev, const char *name, const uint8_t *hw
 	memcpy((char*)dev->name, name, len);
 }
 
+void pcapdev_set_name(struct netdev *dev, const char *name)
+{
+	int len;
+
+	len = strlen(name) + 1;
+	dev->name = realloc((void*)dev->name, len);
+	memcpy((char*)dev->name, name, len);
+}
+
 static void pcapdev_setup_output(const char *dst, struct pcapdev_private *priv)
 {
 	priv->dst = pcap_open_dead(DLT_EN10MB, (1 << 16) - 1);
@@ -205,21 +220,24 @@ struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
 	int len;
 
 	priv = z_alloc(sizeof(*priv));
-	assert(srcfile != NULL);
 	assert(priv != NULL);
+	assert(dstfile);
 
-	len = strlen(srcfile);
-	priv->src = z_alloc(len + 1);
-	memcpy(priv->src, srcfile, len);
+	if(srcfile) {
+		len = strlen(srcfile);
+		priv->src = z_alloc(len + 1);
+		memcpy(priv->src, srcfile, len);
+		priv->cap = pcapdev_open_file(srcfile);
+
+		if(!priv->cap) {
+			return NULL;
+		}
+	}
 
 	pcapdev_setup_output(dstfile, priv);
-	priv->cap = pcapdev_open_file(srcfile);
+
 	dev = &priv->dev;
 	pcapdev_init(dev, "dbg0", hwaddr, mtu);
-
-	if(!priv->cap) {
-		return NULL;
-	}
 
 	priv->available = -1;
 	dev->read = pcapdev_read;
@@ -239,7 +257,9 @@ void pcapdev_destroy(struct netdev *dev)
 	priv = container_of(dev, struct pcapdev_private, dev);
 	netdev_destroy(dev);
 
-	pcap_close(priv->cap);
+	if(priv->cap)
+		pcap_close(priv->cap);
+
 	if(priv->dumper) {
 		pcap_dump_close(priv->dumper);
 		pcap_close(priv->dst);

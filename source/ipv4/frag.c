@@ -303,6 +303,7 @@ void ipfrag4_fragment(struct netbuf *nb, uint32_t dst)
 		ofs |= flags;
 		ofs = htons(ofs);
 		hdr->offset = ofs;
+		hdr->saddr = 0;
 		__ipv4_output(frag, dst);
 	}
 

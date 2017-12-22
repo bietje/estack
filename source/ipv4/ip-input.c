@@ -19,6 +19,7 @@
 #include <estack/log.h>
 #include <estack/inet.h>
 #include <estack/icmp.h>
+#include <estack/route.h>
 
 static inline struct ipv4_header *ipv4_nbuf_to_iphdr(struct netbuf *nb)
 {
@@ -37,6 +38,22 @@ static inline int ipv4_is_fragmented(struct ipv4_header *hdr)
 	offset = ipv4_get_offset(hdr);
 
 	return (flags & (1UL << IP4_MORE_FRAGMENTS_FLAG)) != 0 || offset;
+}
+
+static bool ipv4_forward(struct netbuf *nb, struct ipv4_header *hdr)
+{
+	struct netdev *dev;
+
+	dev = route4_lookup(hdr->daddr, 0);
+	if(nb->dev == dev)
+		return false;
+
+	netbuf_set_dev(nb, dev);
+	netbuf_set_flag(nb, NBUF_REUSE);
+	hdr->offset = htons(hdr->offset);
+	hdr->saddr = htonl(hdr->saddr);
+	__ipv4_output(nb, hdr->daddr);
+	return true;
 }
 
 void ipv4_input(struct netbuf *nb)
@@ -94,6 +111,7 @@ void ipv4_input(struct netbuf *nb)
 
 	localip = ipv4_ptoi(nif->local_ip);
 	localmask = ipv4_ptoi(nif->ip_mask);
+	nb->protocol = hdr->protocol;
 
 	if(unlikely(hdr->daddr == INADDR_BCAST ||
 		(localip && localmask != INADDR_BCAST && (hdr->daddr | localmask) == INADDR_BCAST))) {
@@ -107,11 +125,6 @@ void ipv4_input(struct netbuf *nb)
 		return;
 	} else {
 		netbuf_set_flag(nb, NBUF_UNICAST);
-
-		if(localip && (hdr->daddr == 0 || hdr->daddr != localip)) {
-			print_dbg("Dropping IP packet that isn't ment for us..\n");
-			netbuf_set_flag(nb, NBUF_DROPPED);
-		}
 	}
 
 	nb->transport.size = hdr->length - hdrlen;
@@ -122,6 +135,14 @@ void ipv4_input(struct netbuf *nb)
 
 	if(nb->transport.size)
 		nb->transport.data = ((uint8_t*)hdr) + hdrlen;
+
+	if(localip && (hdr->daddr == 0 || hdr->daddr != localip)) {
+		if(ipv4_forward(nb, hdr))
+			return;
+		print_dbg("Dropping IP packet that isn't ment for us..\n");
+		netbuf_set_flag(nb, NBUF_DROPPED);
+		return;
+	}
 
 	if(ipv4_is_fragmented(hdr)) {
 		ipfrag4_add_packet(nb);
@@ -136,7 +157,6 @@ void ipv4_input(struct netbuf *nb)
 void ipv4_input_postfrag(struct netbuf *nb)
 {
 	struct ipv4_header *hdr;
-	uint8_t *udp;
 
 	hdr = nb->network.data;
 
@@ -147,8 +167,7 @@ void ipv4_input_postfrag(struct netbuf *nb)
 		break;
 
 	case IP_PROTO_UDP:
-		udp = nb->transport.data + 0xce8;
-		printf("Source: %x - Destination: %x\n", *udp, *(udp + 1));
+		netbuf_set_flag(nb, NBUF_ARRIVED);
 		break;
 
 	case IP_PROTO_IGMP:

@@ -48,9 +48,6 @@ void __ipv4_output(struct netbuf *nb, uint32_t dst)
 	header->length = htons((uint16_t)(nb->network.size +
 		nb->transport.size + nb->application.size));
 	
-	if(!header->offset)
-		header->offset = 0;
-
 	if(proto == IP_PROTO_IGMP)
 		header->ttl = 1;
 	else
@@ -76,8 +73,11 @@ void __ipv4_output(struct netbuf *nb, uint32_t dst)
 	if(!header->id)
 		header->id = ntohs(netif_get_id(nif));
 
-	saddr = ipv4_ptoi(nif->local_ip);
-	header->saddr = htonl(saddr);
+	if(!header->saddr) {
+		saddr = ipv4_ptoi(nif->local_ip);
+		header->saddr = htonl(saddr);
+	}
+	header->chksum = 0;
 	header->chksum = ip_checksum(0, nb->network.data, nb->network.size);
 
 	if(gw)
