@@ -6,5 +6,7 @@ estack:
     - make
     - make run_netdev
     - make run_ip
+    - make run_ipfrag
+    - make run_ipforward
   only:
     - master
