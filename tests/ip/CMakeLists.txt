@@ -15,6 +15,9 @@ target_link_libraries(icmp-test estack-static ${PCAP_LIBRARY})
 add_executable(ipfrag-test ipfrag-test.c)
 target_link_libraries(ipfrag-test estack-static ${PCAP_LIBRARY})
 
+add_executable(ipforward-test ipforward-test.c)
+target_link_libraries(ipforward-test estack-static ${PCAP_LIBRARY})
+
 add_custom_target(run_ip
 COMMAND ip-test resources/icmp-reply.pcap
 DEPENDS ip-test
@@ -31,6 +34,11 @@ DEPENDS icmp-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_custom_target(run_ipfrag
-COMMAND ipfrag-test resources/icmp-reply.pcap
+COMMAND ipfrag-test resources/ip-fragments.pcap
 DEPENDS ipfrag-test
+WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_custom_target(run_ipforward
+COMMAND ipforward-test resources/ip-fragments.pcap
+DEPENDS ipforward-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
