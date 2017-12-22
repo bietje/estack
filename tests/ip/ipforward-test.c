@@ -115,6 +115,12 @@ int main(int argc, char **argv)
 	putchar('\n');
 	netdev_print(dev2, stdout);
 
+	assert(netdev_get_tx_bytes(dev1) == 0);
+	assert(netdev_get_rx_bytes(dev1) == 3410);
+
+	assert(netdev_get_tx_bytes(dev2) == 3410);
+	assert(netdev_get_tx_bytes(dev1) == 0);
+
 	route4_clear();
 	pcapdev_destroy(dev1);
 	pcapdev_destroy(dev2);
