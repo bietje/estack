@@ -1,5 +1,7 @@
 # E/STACK README
 
+[![pipeline status](https://git.bietje.net/etaos/estack/badges/master/pipeline.svg)](https://git.bietje.net/etaos/estack/commits/master)
+
 ## About
 
 E/STACK is a small, system independent network stack. The focus
