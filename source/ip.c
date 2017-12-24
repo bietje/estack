@@ -15,6 +15,7 @@
 #include <estack/netdev.h>
 #include <estack/log.h>
 #include <estack/ip.h>
+#include <estack/inet.h>
 
 #include "config.h"
 
@@ -52,6 +53,30 @@ uint16_t ip_checksum_partial(uint16_t start, const void *buf, int len)
 	sum = FOLD_U32(sum);
 
 	return (uint16_t)sum & 0xFFFF;
+}
+
+uint16_t ipv4_inet_csum(const void *start, uint16_t length, uint32_t saddr,
+							uint32_t daddr, uint8_t proto)
+{
+	uint32_t csum;
+
+	csum = ip_checksum_partial(0, start, length);
+
+	/* Add the pseudo header to the mix */
+	saddr = htonl(saddr);
+	daddr = htonl(daddr);
+	csum += saddr & 0xFFFF;
+	csum += (saddr >> 16) & 0xFFFF;
+	csum += daddr & 0xFFFF;
+	csum += (daddr >> 16) & 0xFFFF;
+
+	csum += htons(proto);
+	csum += htons(length);
+
+	csum = FOLD_U32(csum);
+	csum = FOLD_U32(csum);
+	
+	return (uint16_t)~(csum & 0xFFFF);
 }
 
 uint16_t ip_checksum(uint16_t start, const void *buf, int len)

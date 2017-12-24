@@ -26,6 +26,7 @@ ipv4/frag.c
 802.3/eth-in.c
 802.3/eth-out.c
 802.3/addr.c
+transport/udp.c
 )
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -77,6 +78,8 @@ error.h
 inet.h
 translate.h
 icmp.h
+udp.h
+types.h
 )
 
 SET(BASE_HDRS

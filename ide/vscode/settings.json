@@ -5,7 +5,8 @@
 		"estack.h": "c",
 		"ip.h": "c",
 		"string.h": "c",
-		"config.h": "c"
+		"config.h": "c",
+		"udp.h": "c"
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False"

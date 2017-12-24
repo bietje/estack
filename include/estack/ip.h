@@ -58,11 +58,38 @@ extern DLL_EXPORT void __ipv4_output(struct netbuf *nb, uint32_t dst);
 
 extern DLL_EXPORT uint16_t ip_checksum_partial(uint16_t start, const void *buf, int len);
 extern uint16_t DLL_EXPORT ip_checksum(uint16_t start, const void *buf, int len);
+extern DLL_EXPORT uint16_t ipv4_inet_csum(const void *start, uint16_t length,
+											uint32_t saddr, uint32_t daddr, uint8_t proto);
 
 extern DLL_EXPORT void ipfrag4_add_packet(struct netbuf *nb);
 extern DLL_EXPORT void ipv4_input_postfrag(struct netbuf *nb);
 extern DLL_EXPORT void ipfrag4_tmo(void);
 extern DLL_EXPORT void ipfrag4_fragment(struct netbuf *nb, uint32_t dst);
+
+static inline bool ip_is_ipv4(struct netbuf *nb)
+{
+	struct ipv4_header *hdr;
+	uint8_t version;
+
+	hdr = nb->network.data;
+#ifdef HAVE_BIG_ENDIAN
+	version = hdr->version & 0xF;
+#else
+	version = (hdr->ihl_version >> 4) & 0xF;
+#endif
+
+	return version == 4;
+}
+
+static inline uint32_t ipv4_get_saddr(struct ipv4_header *hdr)
+{
+	return hdr->saddr;
+}
+
+static inline uint32_t ipv4_get_daddr(struct ipv4_header *hdr)
+{
+	return hdr->daddr;
+}
 
 static inline uint8_t ipv4_get_flags(struct ipv4_header *hdr)
 {
