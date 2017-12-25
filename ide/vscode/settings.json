@@ -6,7 +6,8 @@
 		"ip.h": "c",
 		"string.h": "c",
 		"config.h": "c",
-		"udp.h": "c"
+		"udp.h": "c",
+		"addr.h": "c"
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False"

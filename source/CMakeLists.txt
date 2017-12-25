@@ -16,6 +16,8 @@ addrutil.c
 neighbour.c
 ip.c
 route.c
+sock.c
+addr.c
 ipv4/arp-in.c
 ipv4/arp-out.c
 ipv4/arp.c
@@ -80,6 +82,7 @@ translate.h
 icmp.h
 udp.h
 types.h
+socket.h
 )
 
 SET(BASE_HDRS
