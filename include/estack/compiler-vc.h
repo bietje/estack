@@ -18,6 +18,7 @@
 #pragma warning(disable : 4251)
 #pragma warning (disable : 4820)
 #pragma warning (disable : 4100)
+#pragma warning (disable : 4201)
 
 #define DLL_EXPORT __declspec(dllexport)
 #define __always_inline __forceinline

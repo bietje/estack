@@ -299,7 +299,7 @@ void ipfrag4_fragment(struct netbuf *nb, uint32_t dst)
 
 		hdr->id = id;
 		/* Set flag and offset bits */
-		ofs = offset / 8;
+		ofs = (uint16_t)offset / 8;
 		ofs |= flags;
 		ofs = htons(ofs);
 		hdr->offset = ofs;

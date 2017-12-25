@@ -43,7 +43,7 @@ static void icmp_reflect(struct netbuf *nb, uint8_t type)
 	nif = &nb->dev->nif;
 	iphdr = nb->network.data;
 	dst = iphdr->saddr;
-	iphdr->saddr = htons(ipv4_ptoi(nif->local_ip));
+	iphdr->saddr = htonl(ipv4_ptoi(nif->local_ip));
 
 	print_dbg("\tICMP ECHOREPLY sent\n");
 	icmp_output(type, dst, nb);

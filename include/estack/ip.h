@@ -97,7 +97,7 @@ static inline uint8_t ipv4_get_flags(struct ipv4_header *hdr)
 
 	offset &= 0xE000;
 	offset >>= 13;
-	return offset;
+	return (uint8_t)offset;
 }
 
 static inline uint16_t ipv4_get_offset(struct ipv4_header *hdr)

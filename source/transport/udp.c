@@ -34,7 +34,7 @@ void udp_input(struct netbuf *nb)
 			hdr->csum = 0x0;
 		
 		if(ip_is_ipv4(nb)) {
-			csum = ipv4_inet_csum(nb->transport.data, nb->transport.size,
+			csum = ipv4_inet_csum(nb->transport.data, (uint16_t)nb->transport.size,
 								ipv4_get_saddr(nb->network.data),
 								ipv4_get_daddr(nb->network.data), IP_PROTO_UDP);
 			
