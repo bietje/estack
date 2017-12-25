@@ -12,7 +12,8 @@
 typedef enum error_code {
 	EOK = 0,
 	EDRPPPED,
-	EARRIVED
+	EARRIVED,
+	EINVALID,
 } error_t;
 
 #endif // !__ESTACK_ERROR_H__

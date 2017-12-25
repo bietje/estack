@@ -29,21 +29,6 @@ void *z_alloc(size_t size)
 
 #ifndef HAVE_GENERIC_SYS
 #ifdef WIN32
-#define WIN32_EPOCH_ADJUSTMENT 11644473600000000ULL
-#include <Windows.h>
-time_t estack_utime(void)
-{
-	time_t rv;
-	FILETIME ft;
-
-	GetSystemTimeAsFileTime(&ft);
-	rv = ft.dwHighDateTime;
-	rv <<= 32;
-	rv |= ft.dwLowDateTime;
-	rv /= 10;
-
-	return rv - WIN32_EPOCH_ADJUSTMENT;
-}
 #else
 #include <sys/time.h>
 time_t estack_utime(void)

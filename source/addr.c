@@ -26,7 +26,7 @@ bool ip_addr_cmp(ip_addr_t *a, ip_addr_t *b)
 		break;
 
 	case IP6_ADDR:
-		rv = memcmp(a->ip6.addr, b->ip6.addr, sizeof(b->ip6.addr));
+		rv = (bool)memcmp(a->ip6.addr, b->ip6.addr, sizeof(b->ip6.addr));
 		break;
 
 	default:

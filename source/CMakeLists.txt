@@ -5,6 +5,8 @@
 include( ${PROJECT_SOURCE_DIR}/cmake/pcap.cmake )
 include (TestBigEndian)
 
+include( ${PROJECT_SOURCE_DIR}/cmake/port.cmake )
+
 SET(ESTACK_SRCS
 netbuf.c
 util.c
@@ -29,6 +31,7 @@ ipv4/frag.c
 802.3/eth-out.c
 802.3/addr.c
 transport/udp.c
+${ESTACK_PORT_SRCS}
 )
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -83,10 +86,12 @@ icmp.h
 udp.h
 types.h
 socket.h
+port.h
 )
 
 SET(BASE_HDRS
-${PROJECT_SOURCE_DIR}/include/estack.h)
+${PROJECT_SOURCE_DIR}/include/estack.h
+${ESTACK_PORT_HEADERS})
 
 # Append include dir to header files
 prepend_path(GENERIC_HEADERS ${INCLUDE_DIR}/estack)
@@ -104,7 +109,7 @@ SET(HAVE_CI ${CMAKE_CI})
 CONFIGURE_FILE(${INCLUDE_DIR}/estack/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 
 # Set the include directories
-include_directories(${PROJECT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR} ${ESTACK_PORT_DIR})
 
 # Shared and static library definitions
 if(CMAKE_LIBTYPE MATCHES Shared)
