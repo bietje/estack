@@ -24,7 +24,9 @@
                 "/usr/local/include",
                 "${workspaceRoot}",
                 "${workspaceRoot}/include",
-                "${workspaceRoot}/build"
+                "${workspaceRoot}/build",
+                "${workspaceRoot}/external/freertos/source/portable/unix",
+                "${workspaceRoot}/external/freertos/source/include"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
