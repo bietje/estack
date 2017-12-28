@@ -26,20 +26,3 @@ void *z_alloc(size_t size)
 	memset(vp, 0, size);
 	return vp;
 }
-
-#ifndef HAVE_GENERIC_SYS
-#ifdef WIN32
-#else
-#include <sys/time.h>
-time_t estack_utime(void)
-{
-	time_t rv;
-	struct timeval tv;
-
-	gettimeofday(&tv, NULL);
-	rv = tv.tv_sec * 1000000ULL;
-	rv += tv.tv_usec;
-	return rv;
-}
-#endif // WIN32
-#endif

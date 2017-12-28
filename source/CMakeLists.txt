@@ -109,7 +109,7 @@ SET(HAVE_CI ${CMAKE_CI})
 CONFIGURE_FILE(${INCLUDE_DIR}/estack/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 
 # Set the include directories
-include_directories(${PROJECT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR} ${ESTACK_PORT_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR} ${ESTACK_PORT_INCLUDE_DIR})
 
 # Shared and static library definitions
 if(CMAKE_LIBTYPE MATCHES Shared)

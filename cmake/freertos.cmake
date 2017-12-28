@@ -1,0 +1,18 @@
+SET(ESTACK_PORT_DIR ports/freertos)
+SET(ESTACK_PORT_SRCS
+${ESTACK_PORT_DIR}/rtos.c)
+SET(ESTACK_PORT_HEADERS
+${ESTACK_PORT_DIR}/arch.h)
+SET(FREERTOS_DIR "${PROJECT_SOURCE_DIR}/external/freertos" CACHE STRING "FreeRTOS directory")
+
+SET(ESTACK_PORT_INCLUDE_DIR
+${PROJECT_SOURCE_DIR}/source/ports/freertos
+${FREERTOS_DIR}/Source/include
+${FREERTOS_DIR}/Source/portable/${PORT}
+)
+
+if(${PORT} MATCHES "unix")
+	SET(ESTACK_PORT_SRCS ${ESTACK_PORT_SRCS} ${ESTACK_PORT_DIR}/unix.c)
+	find_package(Threads REQUIRED)
+	SET(ESTACK_SYSTEM_LIBS ${PROJECT_SOURCE_DIR}/external/freertos/lib/libfreertos.a ${CMAKE_THREAD_LIBS_INIT} ${ESTACK_SYSTEM_LIBS})
+endif()

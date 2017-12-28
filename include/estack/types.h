@@ -11,11 +11,14 @@
 
 #include "config.h"
 
-#ifdef HAVE_GENERIC_SYS
-typedef unsigned long long time_t;
-#else
-#include <stdint.h>
+#ifdef HAVE_TIME_H
 #include <time.h>
+#else
+typedef unsigned long long time_t;
+#endif
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
 #endif
 
 #endif
