@@ -11,6 +11,9 @@
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False"
+        //"-DCMAKE_SYSTEM_NAME=Generic",
+        //"-DFREERTOS=True",
+		//"-DPORT=unix"
 	],
 	"cmake.useCMakeServer": true
 }
