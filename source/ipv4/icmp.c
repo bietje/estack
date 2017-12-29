@@ -98,8 +98,8 @@ void icmp_input(struct netbuf *nb)
 	switch(header->type) {
 	case ICMP_ECHO:
 		print_dbg("\tICMP ECHOREQUEST received!\n");
-		icmp_reflect(nb, ICMP_REPLY);
 		netbuf_set_flag(nb, NBUF_REUSE);
+		icmp_reflect(nb, ICMP_REPLY);
 		break;
 
 	case ICMP_REPLY:

@@ -81,12 +81,14 @@ int main(int argc, char **argv)
 
 	lookup = route4_lookup(ipv4_atoi("8.8.8.8"), &gwlookup);
 
+	estack_sleep(1000);
 	assert(gw == gwlookup);
 	assert(lookup);
 	netdev_print(dev, stdout);
 
 	route4_clear();
 	pcapdev_destroy(dev);
+	estack_destroy();
 
 	wait_close();
 	return 0;

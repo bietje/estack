@@ -59,7 +59,6 @@ static void test_ipout(struct netdev *ndev, uint32_t addr)
 	nb->protocol = 0xFE;
 	nb->dev = ndev;
 	ipv4_output(nb, addr);
-	netdev_poll(ndev);
 }
 
 static void test_setup_routes(struct netdev *dev)
@@ -97,7 +96,7 @@ int main(int argc, char **argv)
 	test_setup_routes(dev);
 	test_ipout(dev, addr);
 
-	netdev_poll(dev);
+	estack_sleep(300);
 	netdev_print(dev, stdout);
 
 	assert(netdev_get_dropped(dev) == 0);
@@ -105,6 +104,7 @@ int main(int argc, char **argv)
 	assert(netdev_get_tx_packets(dev) == 1);
 	route4_clear();
 	pcapdev_destroy(dev);
+	estack_destroy();
 
 	wait_close();
 	return 0;

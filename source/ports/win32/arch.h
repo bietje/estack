@@ -21,6 +21,7 @@ typedef struct DLL_EXPORT mutex {
 } estack_mutex_t;
 
 typedef struct DLL_EXPORT thread {
+	const char *name;
 	HANDLE tp;
 	DWORD tid;
 	void *arg;

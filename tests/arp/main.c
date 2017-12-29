@@ -50,6 +50,7 @@ static void print_dst_cache(struct netdev *dev)
 	char hwbuf[18];
 
 	printf("Destination cache entries:\n");
+	estack_mutex_lock(&dev->mtx, 0);
 	list_for_each(entry, &dev->destinations) {
 		e = list_entry(entry, struct dst_cache_entry, entry);
 
@@ -57,6 +58,7 @@ static void print_dst_cache(struct netdev *dev)
 		printf("\t\tSource IP: %s\n", ipv4_ntoa(ipv4_ptoi(e->saddr), ipbuf, 16));
 		printf("\t\tHardware address: %s\n", ethernet_mac_ntoa(e->hwaddr, hwbuf, 18));
 	}
+	estack_mutex_unlock(&dev->mtx);
 }
 
 #define IPV4_ADDR 0xC0A83268
@@ -83,11 +85,14 @@ int main(int argc, char **argv)
 	/* Lets ask where 145.49.6.13 is */
 	arp_ipv4_request(dev, 0x9131060D);
 
-	netdev_poll(dev);
+	estack_sleep(500);
 	putchar('\n');
 	netdev_print(dev, stdout);
 	putchar('\n');
 	print_dst_cache(dev);
+
+	pcapdev_destroy(dev);
+	estack_destroy();
 
 	wait_close();
 	return 0;

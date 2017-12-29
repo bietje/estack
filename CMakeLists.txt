@@ -13,7 +13,7 @@ include(CheckIncludeFiles)
 
 if(UNIX OR CMAKE_SYSTEM_NAME MATCHES Generic)
 	if(CMAKE_BUILD_TYPE MATCHES Debug)
-		SET(CFLAGS_EXTRA "-Og -ggdb -g3")
+		SET(CFLAGS_EXTRA "-ggdb -g3")
 	endif()
 
 	if(BUILD_TYPE MATCHES Native)

@@ -82,10 +82,12 @@ int main(int argc, char **argv)
 	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
 
 	ethernet_output(build_dummy_frame(SAMPLE_DATA, dev), dev->hwaddr);
-	netdev_poll(dev);
+	estack_sleep(500);
 	
 	putchar('\n');
 	netdev_print(dev, stdout);
+	pcapdev_destroy(dev);
+	estack_destroy();
 
 	wait_close();
 	return 0;

@@ -8,7 +8,6 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <time.h>
 #include <assert.h>
 #include <estack.h>
 
@@ -120,4 +119,9 @@ void estack_mutex_unlock(estack_mutex_t *mtx)
 		xSemaphoreGiveRecursive(mtx->sem);
 	else
 		xSemaphoreGive(mtx->sem);
+}
+
+void estack_sleep(int ms)
+{
+	vTaskDelay(ms / portTICK_PERIOD_MS);
 }

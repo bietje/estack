@@ -1,9 +1,14 @@
 /*
- * E/STACK network device's
+ * E/STACK - Network device core
  *
  * Author: Michel Megens
  * Date: 03/12/2017
  * Email: dev@bietje.net
+ * 
+ * This is an additional 'virtual' layer in the OSI model, that
+ * sits between the datalink layer protocol and the PHY-layer (i.e.
+ * the actual device drivers). This layer is purely an administrative
+ * layer to ensure thread and memory safety.
  */
 
 /**
@@ -24,12 +29,43 @@
 #include <estack/inet.h>
 #include <estack/log.h>
 
-static struct list_head dst_cache = STATIC_INIT_LIST_HEAD(dst_cache);
-static struct list_head devices = STATIC_INIT_LIST_HEAD(devices);
+/**
+ * @brief Network device core data.
+ */
+struct dev_core {
+	struct list_head devices; //!< Global device list.
+	struct list_head dst_cache; //!< Global destination / ARP cache.
+	estack_mutex_t mtx; //!< Global device lock.
+	estack_thread_t runner; //!< Processing runner.
+	volatile bool running; //!< Core initialisation indicator.
+};
+
+static struct dev_core devcore = {
+	.devices = STATIC_INIT_LIST_HEAD(devcore.devices),
+	.dst_cache = STATIC_INIT_LIST_HEAD(devcore.dst_cache),
+};
 
 static uint32_t dst_resolve_tmo = 4500000;
 static uint32_t dst_retry_tmo = 1000000;
 static int dst_retries = 4;
+
+/**
+ * @brief Lock the networking core.
+ * @note This function will acquire struct dev_core::mtx.
+ */
+static inline void netdev_lock_core(void)
+{
+	estack_mutex_lock(&devcore.mtx, 0);
+}
+
+/**
+ * @brief Unlock the networking core.
+ * @note This function will release struct dev_core::mtx.
+ */
+static inline void netdev_unlock_core(void)
+{
+	estack_mutex_unlock(&devcore.mtx);
+}
 
 /**
  * @brief Search the global device list.
@@ -41,13 +77,39 @@ struct netdev *netdev_find(const char *name)
 	struct list_head *entry;
 	struct netdev *dev;
 
-	list_for_each(entry, &devices) {
+	netdev_lock_core();
+	list_for_each(entry, &devcore.devices) {
 		dev = list_entry(entry, struct netdev, entry);
-		if(!strcmp(dev->name, name))
+		if(!strcmp(dev->name, name)) {
+			netdev_unlock_core();
 			return dev;
+		}
 	}
+	netdev_unlock_core();
 
 	return NULL;
+}
+
+/**
+ * @brief Lock a network device.
+ * @param dev Network device to lock.
+ * @note This function will acquire struct netdev::mtx.
+ */
+static inline void netdev_lock(struct netdev *dev)
+{
+	assert(dev);
+	estack_mutex_lock(&dev->mtx, 0);
+}
+
+/**
+ * @brief Unlock a network device.
+ * @param dev Network device to unlock.
+ * @note This function will release struct netdev::mtx.
+ */
+static inline void netdev_unlock(struct netdev *dev)
+{
+	assert(dev);
+	estack_mutex_unlock(&dev->mtx);
 }
 
 /**
@@ -57,7 +119,7 @@ struct netdev *netdev_find(const char *name)
  */
 struct list_head *netdev_get_devices(void)
 {
-	return &devices;
+	return &devcore.devices;
 }
 
 /**
@@ -73,8 +135,16 @@ struct netdev *netdev_remove(const char *name)
 	if(!dev)
 		return NULL;
 
+	netdev_lock(dev);
 	list_del(&dev->entry);
+	netdev_unlock(dev);
 	return dev;
+}
+
+static inline void __netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
+{
+	list_add_tail(&nb->bl_entry, &dev->backlog.head);
+	dev->backlog.size += 1;
 }
 
 /**
@@ -90,8 +160,9 @@ void netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
 	assert(dev);
 	assert(nb);
 
-	list_add_tail(&nb->bl_entry, &dev->backlog.head);
-	dev->backlog.size += 1;
+	netdev_lock(dev);
+	__netdev_add_backlog(dev, nb);
+	netdev_unlock(dev);
 }
 
 /**
@@ -110,10 +181,16 @@ static inline void netdev_remove_backlog_entry(struct netdev *dev, struct netbuf
  * @param dev Device to get the backlog length for.
  * @return The length of the backlog for \p dev.
  */
-int netdev_backlog_length(struct netdev *dev)
+static int netdev_backlog_length(struct netdev *dev)
 {
+	int length;
+
 	assert(dev);
-	return dev->backlog.size;
+	netdev_lock(dev);
+	length = dev->backlog.size;
+	netdev_unlock(dev);
+
+	return length;
 }
 
 static void netdev_rx_stats_inc(struct netdev *dev, struct netbuf *nb)
@@ -147,12 +224,16 @@ static struct protocol *netdev_find_protocol(struct netdev *dev, uint16_t proto)
 	struct list_head *entry;
 	struct protocol *p;
 
+	netdev_lock(dev);
 	list_for_each(entry, &dev->protocols) {
 		p = list_entry(entry, struct protocol, entry);
-		if(p->protocol == proto)
+		if(p->protocol == proto) {
+			netdev_unlock(dev);
 			return p;
+		}
 	}
 
+	netdev_unlock(dev);
 	return NULL;
 }
 
@@ -179,7 +260,9 @@ bool netdev_add_protocol(struct netdev *dev, uint16_t proto, rx_handle handle)
 	list_head_init(&p->entry);
 	p->protocol = proto;
 	p->rx = handle;
+	netdev_lock(dev);
 	list_add_tail(&p->entry, &dev->protocols);
+	netdev_unlock(dev);
 
 	return true;
 }
@@ -198,7 +281,9 @@ bool netdev_remove_protocol(struct netdev *dev, uint16_t proto)
 	p = netdev_find_protocol(dev, proto);
 
 	if(p) {
+		netdev_lock(dev);
 		list_del(&p->entry);
+		netdev_unlock(dev);
 		free(p);
 		return true;
 	}
@@ -234,7 +319,9 @@ void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t dadd
 
 	list_head_init(&centry->entry);
 	list_head_init(&centry->packets);
+	netdev_lock(dev);
 	list_add(&centry->entry, &dev->destinations);
+	netdev_unlock(dev);
 }
 
 /**
@@ -265,18 +352,22 @@ struct dst_cache_entry *netdev_add_destination_unresolved(struct netdev *dev,
 	centry->timeout = estack_utime() + dst_resolve_tmo;
 	centry->retry = dst_retries;
 	centry->translate = handler;
+
+	netdev_lock(dev);
 	list_add(&centry->entry, &dev->destinations);
+	netdev_unlock(dev);
 
 	return centry;
 }
 
 /**
  * @brief Add a packet buffer to a destination cache entry.
+ * @param dev Device to which \p e belongs.
  * @param e Destination cache entry to add \p nb to.
  * @param nb Packet buff to add to \p e.
  * @return True or false based on whether the packet buffer was added or not.
  */
-bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb)
+bool netdev_dstcache_add_packet(struct netdev *dev, struct dst_cache_entry *e, struct netbuf *nb)
 {
 	assert(e);
 	assert(nb);
@@ -286,7 +377,9 @@ bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb)
 
 	assert(nb->dev);
 	e->timeout = estack_utime() + dst_resolve_tmo;
+	netdev_lock(dev);
 	list_add(&nb->bl_entry, &e->packets);
+	netdev_unlock(dev);
 
 	return true;
 }
@@ -306,6 +399,7 @@ bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t d
 	struct list_head *entry;
 	struct dst_cache_entry *centry;
 
+	netdev_lock(dev);
 	list_for_each(entry, &dev->destinations) {
 		centry = list_entry(entry, struct dst_cache_entry, entry);
 		if(centry->saddr_length != slength)
@@ -317,9 +411,11 @@ bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t d
 
 			memcpy(centry->hwaddr, dst, dlength);
 			centry->state = DST_RESOLVED;
+			netdev_unlock(dev);
 			return true;
 		}
 	}
+	netdev_unlock(dev);
 
 	return false;
 }
@@ -347,6 +443,7 @@ bool netdev_remove_destination(struct netdev *dev, const uint8_t *src, uint8_t l
 	struct list_head *entry;
 	struct dst_cache_entry *centry;
 
+	netdev_lock(dev);
 	list_for_each(entry, &dev->destinations) {
 		centry = list_entry(entry, struct dst_cache_entry, entry);
 		if(centry->saddr_length != length)
@@ -355,10 +452,12 @@ bool netdev_remove_destination(struct netdev *dev, const uint8_t *src, uint8_t l
 		if(!memcmp(centry->saddr, src, length)) {
 			list_del(entry);
 			netdev_free_dst_entry(centry);
+			netdev_unlock(dev);
 			return true;
 		}
 	}
 
+	netdev_unlock(dev);
 	return false;
 }
 
@@ -374,15 +473,19 @@ struct dst_cache_entry *netdev_find_destination(struct netdev *dev, const uint8_
 	struct list_head *entry;
 	struct dst_cache_entry *centry;
 
+	netdev_lock(dev);
 	list_for_each(entry, &dev->destinations) {
 		centry = list_entry(entry, struct dst_cache_entry, entry);
 		if(centry->saddr_length != length)
 			continue;
 
-		if(!memcmp(centry->saddr, src, length))
+		if(!memcmp(centry->saddr, src, length)) {
+			netdev_unlock(dev);
 			return centry;
+		}
 	}
 
+	netdev_unlock(dev);
 	return NULL;
 }
 
@@ -417,6 +520,13 @@ static void netdev_try_translate_cache(struct netdev *dev)
 		e = list_entry(dst, struct dst_cache_entry, entry);
 
 		if(e->state == DST_UNFINISHED) {
+			/*
+			 * Attempt to clean up any unfinished destination
+			 * cache entries. Unfinished entries are entries that
+			 * have been requested but have not received an ARP / ICMP6
+			 * reply as of yet. Attempt to send out another completion request
+			 * or drop the entry if a timeout has ocurred
+			 */
 			if(netdev_dst_timeout(e) || !e->translate ||
 				e->retry <= 0 || list_empty(&e->packets)) {
 				netdev_drop_dst(e);
@@ -426,18 +536,28 @@ static void netdev_try_translate_cache(struct netdev *dev)
 			}
 
 			if(e->last_attempt + dst_retry_tmo < estack_utime()) {
+				netdev_unlock(dev);
 				e->translate(dev, e->saddr);
+				netdev_lock(dev);
 				e->retry--;
 				e->last_attempt = estack_utime();
 			}
 			continue;
 		}
 
+		/*
+		 * Push all packets that are waiting on a (recently)
+		 * completed DST cache entry into the datalink layer. They
+		 * will be processed by netdev_process_backlog in a later call
+		 */
 		list_for_each_safe(entry, tmp, &e->packets) {
 			nb = list_entry(entry, struct netbuf, bl_entry);
 			list_del(entry);
 			netbuf_set_dev(nb, dev);
+
+			netdev_unlock(dev);
 			dev->tx(nb, e->hwaddr);
+			netdev_lock(dev);
 		}
 	}
 }
@@ -449,8 +569,11 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 		*tmp;
 	int rc, arrived;
 
-	if(list_empty(&dev->backlog.head))
+	netdev_lock(dev);
+	if(unlikely(list_empty(&dev->backlog.head))) {
+		netdev_unlock(dev);
 		return -EOK;
+	}
 
 	backlog_for_each_safe(&dev->backlog, entry, tmp) {
 		nb = list_entry(entry, struct netbuf, bl_entry);
@@ -468,7 +591,10 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			netbuf_set_timestamp(nb);
 			nb->protocol = ntohs(nb->protocol);
 			nb->size = netbuf_get_size(nb);
+
+			netdev_unlock(dev);
 			dev->rx(nb);
+			netdev_lock(dev);
 
 			if(likely(netbuf_test_flag(nb, NBUF_ARRIVED) || netbuf_test_flag(nb, NBUF_REUSE))) {
 				netdev_rx_stats_inc(dev, nb);
@@ -486,7 +612,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 		}
 
 		if(netbuf_test_flag(nb, NBUF_AGAIN)) {
-			netdev_add_backlog(dev, nb);
+			__netdev_add_backlog(dev, nb);
 		} else if(netbuf_test_flag(nb, NBUF_DROPPED)) {
 			netdev_dropped_stats_inc(dev);
 			netbuf_free(nb);
@@ -501,6 +627,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 
 	/* Attempt to resolve any unresolved destination cache entries. */
 	netdev_try_translate_cache(dev);
+	netdev_unlock(dev);
 	return weight;
 }
 
@@ -524,7 +651,10 @@ int netdev_poll(struct netdev *dev)
 		dev->read(dev, available);
 
 	weight = dev->processing_weight;
+	netdev_lock(dev);
 	netdev_try_translate_cache(dev);
+	netdev_unlock(dev);
+
 	while(weight > 0 && netdev_backlog_length(dev) != 0) {
 		weight = netdev_process_backlog(dev, weight);
 	}
@@ -546,12 +676,54 @@ int netdev_poll_all(void)
 	struct netdev *dev;
 
 	num = 0;
-	list_for_each(entry, &devices) {
+	netdev_lock_core();
+	list_for_each(entry, &devcore.devices) {
 		dev = list_entry(entry, struct netdev, entry);
 		num += netdev_poll(dev);
 	}
+	netdev_unlock_core();
 
 	return num;
+}
+
+static void netdev_poll_task(void *arg)
+{
+	UNUSED(arg);
+
+	while(true) {
+		/*
+		 * Roll through all devices as long as
+		 * the device core is running. If there are no
+		 * packets remaining on the backlog the processor
+		 * will be suspended for 100ms.
+		 */
+		netdev_lock_core();
+		if(unlikely(!devcore.running)) {
+			netdev_unlock_core();
+			break;
+		}
+		netdev_unlock_core();
+
+		if(netdev_poll_all())
+			continue;
+		estack_sleep(100);
+	}
+}
+
+/**
+ * @brief Configure various network device parameters.
+ * @param dev Network device to configure.
+ * @param maxrx Maximum number of packets to receive at once.
+ * @param maxweight Maximum number of bytes to process in a single pass.
+ */
+void netdev_config_params(struct netdev *dev, int maxrx, int maxweight)
+{
+	netdev_lock_core();
+	netdev_lock(dev);
+	dev->rx_max = maxrx;
+	dev->processing_weight = maxweight;
+	netdev_unlock(dev);
+	netdev_unlock_core();
 }
 
 static void __netdev_demux_handle(struct netbuf *nb)
@@ -561,11 +733,17 @@ static void __netdev_demux_handle(struct netbuf *nb)
 	struct protocol *proto;
 
 	dev = nb->dev;
+	netdev_lock(dev);
 	list_for_each(entry, &dev->protocols) {
 		proto = list_entry(entry, struct protocol, entry);
-		if(proto->protocol == nb->protocol)
+		if(proto->protocol == nb->protocol) {
+			netdev_unlock(dev);
 			proto->rx(nb);
+			netdev_lock(dev);
+		}
 	}
+
+	netdev_unlock(dev);
 }
 
 /**
@@ -592,8 +770,9 @@ void netdev_config_core_params(uint32_t retry_tmo, uint32_t resolv_tmo, int retr
 void netdev_demux_handle(struct netbuf *nb)
 {
 	assert(nb);
+	assert(nb->dev);
 
-	if(nb->protocol != 0)
+	if(likely(nb->protocol != 0))
 		__netdev_demux_handle(nb);
 }
 
@@ -610,10 +789,15 @@ static inline struct netdev_stats *netdev_get_stats(struct netdev *dev)
 uint32_t netdev_get_dropped(struct netdev *dev)
 {
 	struct netdev_stats *stats;
+	uint32_t dropped;
 
 	assert(dev);
+	netdev_lock(dev);
 	stats = netdev_get_stats(dev);
-	return stats->dropped;
+	dropped = stats->dropped;
+	netdev_unlock(dev);
+
+	return dropped;
 }
 
 /**
@@ -624,10 +808,16 @@ uint32_t netdev_get_dropped(struct netdev *dev)
 uint32_t netdev_get_rx_bytes(struct netdev *dev)
 {
 	struct netdev_stats *stats;
+	uint32_t bytes;
 
 	assert(dev);
+
+	netdev_lock(dev);
 	stats = netdev_get_stats(dev);
-	return stats->rx_bytes;
+	bytes = stats->rx_bytes;
+	netdev_unlock(dev);
+
+	return bytes;
 }
 
 /**
@@ -638,10 +828,16 @@ uint32_t netdev_get_rx_bytes(struct netdev *dev)
 uint32_t netdev_get_tx_bytes(struct netdev *dev)
 {
 	struct netdev_stats *stats;
+	uint32_t bytes;
 
 	assert(dev);
+
+	netdev_lock(dev);
 	stats = netdev_get_stats(dev);
-	return stats->tx_bytes;
+	bytes = stats->tx_bytes;
+	netdev_unlock(dev);
+
+	return bytes;
 }
 
 /**
@@ -652,10 +848,16 @@ uint32_t netdev_get_tx_bytes(struct netdev *dev)
 uint32_t netdev_get_rx_packets(struct netdev *dev)
 {
 	struct netdev_stats *stats;
+	uint32_t packets;
 
 	assert(dev);
+
+	netdev_lock(dev);
 	stats = netdev_get_stats(dev);
-	return stats->rx_packets;
+	packets = stats->rx_packets;
+	netdev_unlock(dev);
+
+	return packets;
 }
 
 /**
@@ -666,10 +868,16 @@ uint32_t netdev_get_rx_packets(struct netdev *dev)
 uint32_t netdev_get_tx_packets(struct netdev *dev)
 {
 	struct netdev_stats *stats;
+	uint32_t packets;
 
 	assert(dev);
+
+	netdev_lock(dev);
 	stats = netdev_get_stats(dev);
-	return stats->tx_packets;
+	packets = stats->tx_packets;
+	netdev_unlock(dev);
+
+	return packets;
 }
 
 /**
@@ -683,13 +891,18 @@ void netdev_write_stats(struct netdev *dev, FILE *file)
 
 	assert(file);
 	assert(dev);
+
+	netdev_lock(dev);
 	stats = netdev_get_stats(dev);
 
 	fprintf(file, "Stats for: %s\n", dev->name);
-	fprintf(file, "\tReceived: %lu bytes in %lu packets\n", (unsigned long)stats->rx_bytes, (unsigned long)stats->rx_packets);
-	fprintf(file, "\tTransmit: %lu bytes in %lu packets\n", (unsigned long)stats->tx_bytes, (unsigned long)stats->tx_packets);
+	fprintf(file, "\tReceived: %lu bytes in %lu packets\n", (unsigned long)stats->rx_bytes,
+			(unsigned long)stats->rx_packets);
+	fprintf(file, "\tTransmit: %lu bytes in %lu packets\n", (unsigned long)stats->tx_bytes,
+			(unsigned long)stats->tx_packets);
 	fprintf(file, "\t%lu packets have been dropped\n", (unsigned long)stats->dropped);
 	fprintf(file, "\tBacklog size %u\n", (unsigned int)dev->backlog.size);
+	netdev_unlock(dev);
 }
 
 #ifdef HAVE_DEBUG
@@ -704,6 +917,7 @@ void netdev_print(struct netdev *dev, FILE *file)
 	char ipbuf[16];
 	struct netif *nif = &dev->nif;
 
+	netdev_lock(dev);
 	fprintf(file, "Info for %s:\n", dev->name);
 	ethernet_mac_ntoa(dev->hwaddr, hwbuf, 18);
 	fprintf(file, "\tHardware address %s\n", hwbuf);
@@ -711,6 +925,7 @@ void netdev_print(struct netdev *dev, FILE *file)
 	fprintf(file, "\tLocal IP: %s\n", ipbuf);
 	ipv4_ntoa(ipv4_ptoi(nif->ip_mask), ipbuf, 16);
 	fprintf(file, "\tIP mask: %s\n", ipbuf);
+	netdev_unlock(dev);
 
 	netdev_write_stats(dev, file);
 }
@@ -730,11 +945,17 @@ void netdev_init(struct netdev *dev)
 	list_head_init(&dev->backlog.head);
 	list_head_init(&dev->protocols);
 	list_head_init(&dev->destinations);
+	estack_mutex_create(&dev->mtx, 0);
 
 	dev->backlog.size = 0;
 	dev->processing_weight = 15000;
 	dev->rx_max = 10;
-	list_add(&dev->entry, &devices);
+
+	netdev_lock_core();
+	netdev_lock(dev);
+	list_add(&dev->entry, &devcore.devices);
+	netdev_unlock(dev);
+	netdev_unlock_core();
 }
 
 /**
@@ -750,21 +971,61 @@ void netdev_destroy(struct netdev *dev)
 	struct protocol *proto;
 
 	assert(dev);
+
+	netdev_lock_core();
+	netdev_lock(dev);
+
 	list_for_each_safe(entry, tmp, &dev->destinations) {
 		e = list_entry(entry, struct dst_cache_entry, entry);
+		list_del(entry);
 		netdev_drop_dst(e);
 		netdev_free_dst_entry(e);
 	}
 
 	backlog_for_each_safe(&dev->backlog, entry, tmp) {
 		nb = list_entry(entry, struct netbuf, bl_entry);
+		list_del(entry);
 		netbuf_free(nb);
 	}
 
 	list_for_each_safe(entry, tmp, &dev->protocols) {
 		proto = list_entry(entry, struct protocol, entry);
+		list_del(entry);
 		free(proto);
 	}
+
+	list_del(&dev->entry);
+	netdev_unlock(dev);
+	netdev_unlock_core();
+}
+
+/**
+ * @brief Initialise the network device core.
+ *
+ * Initialise the core parameters for the network device core / handler.
+ */
+void devcore_init(void)
+{
+	devcore.runner.name = "polltsk";
+	devcore.running = true;
+
+	estack_mutex_create(&devcore.mtx, 0);
+	estack_thread_create(&devcore.runner, netdev_poll_task, NULL);
+}
+
+/**
+ * @brief Destroy the network core.
+ *
+ * The device core runner task will be terminated by this function.
+ */
+void devcore_destroy(void)
+{
+	netdev_lock_core();
+	devcore.running = false;
+	netdev_unlock_core();
+
+	estack_thread_destroy(&devcore.runner);
+	estack_mutex_destroy(&devcore.mtx);
 }
 
 /** @} */

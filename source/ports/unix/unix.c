@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <estack.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include <sys/time.h>
 
@@ -108,4 +109,12 @@ void estack_mutex_unlock(estack_mutex_t *mtx)
 {
 	assert(mtx);
 	pthread_mutex_unlock(&mtx->mtx);
+}
+
+void estack_sleep(int ms)
+{
+	time_t us;
+
+	us = ms * 1000;
+	usleep(us);
 }

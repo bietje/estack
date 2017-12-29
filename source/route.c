@@ -59,7 +59,9 @@ bool route4_add(uint32_t addr, uint32_t mask, uint32_t gw, struct netdev *dev)
 	entry->ip = addr;
 	entry->mask = mask;
 
+	estack_mutex_lock(&ip4_head.lock, 0);
 	list_add_tail(&entry->entry, &ip4_head.head);
+	estack_mutex_unlock(&ip4_head.lock);
 	return false;
 }
 
@@ -70,11 +72,13 @@ void route4_clear(void)
 	struct iproute_head *head;
 
 	head = route4_get_head();
+	estack_mutex_lock(&ip4_head.lock, 0);
 	list_for_each_safe(entry, tmp, &head->head) {
 		e = list_entry(entry, struct iproute4_entry, entry);
 		list_del(entry);
 		free(e);
 	}
+	estack_mutex_unlock(&ip4_head.lock);
 }
 
 bool route4_delete(uint32_t ip, uint32_t mask, uint32_t gate, struct netdev *dev)
@@ -85,6 +89,7 @@ bool route4_delete(uint32_t ip, uint32_t mask, uint32_t gate, struct netdev *dev
 	bool rv = false;
 
 	head = route4_get_head();
+	estack_mutex_lock(&ip4_head.lock, 0);
 	list_for_each_safe(e, tmp, &head->head) {
 		entry = list_entry(e, struct iproute4_entry, entry);
 
@@ -92,10 +97,12 @@ bool route4_delete(uint32_t ip, uint32_t mask, uint32_t gate, struct netdev *dev
 				entry->gateway == gate && entry->dev == dev) {
 			list_del(e);
 			free(entry);
+			estack_mutex_unlock(&ip4_head.lock);
 			rv = true;
 		}
 	}
 
+	estack_mutex_unlock(&ip4_head.lock);
 	return rv;
 }
 
@@ -112,6 +119,9 @@ static struct iproute4_entry *__route4_lookup(uint32_t ip, uint32_t *gw, uint8_t
 		return entry;
 
 	head = route4_get_head();
+
+	if(!level)
+		estack_mutex_lock(&ip4_head.lock, 0);
 	list_for_each(e, &head->head) {
 		entry = list_entry(e, struct iproute4_entry, entry);
 
@@ -125,6 +135,9 @@ static struct iproute4_entry *__route4_lookup(uint32_t ip, uint32_t *gw, uint8_t
 			break;
 		}
 	}
+
+	if(!level)
+		estack_mutex_unlock(&ip4_head.lock);
 
 	return entry;
 }
@@ -140,10 +153,22 @@ struct netdev *route4_lookup(uint32_t ip, uint32_t *gw)
 		if (list_empty(&ip4_head.head))
 			return NULL;
 
+		estack_mutex_lock(&ip4_head.lock, 0);
 		entry = list_first_entry(&ip4_head.head, struct iproute4_entry, entry);		
+		estack_mutex_unlock(&ip4_head.lock);
 	} else {
 		entry = __route4_lookup(ip, gw, 0);
 	}
 
 	return entry ? entry->dev : NULL;
+}
+
+void route4_init(void)
+{
+	estack_mutex_create(&ip4_head.lock, 0);
+}
+
+void route4_destroy(void)
+{
+	estack_mutex_destroy(&ip4_head.lock);
 }

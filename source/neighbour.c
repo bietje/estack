@@ -30,16 +30,19 @@ bool neighbour_output(struct netdev *dev, struct netbuf *nb, void *addr, uint8_t
 	e = netdev_find_destination(dev, addr, length);
 
 	if(likely(e)) {
+		estack_mutex_lock(&dev->mtx, 0);
 		if(e->state == DST_RESOLVED) {
+			estack_mutex_unlock(&dev->mtx);
 			dev->tx(nb, e->hwaddr);
 			return true;
 		}
+		estack_mutex_unlock(&dev->mtx);
 
 		/* Entry isn't resolved yet, enqueue it */
 	} else {
 		e = netdev_add_destination_unresolved(dev, addr, length, handle);
 	}
 
-	netdev_dstcache_add_packet(e, nb);
+	netdev_dstcache_add_packet(dev, e, nb);
 	return false;
 }

@@ -75,7 +75,6 @@ static void test_ipout(struct netdev *ndev, uint32_t addr)
 	nb->protocol = IP_PROTO_UDP;
 	nb->dev = ndev;
 	ipv4_output(nb, addr);
-	netdev_poll(ndev);
 }
 
 static void test_setup_routes(struct netdev *dev)
@@ -126,7 +125,7 @@ static void task_main(void *arg)
 	test_setup_routes(dev);
 	test_ipout(dev, addr);
 
-	netdev_poll(dev);
+	estack_sleep(1000);
 	netdev_print(dev, stdout);
 
 	assert(netdev_get_rx_bytes(dev) == 3410);

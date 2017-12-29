@@ -84,12 +84,14 @@ int main(int argc, char **argv)
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 	test_setup_routes(dev);
 
-	netdev_poll(dev);
-
 	putchar('\n');
+
+	estack_sleep(300);
 	netdev_print(dev, stdout);
 	wait_close();
 	route4_clear();
 	pcapdev_destroy(dev);
+	estack_destroy();
+
 	return 0;
 }

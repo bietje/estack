@@ -83,6 +83,7 @@ struct DLL_EXPORT netdev {
 	struct list_head entry; //!< Entry into the global device list.
 	struct list_head protocols; //!< Protocol handler list head.
 	struct list_head destinations; //!< Destination cache head.
+	estack_mutex_t mtx;
 
 	uint16_t mtu; //!< MTU.
 	struct netdev_backlog backlog; //!< Device backlog head.
@@ -170,7 +171,7 @@ extern DLL_EXPORT bool netdev_remove_destination(struct netdev *dev, const uint8
 	uint8_t length);
 extern DLL_EXPORT bool netdev_update_destination(struct netdev *dev, const uint8_t *dst,
 	uint8_t dlength, const uint8_t *src, uint8_t slength);
-extern bool netdev_dstcache_add_packet(struct dst_cache_entry *e, struct netbuf *nb);
+extern DLL_EXPORT bool netdev_dstcache_add_packet(struct netdev *dev, struct dst_cache_entry *e, struct netbuf *nb);
 extern DLL_EXPORT void ifconfig(struct netdev *dev, uint8_t *local, uint8_t *remote,
 	uint8_t *mask, uint8_t length, nif_type_t type);
 extern DLL_EXPORT uint16_t netif_get_id(struct netif *nif);
@@ -183,15 +184,13 @@ extern DLL_EXPORT uint32_t netdev_get_tx_bytes(struct netdev *dev);
 extern DLL_EXPORT uint32_t netdev_get_rx_packets(struct netdev *dev);
 extern DLL_EXPORT uint32_t netdev_get_tx_packets(struct netdev *dev);
 extern DLL_EXPORT void netdev_print(struct netdev *dev, FILE *file);
-extern struct dst_cache_entry *netdev_add_destination_unresolved(struct netdev *dev,
+extern DLL_EXPORT struct dst_cache_entry *netdev_add_destination_unresolved(struct netdev *dev,
 	const uint8_t *src, uint8_t length, resolve_handle handle);
 extern DLL_EXPORT void netdev_config_core_params(uint32_t retry_tmo, uint32_t resolv_tmo, int retries);
+extern DLL_EXPORT void devcore_init(void);
+extern DLL_EXPORT void devcore_destroy(void);
+extern DLL_EXPORT void netdev_config_params(struct netdev *dev, int maxrx, int maxweight);
 
-static inline void netdev_config_params(struct netdev *dev, int maxrx, int maxweight)
-{
-	dev->rx_max = maxrx;
-	dev->processing_weight = maxweight;
-}
 CDECL_END
 
 /**

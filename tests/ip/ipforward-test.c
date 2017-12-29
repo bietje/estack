@@ -109,8 +109,7 @@ int main(int argc, char **argv)
 
 	test_setup_routes(dev1, dev2);
 
-	netdev_poll(dev1);
-	netdev_poll(dev2);
+	estack_sleep(1000);
 	netdev_print(dev1, stdout);
 	putchar('\n');
 	netdev_print(dev2, stdout);
@@ -124,6 +123,7 @@ int main(int argc, char **argv)
 	route4_clear();
 	pcapdev_destroy(dev1);
 	pcapdev_destroy(dev2);
+	estack_destroy();
 
 	wait_close();
 	return 0;

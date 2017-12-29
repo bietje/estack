@@ -117,14 +117,8 @@ static void generate_ip_datagram(uint32_t ip)
 
 static void test_cache_timeout(uint32_t ip)
 {
-	time_t time;
-
 	generate_ip_datagram(ip);
-	time = estack_utime();
-	while (time + 3700000 > estack_utime())
-		netdev_poll(dev);
-
-	netdev_poll(dev);
+	estack_sleep(3700);
 }
 
 static void complete_dst_entry(uint32_t ip)
@@ -132,22 +126,18 @@ static void complete_dst_entry(uint32_t ip)
 	const uint8_t hwaddr[] = DESTINATION_MAC;
 
 	netdev_update_destination(dev, hwaddr, 6, (void*)&ip, 4);
-	netdev_poll(dev);
+	estack_sleep(250);
 }
 
 static void test_cache_notimeout(uint32_t ip)
 {
-	time_t time;
-
 	generate_ip_datagram(ip);
-	time = estack_utime();
-	while (time + 1500000 > estack_utime())
-		netdev_poll(dev);
+	estack_sleep(1500);
 
 	complete_dst_entry(ip);
-	netdev_poll(dev);
+	estack_sleep(250);
 	generate_ip_datagram(ip);
-	netdev_poll(dev);
+	estack_sleep(250);
 }
 
 static void setup_dst_cache(void)
@@ -203,12 +193,14 @@ int main(int argc, char **argv)
 	test_cache_notimeout(ip2);
 
 	putchar('\n');
+	estack_sleep(500);
 	netdev_print(dev, stdout);
 
 	assert(netdev_get_rx_packets(dev) == 1);
 	assert(netdev_get_tx_packets(dev) == 9);
 	assert(netdev_get_dropped(dev) == 1);
 	pcapdev_destroy(dev);
+	estack_destroy();
 	wait_close();
 
 	return -EXIT_SUCCESS;

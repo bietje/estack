@@ -24,3 +24,13 @@ time_t estack_utime(void)
 	rv += tv.tv_usec;
 	return rv;
 }
+
+void __attribute__((weak)) vApplicationMallocFailedHook(void)
+{
+	fprintf(stderr, "Failed to allocate memory!\n");
+}
+
+void __attribute__((weak)) vApplicationStackOverflowHook(TaskHandle_t handle, char *name)
+{
+	fprintf(stderr, "Stack overflow on %s\n", name);
+}

@@ -11,7 +11,6 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <time.h>
 #include <arch.h>
 
 #include <estack/estack.h>
@@ -36,6 +35,7 @@ extern DLL_EXPORT int estack_mutex_create(estack_mutex_t *mtx, const uint32_t fl
 extern DLL_EXPORT int estack_mutex_destroy(estack_mutex_t *mtx);
 extern DLL_EXPORT int estack_mutex_lock(estack_mutex_t *mtx, int tmo);
 extern DLL_EXPORT void estack_mutex_unlock(estack_mutex_t *mtx);
+extern DLL_EXPORT void estack_sleep(int ms);
 CDECL_END
 
 #endif

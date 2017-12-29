@@ -75,7 +75,6 @@ static void test_ipout(struct netdev *ndev, uint32_t addr)
 	nb->protocol = IP_PROTO_UDP;
 	nb->dev = ndev;
 	ipv4_output(nb, addr);
-	netdev_poll(ndev);
 }
 
 static void test_setup_routes(struct netdev *dev)
@@ -89,6 +88,7 @@ static void test_setup_routes(struct netdev *dev)
 	route4_add(0, 0, gw, dev);
 }
 
+volatile bool processing = true;
 int main(int argc, char **argv)
 {
 	char *input;
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 	test_setup_routes(dev);
 	test_ipout(dev, addr);
 
-	netdev_poll(dev);
+	estack_sleep(1000);
 	netdev_print(dev, stdout);
 
 	assert(netdev_get_rx_bytes(dev) == 3410);
@@ -121,6 +121,7 @@ int main(int argc, char **argv)
 
 	route4_clear();
 	pcapdev_destroy(dev);
+	devcore_destroy();
 
 	wait_close();
 	return 0;

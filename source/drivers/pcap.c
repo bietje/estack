@@ -32,7 +32,7 @@ struct pcapdev_private {
 	pcap_t *dst;
 	pcap_dumper_t *dumper;
 	struct netdev dev;
-	int available;
+	int available, nread;
 };
 
 static pcap_t *pcapdev_open_file(const char *src)
@@ -75,7 +75,7 @@ static int pcapdev_available(struct netdev *dev)
 	while((rv = pcap_next_ex(cap, &hdr, &data)) >= 0)
 		count += 1;
 
-	priv->available = count;
+	priv->nread = priv->available = count;
 	pcap_close(cap);
 
 	return count;
@@ -147,7 +147,7 @@ static int pcapdev_read(struct netdev *dev, int num)
 	if(!priv->cap)
 		return 0;
 
-	while((rv = pcap_next_ex(priv->cap, &hdr, &data)) >= 0 && num > 0) {
+	while(priv->nread > 0 && (rv = pcap_next_ex(priv->cap, &hdr, &data)) >= 0 && num > 0) {
 		length = hdr->len;
 		nb = netbuf_alloc(NBAF_DATALINK, length);
 		netbuf_cpy_data(nb, data, length, NBAF_DATALINK);
@@ -163,6 +163,7 @@ static int pcapdev_read(struct netdev *dev, int num)
 		hdr->ts.tv_sec = (long)(timestamp / 1e6L);
 		hdr->ts.tv_usec = timestamp % (long)1e6L;
 		pcap_dump((u_char*)priv->dumper, hdr, data);
+		priv->nread--;
 	}
 
 	return tmp;
@@ -237,7 +238,6 @@ struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
 	pcapdev_setup_output(dstfile, priv);
 
 	dev = &priv->dev;
-	pcapdev_init(dev, "dbg0", hwaddr, mtu);
 
 	priv->available = -1;
 	dev->read = pcapdev_read;
@@ -246,6 +246,7 @@ struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
 
 	dev->rx = ethernet_input;
 	dev->tx = ethernet_output;
+	pcapdev_init(dev, "dbg0", hwaddr, mtu);
 
 	return dev;
 }
