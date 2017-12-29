@@ -61,7 +61,7 @@ int estack_thread_create(estack_thread_t *tp, thread_handle_t handle, void *arg)
 		NULL,
 		0,
 		(LPTHREAD_START_ROUTINE)EStackThreadStarter,
-		NULL,
+		tp,
 		0,
 		&tp->tid
 	);
@@ -148,6 +148,11 @@ int estack_mutex_lock(estack_mutex_t *mtx, int tmo)
 
 void estack_mutex_unlock(estack_mutex_t *mtx)
 {
-	if(ReleaseMutex(mtx->mtx))
+	if(!ReleaseMutex(mtx->mtx))
 		print_dbg("Unable to release mutex!\n");
+}
+
+void estack_sleep(int ms)
+{
+	Sleep(ms);
 }
