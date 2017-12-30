@@ -13,7 +13,22 @@
 #include <estack/socket.h>
 #include <estack/addr.h>
 
-static struct socket *sockets[MAX_SOCKETS];
+struct socket_pool {
+	estack_mutex_t mtx;
+	struct socket *sockets[MAX_SOCKETS];
+};
+
+static struct socket_pool sockets;
+
+static inline void socket_pool_lock(void)
+{
+	estack_mutex_lock(&sockets.mtx, 0);
+}
+
+static inline void socket_pool_unlock(void)
+{
+	estack_mutex_unlock(&sockets.mtx);
+}
 
 static inline bool socket_cmp(struct socket *x, struct socket *y)
 {
@@ -31,15 +46,19 @@ struct socket *socket_find(ip_addr_t *addr, uint16_t port)
 	tmp.addr = *addr;
 	tmp.port = port;
 
+	socket_pool_lock();
 	for(int i = 0; i < MAX_SOCKETS; i++) {
-		socket = sockets[i];
+		socket = sockets.sockets[i];
 
 		if(!socket)
 			continue;
 
-		if(socket_cmp(socket, &tmp))
+		if(socket_cmp(socket, &tmp)) {
+			socket_pool_unlock();
 			return socket;
+		}
 	}
+	socket_pool_unlock();
 
 	return NULL;
 }
@@ -48,13 +67,18 @@ int socket_remove(int fd)
 {
 	struct socket *sock;
 
-	sock = sockets[fd];
+	socket_pool_lock();
+	sock = sockets.sockets[fd];
 	
-	if(!sock)
+	if(!sock) {
+		socket_pool_unlock();
 		return -1;
+	}
 
 	sock->fd = -1;
-	sockets[fd] = NULL;
+	sockets.sockets[fd] = NULL;
+	socket_pool_unlock();
+
 	return 0;
 }
 
@@ -64,20 +88,32 @@ int socket_add(struct socket *socket)
 	struct socket *sock;
 
 	fd = -1;
+	socket_pool_lock();
 	for(int i = 0; i < MAX_SOCKETS; i++) {
-		sock = sockets[i];
+		sock = sockets.sockets[i];
 
 		if(sock)
 			continue;
 
-		sockets[i] = socket;
+		sockets.sockets[i] = socket;
 		fd = i;
 		break;
 	}
+	socket_pool_unlock();
 
 	if(fd < 0)
 		return fd;
 
 	socket->fd = fd;
 	return fd;
+}
+
+void socket_api_init(void)
+{
+	estack_mutex_create(&sockets.mtx, 0);
+}
+
+void socket_api_destroy(void)
+{
+	estack_mutex_destroy(&sockets.mtx);
 }

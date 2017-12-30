@@ -20,16 +20,20 @@ extern DLL_EXPORT void devcore_init(void);
 extern DLL_EXPORT void route4_init(void);
 extern DLL_EXPORT void route4_destroy(void);
 extern DLL_EXPORT void devcore_destroy(void);
+extern DLL_EXPORT void socket_api_init(void);
+extern DLL_EXPORT void socket_api_destroy(void);
 
 static inline void estack_init(FILE *log)
 {
 	log_init(log);
 	route4_init();
 	devcore_init();
+	socket_api_init();
 }
 
 static inline void estack_destroy(void)
 {
+	socket_api_destroy();
 	devcore_destroy();
 	route4_destroy();
 }

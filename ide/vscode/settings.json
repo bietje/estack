@@ -7,7 +7,9 @@
 		"string.h": "c",
 		"config.h": "c",
 		"udp.h": "c",
-		"addr.h": "c"
+		"addr.h": "c",
+		"port.h": "c",
+		"arch.h": "c"
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False"

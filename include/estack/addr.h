@@ -13,30 +13,19 @@
 #include <stdio.h>
 
 #include <estack/estack.h>
-#include <estack/ip.h>
+#include <estack/in.h>
+#include <estack/in6.h>
 
-typedef struct {
-	uint32_t addr[4];
-} ip6_addr_t;
-
-typedef struct {
-	uint32_t addr;
-} ip4_addr_t;
-
-typedef enum {
-	IP4_ADDR = 4,
-	IP6_ADDR = 6,
-	IP46_ADDR = 46,
-} ip_addr_type_t;
-
-typedef struct {
+typedef struct ip_addr {
+	uint8_t version;
 	union {
-		ip6_addr_t ip6;
-		ip4_addr_t ip4;
-	};
-
-	ip_addr_type_t type;
+		struct in_addr in4_addr;
+		struct in6_addr in6_addr;
+	} addr;
 } ip_addr_t;
+
+#define add4 addr.in4_addr
+#define addr6 addr.in6_addr
 
 CDECL
 extern DLL_EXPORT bool ip_addr_cmp(ip_addr_t *a, ip_addr_t *b);

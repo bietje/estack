@@ -13,20 +13,23 @@
 #include <estack/estack.h>
 #include <estack/addr.h>
 
+#include <estack/in.h>
+#include <estack/in6.h>
+
 bool ip_addr_cmp(ip_addr_t *a, ip_addr_t *b)
 {
 	bool rv;
 
-	if(a->type != b->type)
+	if(a->version != b->version)
 		return false;
 
-	switch(a->type) {
-	case IP4_ADDR:
-		rv = a->ip4.addr == b->ip4.addr;
+	switch(a->version) {
+	case 4:
+		rv = a->addr.in4_addr.s_addr == b->addr.in4_addr.s_addr;
 		break;
 
-	case IP6_ADDR:
-		rv = (bool)memcmp(a->ip6.addr, b->ip6.addr, sizeof(b->ip6.addr));
+	case 6:
+		rv = (bool)memcmp(a->addr.in6_addr.in6_u.u6_addr8, b->addr.in6_addr.in6_u.u6_addr8, 16);
 		break;
 
 	default:

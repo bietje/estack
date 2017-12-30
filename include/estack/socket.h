@@ -17,10 +17,17 @@
 
 #define MAX_SOCKETS 16
 
+typedef unsigned short sa_family_t;
+
 struct DLL_EXPORT socket {
 	int fd;
 	ip_addr_t addr;
 	uint16_t port;
+};
+
+struct sockaddr {
+	sa_family_t sa_family;
+	char        sa_data[14];
 };
 
 #endif
