@@ -30,4 +30,10 @@ struct sockaddr {
 	char        sa_data[14];
 };
 
+typedef enum {
+	AF_INET,
+} socket_domain_t;
+
+#define PF_INET AF_INET
+
 #endif

@@ -9,10 +9,11 @@
 		"udp.h": "c",
 		"addr.h": "c",
 		"port.h": "c",
-		"arch.h": "c"
+		"arch.h": "c",
+		"socket.h": "c"
 	},
 	"cmake.configureArgs":[
-		"-DCMAKE_CI=False"
+		"-DCMAKE_CI=False",
         //"-DCMAKE_SYSTEM_NAME=Generic",
         //"-DFREERTOS=True",
 		//"-DPORT=unix"

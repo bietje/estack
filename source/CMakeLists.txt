@@ -19,6 +19,7 @@ neighbour.c
 ip.c
 route.c
 sock.c
+socket.c
 addr.c
 ipv4/arp-in.c
 ipv4/arp-out.c
