@@ -8,5 +8,7 @@ estack:
     - make run_ip
     - make run_ipfrag
     - make run_ipforward
+    - make run_events
+    - make run_udp_sockets
   only:
     - master
