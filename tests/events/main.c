@@ -56,6 +56,9 @@ int main(int argc, char **argv)
 	estack_thread_create(&tp1, event_task, &event);
 	vTaskStartScheduler();
 
+#ifndef HAVE_RTOS
+	estack_sleep(2000);
+#endif
 	wait_close();
 
 	estack_thread_destroy(&tp1);
@@ -64,6 +67,7 @@ int main(int argc, char **argv)
 	return -EXIT_SUCCESS;
 }
 
+#ifdef HAVE_RTOS
 void vApplicationMallocFailedHook(void)
 {
 	fprintf(stderr, "Failed to allocate memory!\n");
@@ -73,3 +77,4 @@ void vApplicationStackOverflowHook(TaskHandle_t handle, char *name)
 {
 	fprintf(stderr, "Stack overflow on %s\n", name);
 }
+#endif

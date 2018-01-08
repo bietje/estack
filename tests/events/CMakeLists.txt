@@ -8,6 +8,6 @@ add_executable(events-test ${ETH_TEST_SRCS})
 target_link_libraries(events-test estack-static ${PCAP_LIBRARY} ${ESTACK_SYSTEM_LIBS})
 
 add_custom_target(run_events
-COMMAND events-test resources/ip-fragments.pcap
+COMMAND events-test
 DEPENDS events-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

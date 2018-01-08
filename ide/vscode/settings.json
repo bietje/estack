@@ -10,7 +10,8 @@
 		"addr.h": "c",
 		"port.h": "c",
 		"arch.h": "c",
-		"socket.h": "c"
+		"socket.h": "c",
+		"stdlib.h": "c"
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False",

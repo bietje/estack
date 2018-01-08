@@ -28,4 +28,13 @@ typedef DLL_EXPORT struct thread {
 #define HAVE_THREAD
 } estack_thread_t;
 
+typedef DLL_EXPORT struct event {
+	pthread_mutex_t mtx;
+	pthread_cond_t cond;
+	bool signalled;
+	int length;
+	int size;
+#define HAVE_EVENT
+} estack_event_t;
+
 #endif

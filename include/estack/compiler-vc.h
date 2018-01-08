@@ -15,6 +15,8 @@
 
 #define __compiler_co(addr, type, field) ((type *)((char*)(addr) - offsetof(type, field)))
 
+#define __maybe
+
 #pragma warning(disable : 4251)
 #pragma warning (disable : 4820)
 #pragma warning (disable : 4100)

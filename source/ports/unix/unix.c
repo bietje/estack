@@ -118,3 +118,48 @@ void estack_sleep(int ms)
 	us = ms * 1000;
 	usleep(us);
 }
+
+void estack_event_create(estack_event_t *event, int length)
+{
+	assert(event);
+
+	event->size = length;
+	event->length = 0;
+	event->signalled = false;
+	pthread_mutex_init(&event->mtx, NULL);
+	pthread_cond_init(&event->cond, NULL);
+}
+
+void estack_event_wait(estack_event_t *event)
+{
+	assert(event);
+
+	pthread_mutex_lock(&event->mtx);
+	assert(++event->length < event->size);
+	while(!event->signalled)
+		pthread_cond_wait(&event->cond, &event->mtx);
+	
+	event->length--;
+	event->signalled = false;
+	pthread_mutex_unlock(&event->mtx);
+}
+
+void estack_event_signal(estack_event_t *event)
+{
+	assert(event);
+
+	pthread_mutex_lock(&event->mtx);
+	event->signalled = true;
+	pthread_cond_signal(&event->cond);
+	pthread_mutex_unlock(&event->mtx);
+}
+
+void estack_event_destroy(estack_event_t *e)
+{
+	assert(e);
+
+	pthread_cond_destroy(&e->cond);
+	pthread_mutex_destroy(&e->mtx);
+	e->signalled = false;
+	e->size = 0;
+}

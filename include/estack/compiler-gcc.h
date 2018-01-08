@@ -15,6 +15,8 @@
 
 #define DLL_EXPORT
 
+#define __maybe __attribute__((weak))
+
 #ifndef offsetof
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #endif

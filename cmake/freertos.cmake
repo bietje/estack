@@ -11,6 +11,8 @@ ${FREERTOS_DIR}/Source/include
 ${FREERTOS_DIR}/Source/portable/${COMPILER}/${PORT}
 )
 
+SET(HAVE_RTOS True)
+
 if(${PORT} MATCHES "unix")
 	SET(ESTACK_PORT_SRCS ${ESTACK_PORT_SRCS} ${ESTACK_PORT_DIR}/unix.c)
 	find_package(Threads REQUIRED)

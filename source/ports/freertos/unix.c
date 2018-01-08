@@ -25,12 +25,12 @@ time_t estack_utime(void)
 	return rv;
 }
 
-void __attribute__((weak)) vApplicationMallocFailedHook(void)
+void __maybe vApplicationMallocFailedHook(void)
 {
 	fprintf(stderr, "Failed to allocate memory!\n");
 }
 
-void __attribute__((weak)) vApplicationStackOverflowHook(TaskHandle_t handle, char *name)
+void __maybe vApplicationStackOverflowHook(TaskHandle_t handle, char *name)
 {
 	fprintf(stderr, "Stack overflow on %s\n", name);
 }
