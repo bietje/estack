@@ -11,7 +11,8 @@
 		"port.h": "c",
 		"arch.h": "c",
 		"socket.h": "c",
-		"stdlib.h": "c"
+		"stdlib.h": "c",
+		"error.h": "c"
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False",

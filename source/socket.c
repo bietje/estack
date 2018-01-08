@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <assert.h>
 
 #include <estack/estack.h>
@@ -20,10 +21,27 @@
 
 #define SOCK_EVENT_LENGTH MAX_SOCKETS
 
-static int socket_receive_event(struct netbuf *nb)
+static int socket_receive_event(struct socket *sock, struct netbuf *nb)
 {
+	size_t length;
+	uint8_t *ptr;
+
+	length = nb->application.size;
+	sock->rcv_buffer = realloc(sock->rcv_buffer, sock->rcv_length + length);
+
+	assert(sock->rcv_buffer);
+	if(sock->rcv_buffer)
+		return -ENOMEM;
+
+	ptr = (uint8_t*)sock->rcv_buffer;
+	memcpy(&ptr[sock->rcv_length], nb->application.data, length);
+	sock->rcv_length += length;
+
 	netbuf_set_flag(nb, NBUF_ARRIVED);
-	return -1;
+	if(sock->readsize != 0 && sock->readsize <= sock->rcv_length)
+		estack_event_signal(&sock->read_event);
+
+	return length;
 }
 
 static struct socket *socket_alloc(void)

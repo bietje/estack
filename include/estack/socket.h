@@ -39,8 +39,9 @@ struct DLL_EXPORT socket {
 	void *rcv_buffer;
 	size_t rcv_length,
 		rcv_index;
+	size_t readsize;
 
-	int(*rcv_event)(struct netbuf *nb);
+	int(*rcv_event)(struct socket *sock, struct netbuf *nb);
 };
 
 #ifndef _WINSOCK2API_
