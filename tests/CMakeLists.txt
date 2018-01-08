@@ -3,6 +3,7 @@ add_subdirectory(netdev)
 add_subdirectory(arp)
 add_subdirectory(ip)
 add_subdirectory(events)
+add_subdirectory(sockets)
 
 if(FREERTOS)
 add_subdirectory(rtos)
