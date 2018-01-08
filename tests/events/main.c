@@ -12,6 +12,17 @@
 
 #include <estack/test.h>
 
+#ifdef WIN32
+static void vTaskStartScheduler(void)
+{
+
+}
+
+static void  vTaskEndScheduler(void)
+{
+
+}
+#else
 void __attribute__((weak)) vTaskStartScheduler(void)
 {
 
@@ -21,15 +32,16 @@ void __attribute__((weak)) vTaskEndScheduler(void)
 {
 
 }
+#endif
 
 static void event_task(void *arg)
 {
 	estack_event_t *e;
 
-	printf("Waiting for event..\n");
+	print_dbg("Waiting for event..\n");
 	e = (estack_event_t*)arg;
 	estack_event_wait(e);
-	printf("Event received!\n");
+	print_dbg("Event received!\n");
 
 	vTaskEndScheduler();
 }
@@ -51,6 +63,8 @@ int main(int argc, char **argv)
 	tp1.name = "wait-tsk";
 	tp2.name = "signal-tsk";
 
+	estack_init(stderr);
+
 	estack_event_create(&event, 10);
 	estack_thread_create(&tp2, signal_task, &event);
 	estack_thread_create(&tp1, event_task, &event);
@@ -64,6 +78,7 @@ int main(int argc, char **argv)
 	estack_thread_destroy(&tp1);
 	estack_thread_destroy(&tp2);
 	estack_event_destroy(&event);
+	estack_destroy();
 	return -EXIT_SUCCESS;
 }
 

@@ -14,6 +14,8 @@
 
 #include <estack/estack.h>
 
+#ifndef _WINSOCK2API_
+
 struct in_addr {
 	uint32_t s_addr;
 };
@@ -26,5 +28,7 @@ struct sockaddr_in {
 	uint8_t __pad[SOCK_SIZE - sizeof(short) -
 					sizeof(short) - sizeof(struct in_addr)];
 };
+
+#endif /* WINSOCK */
 
 #endif

@@ -156,3 +156,47 @@ void estack_sleep(int ms)
 {
 	Sleep(ms);
 }
+
+void estack_event_create(estack_event_t *event, int length)
+{
+	assert(event);
+
+	event->size = length;
+	event->length = 0;
+	event->signalled = false;
+	InitializeConditionVariable(&event->cond);
+	InitializeCriticalSection(&event->cs);
+}
+
+void estack_event_destroy(estack_event_t *e)
+{
+	WakeAllConditionVariable(&e->cond);
+	DeleteCriticalSection(&e->cs);
+	e->size = 0;
+	e->length = 0;
+	e->signalled = false;
+}
+
+void estack_event_signal(estack_event_t *event)
+{
+	EnterCriticalSection(&event->cs);
+	event->signalled = true;
+	LeaveCriticalSection(&event->cs);
+
+	WakeConditionVariable(&event->cond);
+}
+
+void estack_event_wait(estack_event_t *event)
+{
+	assert(event);
+
+	EnterCriticalSection(&event->cs);
+	assert(++event->length < event->size);
+
+	while(!event->signalled)
+		SleepConditionVariableCS(&event->cond, &event->cs, INFINITE);
+
+	event->length--;
+	event->signalled = false;
+	LeaveCriticalSection(&event->cs);
+}

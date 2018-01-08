@@ -25,6 +25,7 @@ struct DLL_EXPORT socket {
 	uint16_t port;
 };
 
+#ifndef _WINSOCK2API_
 struct sockaddr {
 	sa_family_t sa_family;
 	char        sa_data[14];
@@ -35,5 +36,6 @@ typedef enum {
 } socket_domain_t;
 
 #define PF_INET AF_INET
+#endif
 
 #endif

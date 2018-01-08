@@ -28,3 +28,12 @@ typedef struct DLL_EXPORT thread {
 	void(*handle)(void *param);
 #define HAVE_THREAD
 } estack_thread_t;
+
+typedef struct DLL_EXPORT event {
+	CRITICAL_SECTION cs;
+	CONDITION_VARIABLE cond;
+	bool signalled;
+	int size,
+		length;
+#define HAVE_EVENT
+} estack_event_t;
