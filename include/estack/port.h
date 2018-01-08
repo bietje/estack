@@ -22,6 +22,10 @@
 #error "Missing thread definition!"
 #endif
 
+#ifndef HAVE_EVENT
+#error "Missing event definition!"
+#endif
+
 #define MTX_RECURSIVE 1
 
 typedef void (*thread_handle_t)(void *arg);
@@ -36,6 +40,11 @@ extern DLL_EXPORT int estack_mutex_destroy(estack_mutex_t *mtx);
 extern DLL_EXPORT int estack_mutex_lock(estack_mutex_t *mtx, int tmo);
 extern DLL_EXPORT void estack_mutex_unlock(estack_mutex_t *mtx);
 extern DLL_EXPORT void estack_sleep(int ms);
+
+extern DLL_EXPORT void estack_event_create(estack_event_t *event, int length);
+extern DLL_EXPORT void estack_event_destroy(estack_event_t *e);
+extern DLL_EXPORT void estack_event_signal(estack_event_t *event);
+extern DLL_EXPORT void estack_event_wait(estack_event_t *event);
 CDECL_END
 
 #endif

@@ -28,7 +28,7 @@ E/STACK is licensed under the GNU Lesser General Public License, version 3. The 
 contains a full copy of said license, but here is the general stretch of it:
 
     E/STACK
-    Copyright (C) 2017  E/STACK developers <etaos@googlegroups.com>
+    Copyright (C) 2017, 2018  E/STACK developers <etaos@googlegroups.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser Lesser General Public License as published by

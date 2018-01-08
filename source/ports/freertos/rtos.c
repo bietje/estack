@@ -125,3 +125,26 @@ void estack_sleep(int ms)
 {
 	vTaskDelay(ms / portTICK_PERIOD_MS);
 }
+
+void estack_event_create(estack_event_t *event, int length)
+{
+	event->evq = xQueueCreate(length, sizeof(void*));
+}
+
+void estack_event_wait(estack_event_t *event)
+{
+	estack_event_t *ev;
+
+	while(xQueueReceive(event->evq, (void*)&ev, portMAX_DELAY) != pdTRUE);
+	assert(ev == event);
+}
+
+void estack_event_signal(estack_event_t *event)
+{
+	xQueueSend(event->evq, &event, (portTickType) 0);
+}
+
+void estack_event_destroy(estack_event_t *e)
+{
+	vQueueDelete(e->evq);
+}

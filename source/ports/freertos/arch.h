@@ -32,4 +32,9 @@ typedef struct mutex {
 #define HAVE_MUTEX
 } estack_mutex_t;
 
+typedef struct event {
+	QueueHandle_t evq;
+#define HAVE_EVENT
+} estack_event_t;
+
 #endif
