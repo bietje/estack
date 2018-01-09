@@ -34,6 +34,7 @@ struct DLL_EXPORT socket {
 	uint16_t port;
 	uint32_t flags;
 
+	estack_mutex_t mtx;
 	estack_event_t read_event;
 
 	void *rcv_buffer;
@@ -65,8 +66,14 @@ typedef enum {
 
 CDECL
 extern DLL_EXPORT int socket_add(struct socket *socket);
-extern DLL_EXPORT int socket_remove(int fd);
+extern DLL_EXPORT struct socket *socket_remove(int fd);
 extern DLL_EXPORT struct socket *socket_find(ip_addr_t *addr, uint16_t port);
+extern DLL_EXPORT struct socket *socket_get(int fd);
+
+extern DLL_EXPORT int socket_trigger_receive(int fd, void *data, size_t length);
+extern DLL_EXPORT int estack_recv(int fd, void *buf, size_t length, int flags);
+extern DLL_EXPORT int estack_socket(int domain, int type, int protocol);
+extern DLL_EXPORT int estack_close(int fd);
 CDECL_END
 
 #endif

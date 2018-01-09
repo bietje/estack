@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <estack.h>
 
 #include <estack/test.h>
@@ -79,9 +80,14 @@ static void test_setup_routes(struct netdev *dev)
 	route4_add(0, 0, gw, dev);
 }
 
-static void wait_task(void *arg)
+static void socket_task(void *arg)
 {
-	estack_sleep(500);
+	uint8_t buf[210];
+	int fd = *(int*)arg;
+
+	fd = estack_socket(PF_INET, SOCK_DGRAM, 0);
+	estack_recv(fd, buf, sizeof(buf), 0);
+	estack_close(fd);
 	vTaskEndScheduler();
 }
 
@@ -92,6 +98,7 @@ int main(int argc, char **argv)
 	const uint8_t hwaddr[] = HW_ADDR;
 	uint32_t addr;
 	estack_thread_t tp;
+	int fd;
 
 	if (argc < 2) {
 		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);
@@ -108,13 +115,14 @@ int main(int argc, char **argv)
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 	test_setup_routes(dev);
 
-	tp.name = "wait-tsk";
-	estack_thread_create(&tp, wait_task, NULL);
+	tp.name = "sock-tsk";
+
+	estack_thread_create(&tp, socket_task, &fd);
 
 #ifdef HAVE_RTOS
 	vTaskStartScheduler();
 #else
-	estack_sleep(500);
+	estack_sleep(1000);
 #endif
 
 	estack_thread_destroy(&tp);

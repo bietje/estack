@@ -24,6 +24,7 @@ static void vPortTaskStarter(void *arg)
 
 	tp = (struct thread *)arg;
 	tp->handle(tp->arg);
+	tp->task = NULL;
 	vTaskDelete(NULL);
 }
 
@@ -32,15 +33,13 @@ static void vPortTaskStarter(void *arg)
 int estack_thread_create(estack_thread_t *tp, thread_handle_t handle, void *arg)
 {
 	BaseType_t bt;
-	TaskHandle_t tsk;
 
 	assert(tp);
 	assert(handle);
 
 	tp->handle = handle;
 	tp->arg = arg;
-	bt = xTaskCreate(vPortTaskStarter, tp->name, STACK_DEPTH, tp, TASK_PRIO, &tsk);
-	tp->task = tsk;
+	bt = xTaskCreate(vPortTaskStarter, tp->name, STACK_DEPTH, tp, TASK_PRIO, &tp->task);
 
 	if(bt == pdPASS)
 		return -EOK;
@@ -56,10 +55,9 @@ int estack_thread_destroy(estack_thread_t *tp)
 	if(tp->task) {
 		vTaskDelete(tp->task);
 		tp->task = NULL;
-		return -EOK;
 	}
 
-	return -EINVALID;
+	return -EOK;
 }
 
 int estack_mutex_create(estack_mutex_t *mtx, const uint32_t flags)

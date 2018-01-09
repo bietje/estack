@@ -157,6 +157,10 @@ void estack_sleep(int ms)
 	Sleep(ms);
 }
 
+/*
+ * EVENT / WAIT QUEUE HANDLING
+ */
+
 void estack_event_create(estack_event_t *event, int length)
 {
 	assert(event);

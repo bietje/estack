@@ -63,7 +63,18 @@ struct socket *socket_find(ip_addr_t *addr, uint16_t port)
 	return NULL;
 }
 
-int socket_remove(int fd)
+struct socket *socket_get(int fd)
+{
+	struct socket *sock;
+
+	socket_pool_lock();
+	sock = sockets.sockets[fd];
+	socket_pool_unlock();
+
+	return sock;
+}
+
+struct socket *socket_remove(int fd)
 {
 	struct socket *sock;
 
@@ -72,14 +83,14 @@ int socket_remove(int fd)
 	
 	if(!sock) {
 		socket_pool_unlock();
-		return -1;
+		return NULL;
 	}
 
 	sock->fd = -1;
 	sockets.sockets[fd] = NULL;
 	socket_pool_unlock();
 
-	return 0;
+	return sock;
 }
 
 int socket_add(struct socket *socket)
