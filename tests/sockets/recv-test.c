@@ -12,6 +12,7 @@
 #include <string.h>
 #include <estack.h>
 
+#include <estack/inet.h>
 #include <estack/test.h>
 #include <estack/ethernet.h>
 #include <estack/pcapdev.h>
@@ -57,6 +58,10 @@ static void socket_task(void *arg)
 	uint8_t buf[210];
 	int fd = *(int*)arg;
 	int i = 0;
+	struct socket *sock;
+
+	sock = socket_get(fd);
+	sock->flags |= SO_CONNECTED;
 
 	estack_recv(fd, buf, sizeof(buf), 0);
 	for(; i < 150; i++)

@@ -18,6 +18,11 @@
 #include <estack/addr.h>
 #include <estack/socket.h>
 
+static void udp_port_unreachable(struct netbuf *nb)
+{
+	netbuf_set_flag(nb, NBUF_DROPPED);
+}
+
 void udp_input(struct netbuf *nb)
 {
 	struct udp_header *hdr;
@@ -69,11 +74,11 @@ void udp_input(struct netbuf *nb)
 
 		if(sock) {
 			sock->rcv_event(sock, nb);
+			netbuf_set_flag(nb, NBUF_ARRIVED);
+		} else {
+			udp_port_unreachable(nb);
 		}
 	}
-
-
-	netbuf_set_flag(nb, NBUF_ARRIVED);
 }
 
 void udp_output(struct netbuf *nb)

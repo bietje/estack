@@ -156,6 +156,11 @@ int estack_recv(int fd, void *buf, size_t length, int flags)
 		return -EINVALID;
 
 	estack_mutex_lock(&sock->mtx, 0);
+	if(!(sock->flags & SO_CONNECTED)) {
+		estack_mutex_unlock(&sock->mtx);
+		return -EINVALID;
+	}
+
 	sock->readsize = length;
 	if(likely(sock->rcv_index >= sock->rcv_length)) {
 		estack_mutex_unlock(&sock->mtx);
@@ -177,6 +182,7 @@ int estack_recv(int fd, void *buf, size_t length, int flags)
 		if(sock->rcv_index >= sock->rcv_length) {
 			sock->rcv_index = sock->rcv_length = 0;
 			free(sock->rcv_buffer);
+			sock->rcv_buffer = NULL;
 		}
 	}
 
