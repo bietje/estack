@@ -10,3 +10,4 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/icmp-reply.pcap ${CMAKE_BINARY_DIR}/r
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/icmp-request.pcap ${CMAKE_BINARY_DIR}/resources/icmp-request.pcap COPYONLY)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/dns-response.pcap ${CMAKE_BINARY_DIR}/resources/dns-response.pcap COPYONLY)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/ip-fragments.pcap ${CMAKE_BINARY_DIR}/resources/ip-fragments.pcap COPYONLY)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/udp-input.pcap ${CMAKE_BINARY_DIR}/resources/udp-input.pcap COPYONLY)

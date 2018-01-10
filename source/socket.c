@@ -108,6 +108,11 @@ int estack_socket(int domain, int type, int protocol)
 
 	if(domain != PF_INET && domain != PF_INET6)
 		return -EINVALID;
+	
+	if(domain == PF_INET)
+		sock->local.version = 4;
+	else
+		sock->local.version = 6;
 
 	switch(type) {
 	case SOCK_STREAM:
@@ -202,7 +207,6 @@ static int datagram_connect_ipv4(struct socket *sock, const struct sockaddr *add
 	sock->addr.addr.in4_addr.s_addr = ntohl(in->sin_addr.s_addr);
 	sock->lport = eph_port_alloc();
 	sock->local.addr.in4_addr.s_addr = INADDR_ANY;
-	sock->local.version = 4;
 
 	sock->flags |= SO_CONNECTED;
 

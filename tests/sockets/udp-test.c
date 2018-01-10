@@ -12,6 +12,7 @@
 #include <string.h>
 #include <estack.h>
 
+#include <estack/inet.h>
 #include <estack/test.h>
 #include <estack/ethernet.h>
 #include <estack/pcapdev.h>
@@ -84,8 +85,14 @@ static void socket_task(void *arg)
 {
 	uint8_t buf[210];
 	int fd = *(int*)arg;
+	struct sockaddr_in addr;
 
 	fd = estack_socket(PF_INET, SOCK_DGRAM, 0);
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(53);
+	addr.sin_addr.s_addr = htonl(ipv4_atoi("145.48.16.26"));
+	assert(estack_connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0);
 	estack_recv(fd, buf, sizeof(buf), 0);
 	estack_close(fd);
 	vTaskEndScheduler();
@@ -107,7 +114,7 @@ int main(int argc, char **argv)
 	}
 
 	estack_init(stdout);
-	dev = pcapdev_create(input, "ipfrag-output.pcap", hwaddr, 1500);
+	dev = pcapdev_create(input, "udptest-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
 
