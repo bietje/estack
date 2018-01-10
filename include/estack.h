@@ -9,8 +9,6 @@
 #ifndef __ESTACK_BASE_HDR__
 #define __ESTACK_BASE_HDR__
 
-#include <stdio.h>
-
 #include <estack/estack.h>
 #include <estack/log.h>
 
@@ -22,21 +20,9 @@ extern DLL_EXPORT void route4_destroy(void);
 extern DLL_EXPORT void devcore_destroy(void);
 extern DLL_EXPORT void socket_api_init(void);
 extern DLL_EXPORT void socket_api_destroy(void);
+extern DLL_EXPORT void estack_init(const FILE *output);
+extern DLL_EXPORT void estack_destroy(void);
 
-static inline void estack_init(FILE *log)
-{
-	log_init(log);
-	route4_init();
-	devcore_init();
-	socket_api_init();
-}
-
-static inline void estack_destroy(void)
-{
-	socket_api_destroy();
-	devcore_destroy();
-	route4_destroy();
-}
 CDECL_END
 
 #endif // !__ESTACK_BASE_HDR__

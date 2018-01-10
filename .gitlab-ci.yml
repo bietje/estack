@@ -2,7 +2,7 @@ estack:
   script:
     - mkdir build
     - cd build
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True -DCONFIG_POLL_TMO=100
     - make
     - make run_netdev
     - make run_ip

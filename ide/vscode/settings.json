@@ -12,10 +12,14 @@
 		"arch.h": "c",
 		"socket.h": "c",
 		"stdlib.h": "c",
-		"error.h": "c"
+		"error.h": "c",
+		"inet.h": "c",
+		"in.h": "c",
+		"in6.h": "c"
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False",
+		"-DCONFIG_POLL_TMO=100"
         //"-DCMAKE_SYSTEM_NAME=Generic",
         //"-DFREERTOS=True",
 		//"-DPORT=unix"

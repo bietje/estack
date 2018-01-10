@@ -42,10 +42,10 @@ void panic(const char *fmt, ...)
 	va_end(va);
 }
 
-void log_init(FILE *file)
+void log_init(const FILE *file)
 {
 	if(file)
-		dbg_file = file;
+		dbg_file = (FILE*)file;
 	else
 		dbg_file = stdout;
 }

@@ -686,11 +686,16 @@ int netdev_poll_all(void)
 	return num;
 }
 
+#ifndef CONFIG_POLL_TMO
+#define CONFIG_POLL_TMO 100
+#endif
+
 static void netdev_poll_task(void *arg)
 {
 	UNUSED(arg);
 
 	while(true) {
+		estack_sleep(CONFIG_POLL_TMO);
 		/*
 		 * Roll through all devices as long as
 		 * the device core is running. If there are no
@@ -706,7 +711,6 @@ static void netdev_poll_task(void *arg)
 
 		if(netdev_poll_all())
 			continue;
-		estack_sleep(100);
 	}
 }
 
