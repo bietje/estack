@@ -14,7 +14,11 @@
 
 #include <estack/estack.h>
 
-#ifndef _WINSOCK2API_
+#define INADDR_BCAST 0xFFFFFFFF
+
+#if !_WINSOCK2API_ && !_NETINET_IN_H
+
+#define INADDR_ANY   0x0
 
 struct in_addr {
 	uint32_t s_addr;

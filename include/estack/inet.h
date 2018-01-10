@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include "config.h"
 
+#include <estack/compiler.h>
+
 #ifndef HAVE_GENERIC_SYS
 #ifdef HAVE_WINSOCK_H
 #include <WinSock2.h>

@@ -14,6 +14,7 @@
 
 #include <estack/estack.h>
 
+#if !_WINSOCK2API_ && !_NETINET_IN_H
 struct in6_addr {
 #define IP6_ADDR_LENGTH 16
 	union {
@@ -32,5 +33,6 @@ struct sockaddr_in6 {
 	struct in6_addr sin6_addr;
 	uint32_t        sin6_scope_id;
 };
+#endif
 
 #endif

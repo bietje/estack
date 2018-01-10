@@ -25,7 +25,7 @@ CDECL_END
 #endif
 
 CDECL
-extern DLL_EXPORT void log_init(FILE *file);
+extern DLL_EXPORT void log_init(const FILE *file);
 extern DLL_EXPORT void panic(const char *fmt, ...);
 CDECL_END
 

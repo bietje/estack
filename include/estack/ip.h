@@ -37,9 +37,6 @@ struct ipv4_header {
 #pragma pack(pop)
 
 #define IS_MULTICAST(x) false
-
-#define INADDR_BCAST 0xFFFFFFFF
-
 #define IPV4_TTL 0x40
 
 typedef enum {

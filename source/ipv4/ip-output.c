@@ -20,6 +20,7 @@
 #include <estack/neighbour.h>
 #include <estack/translate.h>
 #include <estack/ethernet.h>
+#include <estack/in.h>
 
 #include <config.h>
 

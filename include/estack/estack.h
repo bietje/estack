@@ -11,8 +11,8 @@
 
 #include <stdint.h>
 
-#include <estack/types.h>
 #include <estack/compiler.h>
+#include <estack/types.h>
 #include <estack/port.h>
 
 #ifndef UNUSED

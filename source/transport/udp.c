@@ -15,12 +15,16 @@
 #include <estack/udp.h>
 #include <estack/ip.h>
 #include <estack/inet.h>
+#include <estack/addr.h>
+#include <estack/socket.h>
 
 void udp_input(struct netbuf *nb)
 {
 	struct udp_header *hdr;
 	uint16_t length;
 	uint16_t csum;
+	ip_addr_t addr;
+	struct socket *sock;
 
 	hdr = nb->transport.data;
 	if(nb->transport.size <= sizeof(*hdr)) {
@@ -57,6 +61,18 @@ void udp_input(struct netbuf *nb)
 	}
 
 	nb->application.data = (void*) (hdr + 1);
+	/* Find the right socket and dump data into the socket */
+	if(ip_is_ipv4(nb)) {
+		addr.version = 4;
+		addr.addr.in4_addr.s_addr = htonl(ipv4_get_daddr(nb->network.data));
+		sock = socket_find(&addr, hdr->dport);
+
+		if(sock) {
+			sock->rcv_event(sock, nb);
+		}
+	}
+
+
 	netbuf_set_flag(nb, NBUF_ARRIVED);
 }
 

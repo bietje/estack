@@ -32,10 +32,12 @@ static inline void socket_pool_unlock(void)
 
 static inline bool socket_cmp(struct socket *x, struct socket *y)
 {
-	if(x->port != y->port)
+	if(x->lport != y->lport)
 		return false;
 
-	return ip_addr_cmp(&x->addr, &y->addr);
+	if(ip_addr_any(&x->local))
+		return true;
+	return ip_addr_cmp(&x->local, &y->local);
 }
 
 struct socket *socket_find(ip_addr_t *addr, uint16_t port)
@@ -43,8 +45,8 @@ struct socket *socket_find(ip_addr_t *addr, uint16_t port)
 	struct socket *socket;
 	struct socket tmp;
 
-	tmp.addr = *addr;
-	tmp.port = port;
+	tmp.local = *addr;
+	tmp.lport = port;
 
 	socket_pool_lock();
 	for(int i = 0; i < MAX_SOCKETS; i++) {
@@ -117,6 +119,39 @@ int socket_add(struct socket *socket)
 
 	socket->fd = fd;
 	return fd;
+}
+
+#define EPHEMERAL_PORT_START 0xC000
+#define EPHEMERAL_PORT_END   0xFFFF
+
+static inline bool eph_port_inuse(uint16_t port)
+{
+	struct socket *s;
+
+	for(int i = 0; i < MAX_SOCKETS; i++) {
+		s = sockets.sockets[i];
+		if(likely(!s))
+			continue;
+		if(unlikely(s->lport == port))
+			return true;
+	}
+
+	return false;
+}
+
+uint16_t eph_port_alloc(void)
+{
+	uint16_t indx;
+
+	socket_pool_lock();
+	for(indx = EPHEMERAL_PORT_START;
+			indx < EPHEMERAL_PORT_END; indx++) {
+		if(unlikely(!eph_port_inuse(indx)))
+			break;
+	}
+	socket_pool_unlock();
+
+	return indx;
 }
 
 void socket_api_init(void)

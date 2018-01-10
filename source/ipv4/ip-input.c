@@ -21,6 +21,7 @@
 #include <estack/icmp.h>
 #include <estack/route.h>
 #include <estack/udp.h>
+#include <estack/in.h>
 
 static inline struct ipv4_header *ipv4_nbuf_to_iphdr(struct netbuf *nb)
 {

@@ -39,3 +39,20 @@ bool ip_addr_cmp(ip_addr_t *a, ip_addr_t *b)
 
 	return rv;
 }
+
+bool ip_addr_any(const ip_addr_t *addr)
+{
+	if(addr->version == 4)
+		return addr->addr.in4_addr.s_addr == INADDR_ANY;
+
+	if(unlikely(addr->version != 6))
+		return false;
+
+	/* IPv6 */
+	for(int idx = 0; idx < IP6_ADDR_LENGTH / sizeof(uint32_t); idx++) {
+		if(addr->addr.in6_addr.in6_u.u6_addr[idx] != 0x0)
+			return false;
+	}
+
+	return true;
+}

@@ -7,6 +7,8 @@ include (TestBigEndian)
 
 include( ${PROJECT_SOURCE_DIR}/cmake/port.cmake )
 
+SET(CONFIG_POLL_TMO CACHE STRING 100)
+
 SET(ESTACK_SRCS
 netbuf.c
 util.c
@@ -21,6 +23,7 @@ route.c
 sock.c
 socket.c
 addr.c
+init.c
 ipv4/arp-in.c
 ipv4/arp-out.c
 ipv4/arp.c

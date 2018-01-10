@@ -11,6 +11,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include <estack/inet.h>
 #include <estack/estack.h>
 #include <estack/socket.h>
 #include <estack/addr.h>
@@ -102,7 +103,10 @@ int estack_socket(int domain, int type, int protocol)
 	if(domain == AF_INET)
 		domain = PF_INET;
 
-	if(domain != PF_INET)
+	if(domain == AF_INET6)
+		domain = PF_INET6;
+
+	if(domain != PF_INET && domain != PF_INET6)
 		return -EINVALID;
 
 	switch(type) {
@@ -186,4 +190,43 @@ int estack_close(int fd)
 
 	socket_free(sock);
 	return -EOK;
+}
+
+static int datagram_connect_ipv4(struct socket *sock, const struct sockaddr *addr, socklen_t len)
+{
+	struct sockaddr_in *in;
+
+	in = (struct sockaddr_in*)addr;
+	print_dbg("Datagram connect: 0x%x\n", ntohl(in->sin_addr.s_addr));
+	sock->rport = ntohs(in->sin_port);
+	sock->addr.addr.in4_addr.s_addr = ntohl(in->sin_addr.s_addr);
+	sock->lport = eph_port_alloc();
+	sock->local.addr.in4_addr.s_addr = INADDR_ANY;
+	sock->local.version = 4;
+
+	sock->flags |= SO_CONNECTED;
+
+	return 0;
+}
+
+int estack_connect(int fd, const struct sockaddr *addr, socklen_t len)
+{
+	struct socket *sock;
+
+	sock = socket_get(fd);
+	if(!sock) {
+		assert(sock);
+		return -EINVALID;
+	}
+
+	switch(addr->sa_family) {
+	case AF_INET:
+		if(sock->flags & SO_DGRAM)
+			return datagram_connect_ipv4(sock, addr, len);
+		break;
+	case AF_INET6:
+		return -EINVALID;
+	}
+
+	return -EINVALID;
 }

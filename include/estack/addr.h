@@ -29,6 +29,7 @@ typedef struct ip_addr {
 
 CDECL
 extern DLL_EXPORT bool ip_addr_cmp(ip_addr_t *a, ip_addr_t *b);
+extern DLL_EXPORT bool ip_addr_any(const ip_addr_t *addr);
 CDECL_END
 
 #endif

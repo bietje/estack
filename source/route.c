@@ -15,6 +15,7 @@
 #include <estack/netdev.h>
 #include <estack/netbuf.h>
 #include <estack/route.h>
+#include <estack/in.h>
 
 static struct iproute_head ip4_head = {
 	.head = STATIC_INIT_LIST_HEAD(ip4_head.head),
