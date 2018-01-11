@@ -10,6 +10,7 @@
 #define __ESTACK_H__
 
 #include <stdint.h>
+#include <config.h>
 
 #include <estack/compiler.h>
 #include <estack/types.h>

@@ -110,9 +110,9 @@ int estack_socket(int domain, int type, int protocol)
 		return -EINVALID;
 	
 	if(domain == PF_INET)
-		sock->local.version = 4;
+		sock->local.type = IPADDR_TYPE_V4;
 	else
-		sock->local.version = 6;
+		sock->local.type = IPADDR_TYPE_V6;
 
 	switch(type) {
 	case SOCK_STREAM:

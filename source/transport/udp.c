@@ -68,7 +68,7 @@ void udp_input(struct netbuf *nb)
 	nb->application.data = (void*) (hdr + 1);
 	/* Find the right socket and dump data into the socket */
 	if(ip_is_ipv4(nb)) {
-		addr.version = 4;
+		addr.type = 4;
 		addr.addr.in4_addr.s_addr = htonl(ipv4_get_daddr(nb->network.data));
 		sock = socket_find(&addr, hdr->dport);
 

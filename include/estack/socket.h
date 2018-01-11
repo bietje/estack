@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <estack.h>
 
+#include <estack/inet.h>
 #include <estack/addr.h>
 #include <estack/netbuf.h>
 
@@ -48,15 +49,13 @@ struct DLL_EXPORT socket {
 	int(*rcv_event)(struct socket *sock, struct netbuf *nb);
 };
 
-#if !_WINSOCK2API_ && !_NETINET_IN_H
+#ifdef CONFIG_NO_SYS
 struct sockaddr {
 	sa_family_t sa_family;
 	char        sa_data[14];
 };
 
-#ifndef _UNISTD_H
 typedef size_t socklen_t;
-#endif
 
 typedef enum {
 	AF_INET,

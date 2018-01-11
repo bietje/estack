@@ -11,6 +11,7 @@
 
 #include <estack/estack.h>
 #include <estack/socket.h>
+#include <estack/inet.h>
 #include <estack/addr.h>
 
 struct socket_pool {

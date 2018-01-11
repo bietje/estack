@@ -13,11 +13,16 @@
 #include <stdio.h>
 
 #include <estack/estack.h>
+#include <estack/inet.h>
 #include <estack/in.h>
 #include <estack/in6.h>
 
+#define IPADDR_TYPE_V4   4U
+#define IPADDR_TYPE_V6   6U
+#define IPADDR_TYPE_ANY 46U
+
 typedef struct ip_addr {
-	uint8_t version;
+	uint8_t type;
 	union {
 		struct in_addr in4_addr;
 		struct in6_addr in6_addr;

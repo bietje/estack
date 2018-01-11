@@ -14,13 +14,15 @@
 
 #include <estack/compiler.h>
 
-#ifndef HAVE_GENERIC_SYS
+#ifndef CONFIG_NO_SYS
 #ifdef HAVE_WINSOCK_H
 #include <WinSock2.h>
 #else
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #endif
-#else
+
+#else /* NO_SYS */
 extern DLL_EXPORT uint16_t htons(uint16_t s);
 extern DLL_EXPORT uint32_t htonl(uint32_t l);
 

@@ -16,7 +16,7 @@
 
 #define INADDR_BCAST 0xFFFFFFFF
 
-#if !_WINSOCK2API_ && !_NETINET_IN_H
+#ifdef CONFIG_NO_SYS
 
 #define INADDR_ANY   0x0
 
@@ -32,7 +32,8 @@ struct sockaddr_in {
 	uint8_t __pad[SOCK_SIZE - sizeof(short) -
 					sizeof(short) - sizeof(struct in_addr)];
 };
-
-#endif /* WINSOCK */
+#else
+#include <estack/inet.h>
+#endif
 
 #endif

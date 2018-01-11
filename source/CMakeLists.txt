@@ -98,6 +98,8 @@ SET(BASE_HDRS
 ${PROJECT_SOURCE_DIR}/include/estack.h
 ${ESTACK_PORT_HEADERS})
 
+SET(CONFIG_NO_SYS CACHE BOOL False)
+
 # Append include dir to header files
 prepend_path(GENERIC_HEADERS ${INCLUDE_DIR}/estack)
 

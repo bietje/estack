@@ -17,3 +17,4 @@
 #cmakedefine HAVE_GENERIC_SYS
 #cmakedefine HAVE_RTOS
 #cmakedefine CONFIG_POLL_TMO ${CONFIG_POLL_TMO}
+#cmakedefine CONFIG_NO_SYS
