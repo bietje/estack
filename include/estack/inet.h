@@ -17,6 +17,8 @@
 #ifndef CONFIG_NO_SYS
 #ifdef HAVE_WINSOCK_H
 #include <WinSock2.h>
+#include <inaddr.h>
+#include <in6addr.h>
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>

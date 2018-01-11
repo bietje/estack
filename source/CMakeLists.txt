@@ -78,6 +78,8 @@ ethernet.h
 icmp.h
 inet.h
 ip.h
+in.h
+in6.h
 list.h
 log.h
 neighbour.h

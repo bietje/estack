@@ -49,13 +49,15 @@ struct DLL_EXPORT socket {
 	int(*rcv_event)(struct socket *sock, struct netbuf *nb);
 };
 
+#if CONFIG_NO_SYS || WIN32
+typedef size_t socklen_t;
+#endif
+
 #ifdef CONFIG_NO_SYS
 struct sockaddr {
 	sa_family_t sa_family;
 	char        sa_data[14];
 };
-
-typedef size_t socklen_t;
 
 typedef enum {
 	AF_INET,

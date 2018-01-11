@@ -33,7 +33,7 @@ static int socket_receive_event(struct socket *sock, struct netbuf *nb)
 
 	if(!sock->rcv_buffer) {
 		estack_mutex_unlock(&sock->mtx);
-		return -ENOMEM;
+		return -ENOMEMORY;
 	}
 
 	ptr = (uint8_t*)sock->rcv_buffer;
