@@ -119,7 +119,6 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	assert(dev);
 	assert(nb);
 
-	pcapdev_lock(dev);
 	priv = container_of(dev, struct pcapdev_private, dev);
 
 	hdr.caplen = hdr.len = nb->size;
@@ -150,7 +149,6 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	pcap_dump((u_char*)priv->dumper, &hdr, data);
 	free(data);
 
-	pcapdev_unlock(dev);
 	return -EOK;
 }
 

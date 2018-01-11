@@ -1,4 +1,5 @@
 build/*
+avrbuild/*
 xbuild/*
 linbuild/*
 .vscode
