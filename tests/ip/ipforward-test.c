@@ -71,11 +71,14 @@ static void test_setup_routes(struct netdev *dev1, struct netdev *dev2)
 
 }
 
-static struct netdev *setup_dev(const char *input, const char *output, const uint8_t *hwaddr, uint32_t local, uint32_t mask)
+static struct netdev *setup_dev(const char **input, const char *output, const uint8_t *hwaddr, uint32_t local, uint32_t mask)
 {
 	struct netdev *dev;
 
-	dev = pcapdev_create(input, output, hwaddr, 1500);
+	if(input)
+		dev = pcapdev_create(input, 1, output, hwaddr, 1500);
+	else
+		dev = pcapdev_create(NULL, 0, output, hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, local, 0, mask);
 	return dev;
@@ -97,7 +100,7 @@ int main(int argc, char **argv)
 
 	estack_init(NULL);
 
-	dev1 = setup_dev(input, "ipforward-input.pcap", hwaddr1, ipv4_atoi("80.114.180.241"), ipv4_atoi("255.255.255.0"));
+	dev1 = setup_dev((const char**)&input, "ipforward-input.pcap", hwaddr1, ipv4_atoi("80.114.180.241"), ipv4_atoi("255.255.255.0"));
 	dev2 = setup_dev(NULL, "ipforward-output.pcap", hwaddr2, ipv4_atoi("80.114.190.241"), ipv4_atoi("255.255.255.0"));
 	pcapdev_set_name(dev1, "dbg0");
 	pcapdev_set_name(dev2, "dbg2");

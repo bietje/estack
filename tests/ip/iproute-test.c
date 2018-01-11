@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
 	estack_init(NULL);
 
-	dev = pcapdev_create(input, "ip-output.pcap", hwaddr, 1500);
+	dev = pcapdev_create((const char**)&input, 1, "ip-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	/* Link 145.49.6.12, mask 255.255.192.0 */
 	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);

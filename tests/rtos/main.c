@@ -103,20 +103,17 @@ static void task_main(void *arg)
 	argc = args->argc;
 	argv = args->argv;
 
-	char *input;
 	struct netdev *dev;
 	const uint8_t hwaddr[] = HW_ADDR;
 	uint32_t addr;
 
 	if (argc < 2) {
 		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);
-	} else {
-		input = argv[1];
 	}
 
 	estack_init(NULL);
 
-	dev = pcapdev_create(input, "ipfrag-output.pcap", hwaddr, 1500);
+	dev = pcapdev_create((const char**)argv+1, 1, "ipfrag-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, ipv4_atoi("80.114.190.241"), 0, ipv4_atoi("255.255.255.0"));
 

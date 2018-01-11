@@ -27,13 +27,26 @@
 #include <estack/error.h>
 
 struct pcapdev_private {
-	pcap_t *cap;
-	char *src;
+	pcap_t **pio;
+	char **srcs;
+	int idx;
+	int length;
+
 	pcap_t *dst;
 	pcap_dumper_t *dumper;
 	struct netdev dev;
 	int available, nread;
 };
+
+static inline void pcapdev_lock(struct netdev *dev)
+{
+	estack_mutex_lock(&dev->mtx, 0);
+}
+
+static inline void pcapdev_unlock(struct netdev *dev)
+{
+	estack_mutex_unlock(&dev->mtx);
+}
 
 static pcap_t *pcapdev_open_file(const char *src)
 {
@@ -56,29 +69,41 @@ static int pcapdev_available(struct netdev *dev)
 	struct pcapdev_private *priv;
 	pcap_t *cap;
 	struct pcap_pkthdr *hdr;
-	int rv, count;
+	int rv, count, num;
 	const u_char *data;
 
 	priv = container_of(dev, struct pcapdev_private, dev);
-	if(priv->available >= 0)
+	pcapdev_lock(dev);
+
+	if(priv->available >= 0) {
+		pcapdev_unlock(dev);
 		return priv->available;
+	}
 
-	if(!priv->cap)
+	if(priv->idx >= priv->length) {
+		pcapdev_unlock(dev);
 		return 0;
+	}
 
-	cap = pcapdev_open_file(priv->src);
+	cap = pcapdev_open_file(priv->srcs[priv->idx]);
 
-	if(!cap)
+	if(!cap) {
+		pcapdev_unlock(dev);
 		return -1;
+	}
 
-	count = 0;
-	while((rv = pcap_next_ex(cap, &hdr, &data)) >= 0)
-		count += 1;
+	count = num = 0;
+	while((rv = pcap_next_ex(cap, &hdr, &data)) >= 0) {
+		count++;
+		num += hdr->len;
+	}
 
-	priv->nread = priv->available = count;
+	priv->nread = count;
+	priv->available = num;
 	pcap_close(cap);
 
-	return count;
+	pcapdev_unlock(dev);
+	return num;
 }
 
 #define PCAP_MAGIC 0xa1b2c3d4
@@ -94,6 +119,7 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	assert(dev);
 	assert(nb);
 
+	pcapdev_lock(dev);
 	priv = container_of(dev, struct pcapdev_private, dev);
 
 	hdr.caplen = hdr.len = nb->size;
@@ -124,6 +150,7 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	pcap_dump((u_char*)priv->dumper, &hdr, data);
 	free(data);
 
+	pcapdev_unlock(dev);
 	return -EOK;
 }
 
@@ -136,25 +163,33 @@ static int pcapdev_read(struct netdev *dev, int num)
 	int rv, tmp;
 	size_t length;
 	time_t timestamp;
+	pcap_t *cap;
 
-	assert(dev != NULL);
+	assert(dev);
 	priv = container_of(dev, struct pcapdev_private, dev);
 	tmp = 0;
 
-	if(num < 0)
+	pcapdev_lock(dev);
+
+	if(num < 0) 
 		num = INT_MAX;
 
-	if(!priv->cap)
+	if(priv->idx >= priv->length) {
+		pcapdev_unlock(dev);
 		return 0;
+	}
 
-	while(priv->nread > 0 && (rv = pcap_next_ex(priv->cap, &hdr, &data)) >= 0 && num > 0) {
+	cap = priv->pio[priv->idx];
+	while(priv->nread > 0 && (rv = pcap_next_ex(cap, &hdr, &data)) >= 0 && num > 0) {
 		length = hdr->len;
 		nb = netbuf_alloc(NBAF_DATALINK, length);
 		netbuf_cpy_data(nb, data, length, NBAF_DATALINK);
 		netbuf_set_flag(nb, NBUF_RX);
 		nb->protocol = ethernet_get_type(nb);
 		nb->size = length;
+		pcapdev_unlock(dev);
 		netdev_add_backlog(dev, nb);
+		pcapdev_lock(dev);
 
 		num -= 1;
 		tmp += 1;
@@ -163,9 +198,12 @@ static int pcapdev_read(struct netdev *dev, int num)
 		hdr->ts.tv_sec = (long)(timestamp / 1e6L);
 		hdr->ts.tv_usec = timestamp % (long)1e6L;
 		pcap_dump((u_char*)priv->dumper, hdr, data);
+
 		priv->nread--;
+		priv->available -= length;
 	}
 
+	pcapdev_unlock(dev);
 	return tmp;
 }
 
@@ -213,7 +251,21 @@ void pcapdev_create_link_ip4(struct netdev *dev, uint32_t local, uint32_t remote
 	ifconfig(dev, _local, _remote, _mask, 4, NIF_TYPE_ETHER);
 }
 
-struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
+void pcapdev_next_src(struct netdev *dev)
+{
+	struct pcapdev_private *priv;
+
+	assert(dev);
+	priv = container_of(dev, struct pcapdev_private, dev);
+
+	pcapdev_lock(dev);
+	priv->idx++;
+	priv->available = -1;
+	priv->nread = 0;
+	pcapdev_unlock(dev);
+}
+
+struct netdev *pcapdev_create(const char **srcs, int length, const char *dstfile,
 	const uint8_t *hwaddr, uint16_t mtu)
 {
 	struct pcapdev_private *priv;
@@ -224,14 +276,19 @@ struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
 	assert(priv != NULL);
 	assert(dstfile);
 
-	if(srcfile) {
-		len = strlen(srcfile);
-		priv->src = z_alloc(len + 1);
-		memcpy(priv->src, srcfile, len);
-		priv->cap = pcapdev_open_file(srcfile);
+	if(srcs && length) {
+		priv->srcs = calloc(length, sizeof(void*));
+		priv->pio = calloc(length, sizeof(void*));
+		priv->idx = 0;
+		priv->length = length;
 
-		if(!priv->cap) {
-			return NULL;
+		for(int i = 0; i < length; i++) {
+			len = strlen(srcs[i]);
+			priv->srcs[i] = z_alloc(len + 1);
+			strcpy(priv->srcs[i], srcs[i]);
+			priv->pio[i] = pcapdev_open_file(srcs[i]);
+
+			assert(priv->pio[i]);
 		}
 	}
 
@@ -256,17 +313,24 @@ void pcapdev_destroy(struct netdev *dev)
 	struct pcapdev_private *priv;
 
 	priv = container_of(dev, struct pcapdev_private, dev);
-	netdev_destroy(dev);
 
-	if(priv->cap)
-		pcap_close(priv->cap);
+	if(priv->srcs && priv->pio) {
+		for(int i = 0; i < priv->length; i++) {
+			pcap_close(priv->pio[i]);
+			free(priv->srcs[i]);
+		}
+
+		free(priv->pio);
+		free(priv->srcs);
+	}
+
+	netdev_destroy(dev);
 
 	if(priv->dumper) {
 		pcap_dump_close(priv->dumper);
 		pcap_close(priv->dst);
 	}
 
-	free(priv->src);
 	free((void*)dev->name);
 	free(priv);
 }

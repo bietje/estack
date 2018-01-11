@@ -16,8 +16,9 @@
 #include <estack/netdev.h>
 
 CDECL
-extern DLL_EXPORT struct netdev *pcapdev_create(const char *srcfile, const char *dstfile,
+extern DLL_EXPORT struct netdev *pcapdev_create(const char **srcs, int length, const char *dstfile,
 	const uint8_t *hwaddr, uint16_t mtu);
+extern DLL_EXPORT void pcapdev_next_src(struct netdev *dev);
 extern DLL_EXPORT void pcapdev_create_link_ip4(struct netdev *dev, uint32_t local,
 	uint32_t remote, uint32_t mask);
 extern DLL_EXPORT void pcapdev_destroy(struct netdev *dev);

@@ -101,7 +101,6 @@ static void socket_task(void *arg)
 int main(int argc, char **argv)
 {
 	struct netdev *dev;
-	char *input;
 	const uint8_t hwaddr[] = HW_ADDR;
 	uint32_t addr;
 	estack_thread_t tp;
@@ -109,12 +108,10 @@ int main(int argc, char **argv)
 
 	if (argc < 2) {
 		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);
-	} else {
-		input = argv[1];
 	}
 
 	estack_init(stdout);
-	dev = pcapdev_create(input, "udptest-output.pcap", hwaddr, 1500);
+	dev = pcapdev_create((const char**) argv+1, 1, "udptest-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
 
@@ -129,6 +126,8 @@ int main(int argc, char **argv)
 #ifdef HAVE_RTOS
 	vTaskStartScheduler();
 #else
+	estack_sleep(500);
+	pcapdev_next_src(dev);
 	estack_sleep(1000);
 #endif
 

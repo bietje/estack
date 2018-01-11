@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 
 	estack_init(NULL);
 
-	dev = pcapdev_create(input, "ipfrag-output.pcap", hwaddr, 1500);
+	dev = pcapdev_create((const char**)&input, 1, "ipfrag-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, ipv4_atoi("80.114.190.241"), 0, ipv4_atoi("255.255.255.0"));
 
