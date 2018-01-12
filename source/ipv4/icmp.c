@@ -69,6 +69,7 @@ void icmp_response(struct netbuf *nb, uint8_t type, uint8_t code, uint32_t spec)
 
 	ip = nb->network.data;
 	destination = ip->saddr;
+	ip_htons(nb);
 
 	nb = netbuf_realloc(nb, NBAF_APPLICTION, sizeof(*ip) + 8);
 	assert(nb);

@@ -31,7 +31,6 @@ static void udp_port_unreachable(struct netbuf *nb)
 	udp->sport = htons(udp->sport);
 	udp->dport = htons(udp->dport);
 	udp->length = htons(udp->length);
-	ip_htons(nb);
 	icmp_response(nb, ICMP_UNREACH, ICMP_UNREACH_PORT, 0);
 }
 
@@ -111,7 +110,7 @@ uint16_t udp_get_remote_port(struct netbuf *nb)
 void udp_output(struct netbuf *nb, ip_addr_t *daddr, uint16_t rport, uint16_t lport)
 {
 	struct udp_header *hdr;
-	uint32_t saddr, chksum;
+	uint32_t saddr, chksum, dst;
 	struct netdev *dev;
 	struct netif *nif;
 
@@ -123,11 +122,12 @@ void udp_output(struct netbuf *nb, ip_addr_t *daddr, uint16_t rport, uint16_t lp
 
 	hdr->sport = htons(lport);
 	hdr->dport = htons(rport);
-	hdr->length = nb->application.size + nb->transport.size;
+	hdr->length = (uint16_t)(nb->application.size + nb->transport.size);
 	nb->protocol = IP_PROTO_UDP;
 
 	if(daddr->type == IPADDR_TYPE_V4) {
-		dev = route4_lookup(ntohs(daddr->addr.in4_addr.s_addr), &saddr);
+		dst = ntohl(daddr->addr.in4_addr.s_addr);
+		dev = route4_lookup(dst, &saddr);
 		if(dev) {
 			nif = &dev->nif;
 			saddr = ipv4_ptoi(nif->local_ip);
@@ -138,10 +138,10 @@ void udp_output(struct netbuf *nb, ip_addr_t *daddr, uint16_t rport, uint16_t lp
 		nb->dev = dev;
 		hdr->csum = 0;
 		hdr->length = ntohs(hdr->length);
-		chksum = ipv4_pseudo_partial_csum(htonl(saddr), htonl(daddr->addr.in4_addr.s_addr), IP_PROTO_UDP, hdr->length);
-		chksum = ip_checksum_partial(chksum, hdr, sizeof(*hdr));
-		hdr->csum = ip_checksum(chksum, nb->application.data, nb->application.size);
+		chksum = ipv4_pseudo_partial_csum(htonl(saddr), dst, IP_PROTO_UDP, hdr->length);
+		chksum = ip_checksum_partial((uint16_t)chksum, hdr, sizeof(*hdr));
+		hdr->csum = ip_checksum((uint16_t)chksum, nb->application.data, nb->application.size);
 
-		ipv4_output(nb, daddr->addr.in4_addr.s_addr);
+		ipv4_output(nb, dst);
 	}
 }
