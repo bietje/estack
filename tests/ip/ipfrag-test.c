@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	netdev_print(dev, stdout);
 
 	assert(netdev_get_rx_bytes(dev) == 3410);
-	assert(netdev_get_tx_bytes(dev) == 3510);
+	assert(netdev_get_tx_bytes(dev) == 3580);
 
 	route4_clear();
 	pcapdev_destroy(dev);
