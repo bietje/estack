@@ -10,3 +10,5 @@ ENDIF()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(byteordertool ${BOT_SRC})
+
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/tools/ci-runner.py ${CMAKE_BINARY_DIR}/tools/ci-runner.py COPYONLY)
