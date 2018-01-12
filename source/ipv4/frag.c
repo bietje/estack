@@ -274,23 +274,37 @@ void ipfrag4_fragment(struct netbuf *nb, uint32_t dst)
 	struct netbuf *frag;
 	uint16_t id;
 	struct netif *nif;
+	size_t datasize;
+	size_t cpyoffset;
 
 	length = nb->dev->mtu - sizeof(*hdr);
-	num  = (nb->transport.size / length) + !!(nb->transport.size % length);
+	datasize = nb->transport.size + nb->application.size;
+	num  = (datasize / length) + !!(datasize % length);
 	nif = &nb->dev->nif;
 	id = htons(netif_get_id(nif));
+	cpyoffset = 0;
 
-	for(int idx = 0, offset = 0; idx < num; idx++, offset += length) {
+	for(int idx = 0, offset = 0; idx < num; idx++) {
 		if(idx + 1 < num) {
 			size = length;
 			flags = IP_MORE_FRAGS;
 		} else {
-			size = nb->transport.size % length;
+			size = datasize % length;
 			flags = 0;
 		}
+
+		if(!idx) {
+			frag = netbuf_alloc(NBAF_TRANSPORT, size);
+			netbuf_cpy_data(frag, (uint8_t*)nb->transport.data, nb->transport.size, NBAF_TRANSPORT);
+			netbuf_cpy_data_offset(frag, nb->transport.size, nb->application.data,
+									size - nb->transport.size, NBAF_TRANSPORT);
+			cpyoffset += size - nb->transport.size;
+		} else {
+			frag = netbuf_alloc(NBAF_TRANSPORT, size);
+			netbuf_cpy_data(frag, (uint8_t*)nb->application.data + cpyoffset, size, NBAF_TRANSPORT);
+			cpyoffset += size;
+		}
 		
-		frag = netbuf_alloc(NBAF_TRANSPORT, size);
-		netbuf_cpy_data(frag, (uint8_t*)nb->transport.data + offset, size, NBAF_TRANSPORT);
 		netbuf_realloc(frag, NBAF_NETWORK, sizeof(*hdr));
 		frag->protocol = nb->protocol;
 		frag->flags = nb->flags;
@@ -305,6 +319,7 @@ void ipfrag4_fragment(struct netbuf *nb, uint32_t dst)
 		hdr->offset = ofs;
 		hdr->saddr = 0;
 		__ipv4_output(frag, dst);
+		offset += size;
 	}
 
 	netbuf_free(nb);

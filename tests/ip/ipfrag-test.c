@@ -25,6 +25,8 @@
 #include <estack/test.h>
 #include <estack/route.h>
 #include <estack/inet.h>
+#include <estack/addr.h>
+#include <estack/udp.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -60,21 +62,18 @@ struct dummy_pkt {
 static void test_ipout(struct netdev *ndev, uint32_t addr)
 {
 	struct netbuf *nb;
-	struct dummy_pkt *dummy;
+	uint8_t *data;
+	ip_addr_t dst;
 
+	nb = netbuf_alloc(NBAF_APPLICTION, 3400);
+	memset(nb->application.data, 0xAD, 3400);
+	data = nb->application.data;
+	data[3399] = 0xBF;
 
-	nb = netbuf_alloc(NBAF_TRANSPORT, sizeof(*dummy));
-	dummy = nb->transport.data;
-	dummy->src = htons(48720);
-	dummy->dst = htons(2100);
-	dummy->length = (htons(3408));
+	dst.type = IPADDR_TYPE_V4;
+	dst.addr.in4_addr.s_addr = addr;
 
-	memset(dummy->data, 0xAD, 3400);
-	dummy->data[3399] = 0xBF;
-
-	nb->protocol = IP_PROTO_UDP;
-	nb->dev = ndev;
-	ipv4_output(nb, addr);
+	udp_output(nb, &dst, htons(2100), htons(48720));
 }
 
 static void test_setup_routes(struct netdev *dev)
@@ -88,7 +87,6 @@ static void test_setup_routes(struct netdev *dev)
 	route4_add(0, 0, gw, dev);
 }
 
-volatile bool processing = true;
 int main(int argc, char **argv)
 {
 	char *input;

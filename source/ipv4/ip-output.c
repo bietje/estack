@@ -104,7 +104,9 @@ void ipv4_output(struct netbuf *nb, uint32_t dst)
 	memset(nb->network.data, 0, sizeof(*header));
 	header = nb->network.data;
 
-	if(nb->transport.size > nb->dev->mtu - sizeof(*header)) {
+	/* printf("Should fragment? %u\n",
+			nb->transport.size + nb->application.size > nb->dev->mtu - sizeof(*header)); */
+	if(nb->transport.size + nb->application.size > nb->dev->mtu - sizeof(*header)) {
 		ipfrag4_fragment(nb, dst);
 		return;
 	}
