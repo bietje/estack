@@ -5,8 +5,11 @@ SET(ESTACK_PORT_HEADERS
 ${ESTACK_PORT_DIR}/arch.h)
 SET(FREERTOS_DIR "${PROJECT_SOURCE_DIR}/external/freertos" CACHE STRING "FreeRTOS directory")
 
+SET(FREERTOS_CONFIG_DIR "${PROJECT_SOURCE_DIR}/external/freertos/config" CACHE STRING "FreeRTOS config directory")
+
 SET(ESTACK_PORT_INCLUDE_DIR
 ${PROJECT_SOURCE_DIR}/source/ports/freertos
+${FREERTOS_CONFIG_DIR}
 ${FREERTOS_DIR}/Source/include
 ${FREERTOS_DIR}/Source/portable/${COMPILER}/${PORT}
 )
