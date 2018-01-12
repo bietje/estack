@@ -4,6 +4,7 @@ add_subdirectory(arp)
 add_subdirectory(ip)
 add_subdirectory(events)
 add_subdirectory(sockets)
+add_subdirectory(transport)
 
 if(FREERTOS)
 add_subdirectory(rtos)

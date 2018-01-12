@@ -15,7 +15,8 @@
 		"error.h": "c",
 		"inet.h": "c",
 		"in.h": "c",
-		"in6.h": "c"
+		"in6.h": "c",
+		"route.h": "c"
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False",
