@@ -15,6 +15,6 @@ DEPENDS recv-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_custom_target(run_udptest
-COMMAND udp-test resources/udp-input resources/dns-response.pcap
+COMMAND udp-test resources/udp-input.pcap resources/dns-response.pcap
 DEPENDS udp-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

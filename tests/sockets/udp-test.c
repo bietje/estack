@@ -83,8 +83,11 @@ static void test_setup_routes(struct netdev *dev)
 
 static void socket_task(void *arg)
 {
-	uint8_t buf[210];
-	int fd = *(int*)arg;
+	uint8_t buf[3400];
+	int fd;
+#ifdef HAVE_RTOS
+	struct netdev *dev = arg;
+#endif
 	struct sockaddr_in addr;
 
 	fd = estack_socket(PF_INET, SOCK_DGRAM, 0);
@@ -95,6 +98,13 @@ static void socket_task(void *arg)
 	assert(estack_connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0);
 	estack_recv(fd, buf, sizeof(buf), 0);
 	estack_close(fd);
+
+	assert(buf[3399] == 0xBF);
+
+#ifdef HAVE_RTOS
+	pcapdev_next_src(dev);
+	estack_sleep(300);
+#endif
 	vTaskEndScheduler();
 }
 
@@ -104,14 +114,13 @@ int main(int argc, char **argv)
 	const uint8_t hwaddr[] = HW_ADDR;
 	uint32_t addr;
 	estack_thread_t tp;
-	int fd;
 
 	if (argc < 2) {
 		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);
 	}
 
 	estack_init(stdout);
-	dev = pcapdev_create((const char**) argv+1, 1, "udptest-output.pcap", hwaddr, 1500);
+	dev = pcapdev_create((const char**) argv+1, 2, "udptest-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
 
@@ -121,7 +130,7 @@ int main(int argc, char **argv)
 
 	tp.name = "sock-tsk";
 
-	estack_thread_create(&tp, socket_task, &fd);
+	estack_thread_create(&tp, socket_task, dev);
 
 #ifdef HAVE_RTOS
 	vTaskStartScheduler();
