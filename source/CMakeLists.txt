@@ -38,6 +38,7 @@ sockets/socket.c
 sockets/recv.c
 sockets/connect.c
 sockets/send.c
+sockets/bind.c
 transport/udp.c
 ${ESTACK_PORT_SRCS}
 )

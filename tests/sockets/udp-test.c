@@ -12,12 +12,14 @@
 #include <string.h>
 #include <estack.h>
 
+#include <estack/error.h>
 #include <estack/inet.h>
 #include <estack/test.h>
 #include <estack/ethernet.h>
 #include <estack/pcapdev.h>
 #include <estack/socket.h>
 #include <estack/route.h>
+#include <estack/in.h>
 
 #define HW_ADDR1 {0x00, 0x00, 0x5e, 0x00, 0x01, 0x31}
 static const uint8_t hw1[] = HW_ADDR1;
@@ -88,16 +90,18 @@ static void socket_task(void *arg)
 #ifdef HAVE_RTOS
 	struct netdev *dev = arg;
 #endif
-	struct sockaddr_in addr;
+	struct sockaddr_in addr, other;
 
 	fd = estack_socket(PF_INET, SOCK_DGRAM, 0);
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(2100);
-	addr.sin_addr.s_addr = htonl(ipv4_atoi("145.48.16.26"));
-	assert(estack_connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0);
-	estack_recv(fd, buf, sizeof(buf), 0);
-	estack_send(fd, buf, 225, 0);
+	addr.sin_port = htons(1275);
+	addr.sin_addr.s_addr = INADDR_ANY;
+	assert(bind(fd, (struct sockaddr*) &addr, sizeof(addr)) == -EOK);
+	assert(bind(fd, (struct sockaddr*) &addr, sizeof(addr)) == -EINUSE);
+
+	estack_recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr*) &other, sizeof(other));
+	estack_sendto(fd, buf, 205, 0, (struct sockaddr*)&other, sizeof(other));
 	estack_close(fd);
 
 	assert(buf[3399] == 0xBF);

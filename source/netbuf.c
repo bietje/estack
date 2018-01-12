@@ -158,6 +158,39 @@ void netbuf_cpy_data(struct netbuf *nb, const void *src, size_t length, netbuf_t
 	memcpy(nbd->data, src, length);
 }
 
+void netbuf_cpy_data_offset(struct netbuf *nb, size_t ofs, const void *src,
+							size_t length, netbuf_type_t type)
+{
+	struct nbdata *nbd;
+
+	assert(nb);
+	assert(src);
+	assert(length > 0);
+
+	switch(type) {
+	case NBAF_DATALINK:
+		nbd = &nb->datalink;
+		break;
+
+	case NBAF_NETWORK:
+		nbd = &nb->network;
+		break;
+
+	case NBAF_TRANSPORT:
+		nbd = &nb->transport;
+		break;
+
+	case NBAF_APPLICTION:
+		nbd = &nb->application;
+		break;
+
+	default:
+		return;
+	}
+
+	memcpy(nbd->data+ofs, src, length);
+}
+
 struct netbuf *netbuf_clone(struct netbuf *nb, uint32_t layers)
 {
 	struct netbuf *copy;

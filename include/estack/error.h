@@ -14,7 +14,10 @@ typedef enum error_code {
 	EDRPPPED,
 	EARRIVED,
 	EINVALID,
-	ENOMEMORY
+	ENOMEMORY,
+	EINUSE,
+	ENOTSUPPORTED,
+	ENOSOCK,
 } error_t;
 
 #endif // !__ESTACK_ERROR_H__

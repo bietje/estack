@@ -90,6 +90,7 @@ extern DLL_EXPORT int socket_add(struct socket *socket);
 extern DLL_EXPORT struct socket *socket_remove(int fd);
 extern DLL_EXPORT struct socket *socket_find(ip_addr_t *addr, uint16_t port);
 extern DLL_EXPORT struct socket *socket_get(int fd);
+extern DLL_EXPORT struct socket *socket_find_by_addr(const struct sockaddr *s, socklen_t length);
 extern DLL_EXPORT uint16_t eph_port_alloc(void);
 
 extern DLL_EXPORT int socket_trigger_receive(int fd, void *data, size_t length);

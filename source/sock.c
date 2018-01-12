@@ -8,6 +8,8 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include <estack.h>
 
 #include <estack/estack.h>
 #include <estack/socket.h>
@@ -59,6 +61,43 @@ struct socket *socket_find(ip_addr_t *addr, uint16_t port)
 		if(socket_cmp(socket, &tmp)) {
 			socket_pool_unlock();
 			return socket;
+		}
+	}
+	socket_pool_unlock();
+
+	return NULL;
+}
+
+struct socket *socket_find_by_addr(const struct sockaddr *s, socklen_t length)
+{
+	ip_addr_t *addr;
+	struct sockaddr_in *sin;
+	struct sockaddr_in6 *sin6;
+	struct socket *sock, tmp;
+
+	addr = &tmp.local;
+	if(s->sa_family == AF_INET) {
+		sin = (void*)s;
+		addr->addr.in4_addr.s_addr = sin->sin_addr.s_addr;
+		addr->type = IPADDR_TYPE_V4;
+		tmp.lport = sin->sin_port;
+	} else {
+		sin6 = (void*)s;
+		memcpy(addr->addr.in6_addr.s6_addr, sin6->sin6_addr.s6_addr, IP6_ADDR_LENGTH);
+		addr->type = IPADDR_TYPE_V6;
+		tmp.lport = sin6->sin6_port;
+	}
+
+
+	socket_pool_lock();
+	for(int idx = 0; idx < MAX_SOCKETS; idx++) {
+		sock = sockets.sockets[idx];
+		if(!sock)
+			continue;
+
+		if(socket_cmp(sock, &tmp)) {
+			socket_pool_unlock();
+			return sock;
 		}
 	}
 	socket_pool_unlock();

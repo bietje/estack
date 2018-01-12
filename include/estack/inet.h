@@ -22,6 +22,7 @@
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 #endif
 
 #else /* NO_SYS */

@@ -76,7 +76,7 @@ static void test_setup_routes(struct netdev *dev)
 {
 	uint32_t addr, mask, gw;
 
-	addr = ipv4_atoi("145.49.6.12");
+	addr = ipv4_atoi("145.50.6.15");
 	mask = ipv4_atoi("255.255.192.0");
 	gw = ipv4_atoi("145.49.63.254");
 	route4_add(addr & mask, mask, 0, dev);
@@ -87,13 +87,19 @@ static void udp_task(void *arg)
 {
 	struct netbuf *nb;
 	ip_addr_t daddr;
+	uint16_t remote, local;
+	uint8_t *data;
 
-	nb = netbuf_alloc(NBAF_APPLICTION, 305);
+	nb = netbuf_alloc(NBAF_APPLICTION, 3400);
 	memset(nb->application.data, 0x99, nb->application.size);
-	daddr.addr.in4_addr.s_addr = htonl(ipv4_atoi("145.49.100.20"));
+	data = nb->application.data;
+	data[3399] = 0xBF;
+	daddr.addr.in4_addr.s_addr = htonl(ipv4_atoi("145.49.6.12"));
 	daddr.type = IPADDR_TYPE_V4;
 
-	udp_output(nb, &daddr, htons(52), htons(51234));
+	remote = htons(1275);
+	local = htons(51200);
+	udp_output(nb, &daddr, remote, local);
 
 #ifdef HAVE_RTOS
 	estack_sleep(300);
@@ -116,7 +122,7 @@ int main(int argc, char **argv)
 	estack_init(stdout);
 	dev = pcapdev_create(NULL, 0, "udp-output-test-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
-	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
+	pcapdev_create_link_ip4(dev, 0x9132060F, 0, 0xFFFFC000);
 
 	addr = ipv4_atoi("145.49.63.254");
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
@@ -129,7 +135,7 @@ int main(int argc, char **argv)
 #ifdef HAVE_RTOS
 	vTaskStartScheduler();
 #else
-	estack_sleep(300);
+	estack_sleep(500);
 #endif
 
 	estack_thread_destroy(&tp);
