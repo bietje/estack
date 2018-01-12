@@ -16,6 +16,7 @@
 #include <estack/inet.h>
 #include <estack/addr.h>
 #include <estack/netbuf.h>
+#include <estack/list.h>
 
 #define MAX_SOCKETS 16
 
@@ -38,6 +39,7 @@ struct DLL_EXPORT socket {
 	uint16_t lport; //!< Local port
 	uint32_t flags;
 
+	struct list_head lh;
 	estack_mutex_t mtx;
 	estack_event_t read_event;
 
@@ -49,7 +51,7 @@ struct DLL_EXPORT socket {
 	int(*rcv_event)(struct socket *sock, struct netbuf *nb);
 };
 
-#if CONFIG_NO_SYS || WIN32
+#if defined(CONFIG_NO_SYS) || defined(WIN32)
 typedef size_t socklen_t;
 #endif
 
@@ -86,6 +88,8 @@ extern DLL_EXPORT int estack_recv(int fd, void *buf, size_t length, int flags);
 extern DLL_EXPORT int estack_socket(int domain, int type, int protocol);
 extern DLL_EXPORT int estack_close(int fd);
 extern DLL_EXPORT int estack_connect(int fd, const struct sockaddr *addr, socklen_t len);
+extern DLL_EXPORT ssize_t estack_recvfrom(int fd, void *buf, size_t length,
+                                           int flags, struct sockaddr *addr, socklen_t len);
 CDECL_END
 
 #endif

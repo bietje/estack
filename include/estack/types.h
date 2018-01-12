@@ -17,6 +17,16 @@
 typedef unsigned long long time_t;
 #endif
 
+#ifndef HAVE_SIZE_T
+#include <stdint.h>
+typedef uintptr_t size_t;
+#endif
+
+#ifndef HAVE_SSIZE_T
+#include <stdint.h>
+typedef intptr_t ssize_t;
+#endif
+
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif

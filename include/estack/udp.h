@@ -25,6 +25,7 @@ struct DLL_EXPORT udp_header {
 CDECL
 extern DLL_EXPORT void udp_input(struct netbuf *nb);
 extern DLL_EXPORT void udp_output(struct netbuf *nb);
+extern DLL_EXPORT uint16_t udp_get_remote_port(struct netbuf *nb);
 CDECL_END
 
 #endif

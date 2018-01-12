@@ -10,6 +10,7 @@ project(estack)
 
 include(CMakeToolsHelpers OPTIONAL)
 include(CheckIncludeFiles)
+include(CheckTypeSize)
 
 if(UNIX OR CMAKE_SYSTEM_NAME MATCHES Generic)
 	if(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -52,6 +53,9 @@ CHECK_INCLUDE_FILES (string.h HAVE_STRING_H)
 CHECK_INCLUDE_FILES (time.h HAVE_TIME_H)
 CHECK_INCLUDE_FILES (Winsock2.h HAVE_WINSOCK_H)
 CHECK_INCLUDE_FILES (arpa/inet.h HAVE_INET_H)
+
+CHECK_TYPE_SIZE(size_t HAVE_SIZE_T)
+CHECK_TYPE_SIZE(ssize_t HAVE_SSIZE_T)
 
 if(CMAKE_SYSTEM_NAME MATCHES Generic)
 SET(HAVE_GENERIC_SYS True)

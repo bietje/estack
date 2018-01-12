@@ -83,6 +83,11 @@ static inline uint32_t ipv4_get_saddr(struct ipv4_header *hdr)
 	return hdr->saddr;
 }
 
+static inline uint32_t ipv4_get_remote_address(struct netbuf *nb)
+{
+	return ipv4_get_saddr(nb->network.data);
+}
+
 static inline uint32_t ipv4_get_daddr(struct ipv4_header *hdr)
 {
 	return hdr->daddr;

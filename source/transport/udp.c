@@ -81,6 +81,14 @@ void udp_input(struct netbuf *nb)
 	}
 }
 
+uint16_t udp_get_remote_port(struct netbuf *nb)
+{
+	struct udp_header *hdr;
+
+	hdr = nb->transport.data;
+	return hdr->sport;
+}
+
 void udp_output(struct netbuf *nb)
 {
 }

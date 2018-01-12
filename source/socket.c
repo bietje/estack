@@ -22,32 +22,60 @@
 
 #define SOCK_EVENT_LENGTH MAX_SOCKETS
 
-static int socket_receive_event(struct socket *sock, struct netbuf *nb)
+struct sock_rcv_buffer {
+	struct list_head entry;
+	ip_addr_t addr;
+	uint16_t port;
+	void *data;
+	size_t index;
+	size_t length;
+};
+
+static int socket_datagram_receive_event(struct socket *sock, struct netbuf *nb)
 {
 	size_t length;
-	uint8_t *ptr;
+	struct sock_rcv_buffer *buf;
 
+	buf = malloc(sizeof(*buf));
+	buf->index = 0;
+	list_head_init(&buf->entry);
 	length = nb->application.size;
-	estack_mutex_lock(&sock->mtx, 0);
-	sock->rcv_buffer = realloc(sock->rcv_buffer, sock->rcv_length + length);
+	buf->data = malloc(length);
 
-	if(!sock->rcv_buffer) {
-		estack_mutex_unlock(&sock->mtx);
+	if(!buf->data) {
+		free(buf);
 		return -ENOMEMORY;
 	}
 
-	ptr = (uint8_t*)sock->rcv_buffer;
+	buf->length = length;
 
-	memcpy(&ptr[sock->rcv_length], nb->application.data, length);
-	sock->rcv_length += length;
+	estack_mutex_lock(&sock->mtx, 0);
+	memcpy(buf->data, nb->application.data, length);
+	buf->port = udp_get_remote_port(nb);
+
+	if(ip_is_ipv4(nb)) {
+		buf->addr.addr.in4_addr.s_addr = ipv4_get_remote_address(nb);
+		buf->addr.type = IPADDR_TYPE_V4;
+	} else {
+		print_dbg("IPv6 isn't supported yet!\n");
+		free(buf->data);
+		free(buf);
+		return -EINVALID;
+	}
+
+	list_add(&buf->entry, &sock->lh);
 	netbuf_set_flag(nb, NBUF_ARRIVED);
 
-	if(sock->readsize != 0) {
+	if(sock->readsize != 0)
 		estack_event_signal(&sock->read_event);
-	}
 
 	estack_mutex_unlock(&sock->mtx);
 	return length;
+}
+
+static int socket_stream_receive_event(struct socket *sock, struct netbuf *nb)
+{
+	return -1;
 }
 
 #ifdef HAVE_DEBUG
@@ -62,7 +90,7 @@ int socket_trigger_receive(int fd, void *data, size_t length)
 
 	nb = netbuf_alloc(NBAF_APPLICTION, length);
 	netbuf_cpy_data(nb, data, length, NBAF_APPLICTION);
-	socket_receive_event(s, nb);
+	socket_datagram_receive_event(s, nb);
 	netbuf_free(nb);
 	return -EOK;
 }
@@ -77,7 +105,7 @@ static struct socket *socket_alloc(void)
 
 	estack_mutex_create(&sock->mtx, 0);
 	estack_event_create(&sock->read_event, SOCK_EVENT_LENGTH);
-	sock->rcv_event = socket_receive_event;
+	list_head_init(&sock->lh);
 	return sock;
 }
 
@@ -117,10 +145,12 @@ int estack_socket(int domain, int type, int protocol)
 	switch(type) {
 	case SOCK_STREAM:
 		sock->flags = SO_TCP | SO_STREAM;
+		sock->rcv_event = socket_stream_receive_event;
 		break;
 
 	case SOCK_DGRAM:
 		sock->flags = SO_UDP | SO_DGRAM;
+		sock->rcv_event = socket_datagram_receive_event;
 		break;
 
 	case SOCK_RAW:
@@ -140,55 +170,80 @@ int estack_socket(int domain, int type, int protocol)
 	return sock->fd;
 }
 
-int estack_recv(int fd, void *buf, size_t length, int flags)
+static ssize_t datagram_recvfrom(struct socket *sock, void *buf, size_t length,
+                                   int flags, struct sockaddr *addr, socklen_t len)
 {
-	struct socket *sock;
-	const uint8_t *dataptr;
 	size_t num;
-
-	UNUSED(flags);
-	sock = socket_get(fd);
+	struct sock_rcv_buffer *buffer;
+	struct sockaddr_in *sin;
 
 	if(!length || !buf)
 		return 0;
 
-	if(!sock)
-		return -EINVALID;
-
 	estack_mutex_lock(&sock->mtx, 0);
-	if(!(sock->flags & SO_CONNECTED)) {
+	if(!len && !(sock->flags & SO_CONNECTED)) {
 		estack_mutex_unlock(&sock->mtx);
 		return -EINVALID;
-	}
-
+	} 
+ 
 	sock->readsize = length;
-	if(likely(sock->rcv_index >= sock->rcv_length)) {
+	if(likely(list_empty(&sock->lh))) {
 		estack_mutex_unlock(&sock->mtx);
 		estack_event_wait(&sock->read_event);
 		estack_mutex_lock(&sock->mtx, 0);
 	}
 
-	num = 0;
-	if(likely(sock->rcv_index < sock->rcv_length)) {
-		dataptr = sock->rcv_buffer;
-		if(sock->rcv_index + length < sock->rcv_length)
-			num = length;
-		else
-			num = sock->rcv_length - sock->rcv_index;
+	buffer = list_first_entry(&sock->lh, struct sock_rcv_buffer, entry);
+	num = buffer->length - buffer->index;
+	if(num > length)
+		num = length;
 
-		memcpy(buf, &dataptr[sock->rcv_index], num);
-		sock->rcv_index += num;
+	memcpy(buf, ((uint8_t*)buffer->data) + buffer->index, num);
+	buffer->index += num;
 
-		if(sock->rcv_index >= sock->rcv_length) {
-			sock->rcv_index = sock->rcv_length = 0;
-			free(sock->rcv_buffer);
-			sock->rcv_buffer = NULL;
+	if(len) {
+		/* Store the remote address and port */
+		if(buffer->addr.type == IPADDR_TYPE_V4) {
+			sin = (struct sockaddr_in *)addr;
+			sin->sin_family = AF_INET;
+			sin->sin_port = htons(buffer->port);
+			sin->sin_addr.s_addr = htonl(buffer->addr.addr.in4_addr.s_addr);
+		} else {
+			print_dbg("IPv6 not yet supported!\n");
 		}
+	}
+
+	/* Release the buffer if its fully used up */
+	if(buffer->index >= buffer->length) {
+		free(buffer->data);
+		list_del(&buffer->entry);
+		free(buffer);
 	}
 
 	sock->readsize = 0;
 	estack_mutex_unlock(&sock->mtx);
-	return (int)num;
+	return (ssize_t)num;
+}
+
+ssize_t estack_recvfrom(int fd, void *buf, size_t length,
+                          int flags, struct sockaddr *addr, socklen_t len)
+{
+	struct socket *sock;
+	
+	sock = socket_get(fd);
+	if(!sock)
+		return -EINVALID;
+
+	if(sock->flags & SO_DGRAM)
+		return datagram_recvfrom(sock, buf, length, flags, addr, len);
+	
+	return -EINVALID;
+}
+
+int estack_recv(int fd, void *buf, size_t length, int flags)
+{
+	UNUSED(flags);
+	return estack_recvfrom(fd, buf, length, flags, NULL, 0);
 }
 
 int estack_close(int fd)
