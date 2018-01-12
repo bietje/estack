@@ -17,10 +17,21 @@
 #include <estack/inet.h>
 #include <estack/addr.h>
 #include <estack/socket.h>
+#include <estack/icmp.h>
 
 static void udp_port_unreachable(struct netbuf *nb)
 {
-	netbuf_set_flag(nb, NBUF_DROPPED);
+	struct udp_header *udp;
+
+	udp = nb->transport.data;
+	print_dbg("UDP socked unreachable ([local - remote]): [%u - %u]\n",
+	            udp->dport, udp->sport);
+	netbuf_set_flag(nb, NBUF_REUSE);
+	udp->sport = htons(udp->sport);
+	udp->dport = htons(udp->dport);
+	udp->length = htons(udp->length);
+	ip_htons(nb);
+	icmp_response(nb, ICMP_UNREACH, ICMP_UNREACH_PORT, 0);
 }
 
 void udp_input(struct netbuf *nb)
@@ -89,6 +100,13 @@ uint16_t udp_get_remote_port(struct netbuf *nb)
 	return hdr->sport;
 }
 
-void udp_output(struct netbuf *nb)
+/**
+ * @brief Send out a UDP segment.
+ * @param nb Application data packet buffer.
+ * @param daddr Destination address.
+ * @param rport Remote port.
+ * @param lport Local port.
+ */
+void udp_output(struct netbuf *nb, ip_addr_t *daddr, uint16_t rport, uint16_t lport)
 {
 }

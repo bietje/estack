@@ -14,6 +14,7 @@
 #include <estack/estack.h>
 #include <estack/netdev.h>
 #include <estack/netbuf.h>
+#include <estack/addr.h>
 
 #pragma pack(push, 1)
 struct DLL_EXPORT udp_header {
@@ -24,8 +25,8 @@ struct DLL_EXPORT udp_header {
 
 CDECL
 extern DLL_EXPORT void udp_input(struct netbuf *nb);
-extern DLL_EXPORT void udp_output(struct netbuf *nb);
 extern DLL_EXPORT uint16_t udp_get_remote_port(struct netbuf *nb);
+extern DLL_EXPORT void udp_output(struct netbuf *nb, ip_addr_t *daddr, uint16_t rport, uint16_t lport);
 CDECL_END
 
 #endif

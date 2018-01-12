@@ -142,7 +142,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/build/tests/sockets/udp-test",
-			"args": ["resources/udp-input.pcap"],
+			"args": ["resources/udp-input.pcap", "resources/dns-response.pcap"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}/build",
 			"environment": [],

@@ -96,3 +96,17 @@ void ip_input(struct netbuf *nb)
 		netbuf_set_flag(nb, NBUF_DROPPED);
 	}
 }
+
+void ip_htons(struct netbuf *nb)
+{
+	struct ipv4_header *hdr;
+
+	if(ip_is_ipv4(nb)) {
+		hdr = nb->network.data;
+		hdr->daddr = htonl(hdr->daddr);
+		hdr->saddr = htonl(hdr->saddr);
+		hdr->length = htons(hdr->length);
+		hdr->offset = htons(hdr->offset);
+		hdr->id = htons(hdr->id);
+	}
+}

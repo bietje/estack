@@ -62,6 +62,7 @@ extern DLL_EXPORT void ipfrag4_add_packet(struct netbuf *nb);
 extern DLL_EXPORT void ipv4_input_postfrag(struct netbuf *nb);
 extern DLL_EXPORT void ipfrag4_tmo(void);
 extern DLL_EXPORT void ipfrag4_fragment(struct netbuf *nb, uint32_t dst);
+extern DLL_EXPORT void ip_htons(struct netbuf *nb);
 
 static inline bool ip_is_ipv4(struct netbuf *nb)
 {
