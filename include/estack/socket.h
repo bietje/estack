@@ -93,7 +93,6 @@ extern DLL_EXPORT struct socket *socket_get(int fd);
 extern DLL_EXPORT uint16_t eph_port_alloc(void);
 
 extern DLL_EXPORT int socket_trigger_receive(int fd, void *data, size_t length);
-extern DLL_EXPORT int estack_recv(int fd, void *buf, size_t length, int flags);
 extern DLL_EXPORT int estack_socket(int domain, int type, int protocol);
 extern DLL_EXPORT int estack_close(int fd);
 extern DLL_EXPORT int estack_connect(int fd, const struct sockaddr *addr, socklen_t len);
@@ -103,6 +102,7 @@ extern DLL_EXPORT ssize_t estack_sendto(int fd, const void *msg, size_t length, 
 	const struct sockaddr *daddr, socklen_t len);
 extern DLL_EXPORT ssize_t estack_recvfrom(int fd, void *buf, size_t length,
                                            int flags, struct sockaddr *addr, socklen_t len);
+extern DLL_EXPORT ssize_t estack_recv(int fd, void *buf, size_t length, int flags);
 CDECL_END
 
 #endif

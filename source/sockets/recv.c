@@ -85,7 +85,7 @@ ssize_t estack_recvfrom(int fd, void *buf, size_t length,
 	return -EINVALID;
 }
 
-int estack_recv(int fd, void *buf, size_t length, int flags)
+ssize_t estack_recv(int fd, void *buf, size_t length, int flags)
 {
 	UNUSED(flags);
 	return estack_recvfrom(fd, buf, length, flags, NULL, 0);
