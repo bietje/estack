@@ -34,6 +34,9 @@ ipv4/frag.c
 802.3/eth-in.c
 802.3/eth-out.c
 802.3/addr.c
+sockets/socket.c
+sockets/recv.c
+sockets/connect.c
 transport/udp.c
 ${ESTACK_PORT_SRCS}
 )

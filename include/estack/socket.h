@@ -31,6 +31,15 @@ typedef unsigned short sa_family_t;
 #define SO_TCP    0x20
 #define SO_CONNECTED 0x40
 
+struct sock_rcv_buffer {
+	struct list_head entry;
+	ip_addr_t addr;
+	uint16_t port;
+	void *data;
+	size_t index;
+	size_t length;
+};
+
 struct DLL_EXPORT socket {
 	int fd;
 	ip_addr_t local; //!< Local address
