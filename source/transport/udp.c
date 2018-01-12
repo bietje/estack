@@ -68,7 +68,6 @@ void udp_input(struct netbuf *nb)
 
 	hdr->length = length;
 	hdr->sport = ntohs(hdr->sport);
-	hdr->dport = ntohs(hdr->dport);
 
 	nb->application.size = nb->transport.size - sizeof(*hdr);
 	if(!nb->application.size) {
@@ -82,6 +81,7 @@ void udp_input(struct netbuf *nb)
 		addr.type = 4;
 		addr.addr.in4_addr.s_addr = htonl(ipv4_get_daddr(nb->network.data));
 		sock = socket_find(&addr, hdr->dport);
+		hdr->dport = ntohs(hdr->dport);
 
 		if(sock) {
 			sock->rcv_event(sock, nb);
@@ -120,13 +120,13 @@ void udp_output(struct netbuf *nb, ip_addr_t *daddr, uint16_t rport, uint16_t lp
 	hdr = nb->transport.data;
 	assert(hdr);
 
-	hdr->sport = htons(lport);
-	hdr->dport = htons(rport);
+	hdr->sport = lport;
+	hdr->dport = rport;
 	hdr->length = (uint16_t)(nb->application.size + nb->transport.size);
 	nb->protocol = IP_PROTO_UDP;
 
 	if(daddr->type == IPADDR_TYPE_V4) {
-		dst = ntohl(daddr->addr.in4_addr.s_addr);
+		dst = daddr->addr.in4_addr.s_addr;
 		dev = route4_lookup(dst, &saddr);
 		if(dev) {
 			nif = &dev->nif;
@@ -137,11 +137,11 @@ void udp_output(struct netbuf *nb, ip_addr_t *daddr, uint16_t rport, uint16_t lp
 
 		nb->dev = dev;
 		hdr->csum = 0;
-		hdr->length = ntohs(hdr->length);
+		hdr->length = htons(hdr->length);
 		chksum = ipv4_pseudo_partial_csum(htonl(saddr), dst, IP_PROTO_UDP, hdr->length);
 		chksum = ip_checksum_partial((uint16_t)chksum, hdr, sizeof(*hdr));
 		hdr->csum = ip_checksum((uint16_t)chksum, nb->application.data, nb->application.size);
 
-		ipv4_output(nb, dst);
+		ipv4_output(nb, ntohl(dst));
 	}
 }

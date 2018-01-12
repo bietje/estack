@@ -20,9 +20,10 @@ static int datagram_connect_ipv4(struct socket *sock, const struct sockaddr *add
 
 	in = (struct sockaddr_in*)addr;
 	print_dbg("Datagram connect: 0x%x\n", ntohl(in->sin_addr.s_addr));
-	sock->rport = ntohs(in->sin_port);
-	sock->addr.addr.in4_addr.s_addr = ntohl(in->sin_addr.s_addr);
-	sock->lport = eph_port_alloc();
+	sock->rport = in->sin_port;
+	sock->addr.addr.in4_addr.s_addr = in->sin_addr.s_addr;
+	sock->addr.type = IPADDR_TYPE_V4;
+	sock->lport = htons(eph_port_alloc());
 	sock->local.addr.in4_addr.s_addr = INADDR_ANY;
 
 	sock->flags |= SO_CONNECTED;

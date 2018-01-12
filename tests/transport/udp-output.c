@@ -90,10 +90,10 @@ static void udp_task(void *arg)
 
 	nb = netbuf_alloc(NBAF_APPLICTION, 305);
 	memset(nb->application.data, 0x99, nb->application.size);
-	daddr.addr.in4_addr.s_addr = ipv4_atoi("145.49.100.20");
+	daddr.addr.in4_addr.s_addr = htonl(ipv4_atoi("145.49.100.20"));
 	daddr.type = IPADDR_TYPE_V4;
 
-	udp_output(nb, &daddr, 52, 51234);
+	udp_output(nb, &daddr, htons(52), htons(51234));
 
 #ifdef HAVE_RTOS
 	estack_sleep(300);

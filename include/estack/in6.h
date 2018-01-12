@@ -29,6 +29,9 @@ struct sockaddr_in6 {
 };
 #else
 #include <estack/inet.h>
+#ifdef WIN32
+#include <ws2ipdef.h>
+#endif
 #endif
 
 #endif

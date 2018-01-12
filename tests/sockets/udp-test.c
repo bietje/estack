@@ -93,10 +93,11 @@ static void socket_task(void *arg)
 	fd = estack_socket(PF_INET, SOCK_DGRAM, 0);
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(53);
+	addr.sin_port = htons(2100);
 	addr.sin_addr.s_addr = htonl(ipv4_atoi("145.48.16.26"));
 	assert(estack_connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0);
 	estack_recv(fd, buf, sizeof(buf), 0);
+	estack_send(fd, buf, 225, 0);
 	estack_close(fd);
 
 	assert(buf[3399] == 0xBF);
