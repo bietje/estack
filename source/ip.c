@@ -55,6 +55,29 @@ uint16_t ip_checksum_partial(uint16_t start, const void *buf, int len)
 	return (uint16_t)sum & 0xFFFF;
 }
 
+#pragma pack(push, 1)
+struct pseudo_hdr {
+	uint32_t src;
+	uint32_t dst;
+	uint8_t zero;
+	uint8_t proto;
+	uint16_t length;
+};
+#pragma pack(pop)
+
+uint32_t ipv4_pseudo_partial_csum(uint32_t saddr, uint32_t daddr, uint8_t proto, uint16_t length)
+{
+	struct pseudo_hdr hdr;
+
+	hdr.dst = daddr;
+	hdr.src = saddr;
+	hdr.zero = 0;
+	hdr.proto = proto;
+	hdr.length = length;
+
+	return ip_checksum_partial(0, &hdr, sizeof(hdr));
+}
+
 uint16_t ipv4_inet_csum(const void *start, uint16_t length, uint32_t saddr,
 							uint32_t daddr, uint8_t proto)
 {

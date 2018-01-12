@@ -18,6 +18,7 @@
 #include <estack/addr.h>
 #include <estack/socket.h>
 #include <estack/icmp.h>
+#include <estack/route.h>
 
 static void udp_port_unreachable(struct netbuf *nb)
 {
@@ -109,4 +110,38 @@ uint16_t udp_get_remote_port(struct netbuf *nb)
  */
 void udp_output(struct netbuf *nb, ip_addr_t *daddr, uint16_t rport, uint16_t lport)
 {
+	struct udp_header *hdr;
+	uint32_t saddr, chksum;
+	struct netdev *dev;
+	struct netif *nif;
+
+	assert(nb);
+	assert(daddr);
+	nb = netbuf_realloc(nb, NBAF_TRANSPORT, sizeof(*hdr));
+	hdr = nb->transport.data;
+	assert(hdr);
+
+	hdr->sport = htons(lport);
+	hdr->dport = htons(rport);
+	hdr->length = nb->application.size + nb->transport.size;
+	nb->protocol = IP_PROTO_UDP;
+
+	if(daddr->type == IPADDR_TYPE_V4) {
+		dev = route4_lookup(ntohs(daddr->addr.in4_addr.s_addr), &saddr);
+		if(dev) {
+			nif = &dev->nif;
+			saddr = ipv4_ptoi(nif->local_ip);
+		} else {
+			saddr = 0;
+		}
+
+		nb->dev = dev;
+		hdr->csum = 0;
+		hdr->length = ntohs(hdr->length);
+		chksum = ipv4_pseudo_partial_csum(htonl(saddr), htonl(daddr->addr.in4_addr.s_addr), IP_PROTO_UDP, hdr->length);
+		chksum = ip_checksum_partial(chksum, hdr, sizeof(*hdr));
+		hdr->csum = ip_checksum(chksum, nb->application.data, nb->application.size);
+
+		ipv4_output(nb, daddr->addr.in4_addr.s_addr);
+	}
 }
