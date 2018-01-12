@@ -89,6 +89,9 @@ int estack_mutex_lock(estack_mutex_t *mtx, int tmo)
 	assert(mtx);
 	assert(mtx->sem);
 
+	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING)
+		return -EINVALID;
+
 	if(tmo) {
 		ms = tmo / portTICK_RATE_MS;
 
@@ -112,6 +115,9 @@ void estack_mutex_unlock(estack_mutex_t *mtx)
 {
 	assert(mtx);
 	assert(mtx->sem);
+
+	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING)
+		return;
 
 	if(mtx->recursive)
 		xSemaphoreGiveRecursive(mtx->sem);
