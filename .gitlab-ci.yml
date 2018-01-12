@@ -5,6 +5,7 @@ estack:
     - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True -DCONFIG_POLL_TMO=100
     - make
     - make run_netdev
+    - make run_arp
     - make run_ip
     - make run_ipfrag
     - make run_ipforward
