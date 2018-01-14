@@ -22,6 +22,7 @@
 #include <estack/list.h>
 #include <estack/arp.h>
 #include <estack/ip.h>
+#include <estack/udp.h>
 #include <estack/test.h>
 #include <estack/route.h>
 #include <estack/inet.h>
@@ -60,21 +61,18 @@ struct dummy_pkt {
 static void test_ipout(struct netdev *ndev, uint32_t addr)
 {
 	struct netbuf *nb;
-	struct dummy_pkt *dummy;
+	uint8_t *dummy;
+	ip_addr_t dst;
 
+	nb = netbuf_alloc(NBAF_APPLICTION, 3400);
+	dummy = nb->application.data;
+	memset(dummy, 0xAD, 3400);
+	dummy[3399] = 0xBF;
 
-	nb = netbuf_alloc(NBAF_TRANSPORT, sizeof(*dummy));
-	dummy = nb->transport.data;
-	dummy->src = htons(48720);
-	dummy->dst = htons(2100);
-	dummy->length = (htons(3408));
+	dst.type = IPADDR_TYPE_V4;
+	dst.addr.in4_addr.s_addr = addr;
 
-	memset(dummy->data, 0xAD, 3400);
-	dummy->data[3399] = 0xBF;
-
-	nb->protocol = IP_PROTO_UDP;
-	nb->dev = ndev;
-	ipv4_output(nb, addr);
+	udp_output(nb, &dst, htons(2100), htons(48720));
 }
 
 static void test_setup_routes(struct netdev *dev)
@@ -126,10 +124,11 @@ static void task_main(void *arg)
 	netdev_print(dev, stdout);
 
 	assert(netdev_get_rx_bytes(dev) == 3410);
-	assert(netdev_get_tx_bytes(dev) == 3510);
+	assert(netdev_get_tx_bytes(dev) == 3580);
 
 	route4_clear();
 	pcapdev_destroy(dev);
+	estack_destroy();
 	vTaskEndScheduler();
 }
 
@@ -145,6 +144,7 @@ int main(int argc, char **argv)
 	estack_thread_create(&tp, task_main, &args);
 	vTaskStartScheduler();
 
+	estack_thread_destroy(&tp);
 	wait_close();
 	return 0;
 }

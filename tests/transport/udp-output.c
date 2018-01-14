@@ -83,7 +83,7 @@ static void test_setup_routes(struct netdev *dev)
 	route4_add(0, 0, gw, dev);
 }
 
-static void udp_task(void *arg)
+static void test_udp_output(void)
 {
 	struct netbuf *nb;
 	ip_addr_t daddr;
@@ -104,20 +104,13 @@ static void udp_task(void *arg)
 #ifdef HAVE_RTOS
 	estack_sleep(300);
 #endif
-
-	vTaskEndScheduler();
 }
 
-int main(int argc, char **argv)
+static void udp_task(void *arg)
 {
 	struct netdev *dev;
 	const uint8_t hwaddr[] = HW_ADDR;
 	uint32_t addr;
-	estack_thread_t tp;
-
-	if (argc > 2) {
-		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);
-	}
 
 	estack_init(stdout);
 	dev = pcapdev_create(NULL, 0, "udp-output-test-output.pcap", hwaddr, 1500);
@@ -128,9 +121,27 @@ int main(int argc, char **argv)
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 	test_setup_routes(dev);
 
-	tp.name = "sock-tsk";
+	test_udp_output();
 
-	estack_thread_create(&tp, udp_task, dev);
+	netdev_print(dev, stdout);
+	route4_clear();
+	pcapdev_destroy(dev);
+	estack_destroy();
+	wait_close();
+
+	vTaskEndScheduler();
+}
+
+int main(int argc, char **argv)
+{
+	estack_thread_t tp;
+
+	if (argc > 2) {
+		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);
+	}
+
+	tp.name = "sock-tsk";
+	estack_thread_create(&tp, udp_task, NULL);
 
 #ifdef HAVE_RTOS
 	vTaskStartScheduler();
@@ -139,10 +150,5 @@ int main(int argc, char **argv)
 #endif
 
 	estack_thread_destroy(&tp);
-	netdev_print(dev, stdout);
-	route4_clear();
-	pcapdev_destroy(dev);
-	estack_destroy();
-	wait_close();
 	return -EXIT_SUCCESS;
 }

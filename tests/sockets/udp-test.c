@@ -87,10 +87,20 @@ static void socket_task(void *arg)
 {
 	uint8_t buf[3400];
 	int fd;
-#ifdef HAVE_RTOS
-	struct netdev *dev = arg;
-#endif
 	struct sockaddr_in addr, other;
+	struct netdev *dev;
+	const uint8_t hwaddr[] = HW_ADDR;
+	uint32_t ipaddr;
+	const char **argv = arg;
+
+	estack_init(stdout);
+	dev = pcapdev_create((const char**) argv+1, 2, "udptest-output.pcap", hwaddr, 1500);
+	netdev_config_params(dev, 30, 15000);
+	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
+
+	ipaddr = ipv4_atoi("145.49.63.254");
+	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&ipaddr, 4);
+	test_setup_routes(dev);
 
 	fd = estack_socket(PF_INET, SOCK_DGRAM, 0);
 	memset(&addr, 0, sizeof(addr));
@@ -106,50 +116,36 @@ static void socket_task(void *arg)
 
 	assert(buf[3399] == 0xBF);
 
-#ifdef HAVE_RTOS
 	pcapdev_next_src(dev);
 	estack_sleep(300);
-#endif
+
+	netdev_print(dev, stdout);
+	route4_clear();
+	pcapdev_destroy(dev);
+	estack_destroy();
+
 	vTaskEndScheduler();
 }
 
 int main(int argc, char **argv)
 {
-	struct netdev *dev;
-	const uint8_t hwaddr[] = HW_ADDR;
-	uint32_t addr;
 	estack_thread_t tp;
 
 	if (argc < 2) {
 		err_exit(-EXIT_FAILURE, "Usage: %s <input-file>\n", argv[0]);
 	}
 
-	estack_init(stdout);
-	dev = pcapdev_create((const char**) argv+1, 2, "udptest-output.pcap", hwaddr, 1500);
-	netdev_config_params(dev, 30, 15000);
-	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
-
-	addr = ipv4_atoi("145.49.63.254");
-	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
-	test_setup_routes(dev);
-
 	tp.name = "sock-tsk";
 
-	estack_thread_create(&tp, socket_task, dev);
+	estack_thread_create(&tp, socket_task, argv);
 
 #ifdef HAVE_RTOS
 	vTaskStartScheduler();
 #else
-	estack_sleep(500);
-	pcapdev_next_src(dev);
 	estack_sleep(1000);
 #endif
 
 	estack_thread_destroy(&tp);
-	netdev_print(dev, stdout);
-	route4_clear();
-	pcapdev_destroy(dev);
-	estack_destroy();
 	wait_close();
 	return -EXIT_SUCCESS;
 }
