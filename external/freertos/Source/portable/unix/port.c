@@ -252,7 +252,6 @@ static int LookupThread(xTaskHandle hTask, pthread_t *Thread)
     return 0;
 }
 
-
 static void prvSetTaskCriticalNesting( pthread_t Thread, portBASE_TYPE uxNesting )
 {
     int i;
@@ -600,6 +599,10 @@ void vPortEndScheduler( void )
         if ( pxThreads[i].Valid )
         {
             /* Kill all of the threads, they are in the detached state. */
+	    if(pthread_equal(pthread_self(), pxThreads[i].Thread)) {
+                pxThreads[i].Valid = 0;
+		continue;
+	    }
             pthread_cancel(pxThreads[i].Thread );
             pxThreads[i].Valid = 0;
         }
@@ -607,8 +610,8 @@ void vPortEndScheduler( void )
 
     /* Signal the scheduler to exit its loop. */
     xSchedulerEnd = pdTRUE;
-
     pthread_kill( hMainThread, SIG_RESUME );
+    pthread_exit((void*)1);
 }
 
 
@@ -657,6 +660,10 @@ void vPortYield( void )
     pthread_t ThreadToSuspend;
     pthread_t ThreadToResume;
     int success;
+
+
+    if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING)
+	return;
 
     rc = pthread_mutex_lock(&xSingleThreadMutex);
     assert(rc == 0);
@@ -711,6 +718,20 @@ void vPortClearInterruptMask( portBASE_TYPE xMask )
     xInterruptsEnabled = xMask;
 }
 
+static int ThreadIsValid(xTaskHandle handle)
+{
+    int i;
+    
+    for (i = 0; i < MAX_NUMBER_OF_TASKS; i++)
+    {
+        if (pxThreads[i].hTask == handle)
+        {
+	    return pxThreads[i].Valid;
+        }
+    }
+
+    return 0;
+}
 
 /**
  *  Public API used in tasks.c
@@ -741,8 +762,10 @@ void vPortForciblyEndThread( void *pxTaskToDelete )
         /* Cancelling a thread that is not me. */
  
         /* Send a signal to wake the task so that it definitely cancels. */
-        pthread_testcancel();
-        pthread_cancel( ThreadToDelete );
+	if(ThreadIsValid(hTaskToDelete)) {
+		pthread_testcancel();
+		pthread_cancel( ThreadToDelete );
+	}
  
         /* Pthread Clean-up function will note the cancellation. */
         pthread_mutex_unlock( &xSingleThreadMutex );
