@@ -83,7 +83,7 @@ struct DLL_EXPORT netdev {
 	struct list_head entry; //!< Entry into the global device list.
 	struct list_head protocols; //!< Protocol handler list head.
 	struct list_head destinations; //!< Destination cache head.
-	estack_mutex_t mtx;
+	estack_mutex_t mtx; //!< Network device lock.
 
 	uint16_t mtu; //!< MTU.
 	struct netdev_backlog backlog; //!< Device backlog head.
@@ -190,6 +190,9 @@ extern DLL_EXPORT void netdev_config_core_params(uint32_t retry_tmo, uint32_t re
 extern DLL_EXPORT void devcore_init(void);
 extern DLL_EXPORT void devcore_destroy(void);
 extern DLL_EXPORT void netdev_config_params(struct netdev *dev, int maxrx, int maxweight);
+extern DLL_EXPORT void netdev_poll_async(void);
+extern DLL_EXPORT void netdev_wakeup(void);
+extern DLL_EXPORT void netdev_wakeup_irq(void);
 
 CDECL_END
 

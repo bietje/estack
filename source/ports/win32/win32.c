@@ -190,6 +190,14 @@ void estack_event_signal(estack_event_t *event)
 	WakeConditionVariable(&event->cond);
 }
 
+void estack_event_signal_irq(estack_event_t *event)
+{
+	/* ISR don't exist in UNIX userspace, which means that
+	   something or somebody fucked up. Let them know. */
+	print_dbg("estack_event_signal_irq() called on Win32 port!\n");
+	estack_event_signal(event);
+}
+
 void estack_event_wait(estack_event_t *event)
 {
 	assert(event);

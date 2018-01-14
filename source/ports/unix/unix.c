@@ -154,6 +154,14 @@ void estack_event_signal(estack_event_t *event)
 	pthread_mutex_unlock(&event->mtx);
 }
 
+void estack_event_signal_irq(estack_event_t *event)
+{
+	/* ISR don't exist in UNIX userspace, which means that
+	   something or somebody fucked up. Let them know. */
+	print_dbg("estack_event_signal_irq() called on Unix port!\n");
+	estack_event_signal(event);
+}
+
 void estack_event_destroy(estack_event_t *e)
 {
 	assert(e);

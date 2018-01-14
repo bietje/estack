@@ -45,6 +45,7 @@ extern DLL_EXPORT void estack_event_create(estack_event_t *event, int length);
 extern DLL_EXPORT void estack_event_destroy(estack_event_t *e);
 extern DLL_EXPORT void estack_event_signal(estack_event_t *event);
 extern DLL_EXPORT void estack_event_wait(estack_event_t *event);
+extern DLL_EXPORT void estack_event_signal_irq(estack_event_t *event);
 CDECL_END
 
 #endif

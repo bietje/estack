@@ -35,4 +35,5 @@ void ethernet_output(struct netbuf *nb, uint8_t *hw)
 
 	hdr->type = htons(nb->protocol);
 	netdev_add_backlog(dev, nb);
+	netdev_wakeup();
 }

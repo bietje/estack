@@ -37,6 +37,7 @@ struct dev_core {
 	struct list_head dst_cache; //!< Global destination / ARP cache.
 	estack_mutex_t mtx; //!< Global device lock.
 	estack_thread_t runner; //!< Processing runner.
+	estack_event_t event; //!< Data event.
 	volatile bool running; //!< Core initialisation indicator.
 };
 
@@ -88,6 +89,16 @@ struct netdev *netdev_find(const char *name)
 	netdev_unlock_core();
 
 	return NULL;
+}
+
+void netdev_wakeup(void)
+{
+	estack_event_signal(&devcore.event);
+}
+
+void netdev_wakeup_irq(void)
+{
+	estack_event_signal_irq(&devcore.event);
 }
 
 /**
@@ -686,22 +697,47 @@ int netdev_poll_all(void)
 	return num;
 }
 
+void netdev_poll_async(void)
+{
+	struct list_head *entry;
+	struct netdev *dev;
+
+	netdev_lock_core();
+	list_for_each(entry, &devcore.devices) {
+		dev = list_entry(entry, struct netdev, entry);
+		if(dev->available(dev)) {
+			netdev_wakeup();
+			break;
+		}
+	}
+
+	netdev_unlock_core();
+}
+
 #ifndef CONFIG_POLL_TMO
 #define CONFIG_POLL_TMO 100
 #endif
 
 static void netdev_poll_task(void *arg)
 {
+	int remaining;
+
 	UNUSED(arg);
+	/* start in a sleeping state */
+	remaining = 0;
 
 	while(true) {
-		estack_sleep(CONFIG_POLL_TMO);
 		/*
 		 * Roll through all devices as long as
 		 * the device core is running. If there are no
 		 * packets remaining on the backlog the processor
-		 * will be suspended for 100ms.
+		 * will be suspended on the device core event queue.
 		 */
+		if(!remaining)
+			estack_event_wait(&devcore.event);
+		else
+			estack_sleep(CONFIG_POLL_TMO);
+
 		netdev_lock_core();
 		if(unlikely(!devcore.running)) {
 			netdev_unlock_core();
@@ -709,8 +745,7 @@ static void netdev_poll_task(void *arg)
 		}
 		netdev_unlock_core();
 
-		if(netdev_poll_all())
-			continue;
+		remaining = netdev_poll_all();
 	}
 }
 
@@ -939,6 +974,10 @@ void netdev_print(struct netdev *dev, FILE *file)
 }
 #endif
 
+#ifndef CONFIG_CORE_EVENT_LENGTH
+#define CONFIG_CORE_EVENT_LENGTH 4
+#endif
+
 /**
  * @brief	Initialize a network device.
  * @param	dev	Device to initialise.
@@ -1001,6 +1040,8 @@ void netdev_destroy(struct netdev *dev)
 	list_del(&dev->entry);
 	netdev_unlock(dev);
 	netdev_unlock_core();
+
+	estack_mutex_destroy(&dev->mtx);
 }
 
 /**
@@ -1014,6 +1055,7 @@ void devcore_init(void)
 	devcore.running = true;
 
 	estack_mutex_create(&devcore.mtx, 0);
+	estack_event_create(&devcore.event, CONFIG_CORE_EVENT_LENGTH);
 	estack_thread_create(&devcore.runner, netdev_poll_task, NULL);
 }
 
@@ -1028,8 +1070,10 @@ void devcore_destroy(void)
 	devcore.running = false;
 	netdev_unlock_core();
 
+	estack_event_signal(&devcore.event);
 	estack_thread_destroy(&devcore.runner);
 	estack_mutex_destroy(&devcore.mtx);
+	estack_event_destroy(&devcore.event);
 }
 
 /** @} */

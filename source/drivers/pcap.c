@@ -36,6 +36,8 @@ struct pcapdev_private {
 	pcap_dumper_t *dumper;
 	struct netdev dev;
 	int available, nread;
+	estack_thread_t thread;
+	bool running;
 };
 
 static inline void pcapdev_lock(struct netdev *dev)
@@ -76,8 +78,9 @@ static int pcapdev_available(struct netdev *dev)
 	pcapdev_lock(dev);
 
 	if(priv->available >= 0) {
+		rv = priv->available;
 		pcapdev_unlock(dev);
-		return priv->available;
+		return rv;
 	}
 
 	if(priv->idx >= priv->length) {
@@ -263,6 +266,36 @@ void pcapdev_next_src(struct netdev *dev)
 	pcapdev_unlock(dev);
 }
 
+static inline bool pcapdev_is_running(struct netdev *dev)
+{
+	struct pcapdev_private *priv;
+	bool running;
+
+	priv = container_of(dev, struct pcapdev_private, dev);
+	pcapdev_lock(dev);
+	running = priv->running;
+	pcapdev_unlock(dev);
+
+	return running;
+}
+
+static void pcap_task(void *arg)
+{
+	struct netdev *dev;
+	int available;
+
+	dev = arg;
+
+	estack_sleep(100);
+	while(pcapdev_is_running(dev)) {
+		available = dev->available(dev);
+		if(available)
+			netdev_wakeup();
+		
+		estack_sleep(100);
+	}
+}
+
 struct netdev *pcapdev_create(const char **srcs, int length, const char *dstfile,
 	const uint8_t *hwaddr, uint16_t mtu)
 {
@@ -303,6 +336,13 @@ struct netdev *pcapdev_create(const char **srcs, int length, const char *dstfile
 	dev->tx = ethernet_output;
 	pcapdev_init(dev, "dbg0", hwaddr, mtu);
 
+	pcapdev_lock(dev);
+	priv->running = true;
+	pcapdev_unlock(dev);
+
+	priv->thread.name = "pcap-tsk";
+	estack_thread_create(&priv->thread, pcap_task, dev);
+
 	return dev;
 }
 
@@ -311,6 +351,11 @@ void pcapdev_destroy(struct netdev *dev)
 	struct pcapdev_private *priv;
 
 	priv = container_of(dev, struct pcapdev_private, dev);
+
+	pcapdev_lock(dev);
+	priv->running = false;
+	pcapdev_unlock(dev);
+	estack_thread_destroy(&priv->thread);
 
 	if(priv->srcs && priv->pio) {
 		for(int i = 0; i < priv->length; i++) {
