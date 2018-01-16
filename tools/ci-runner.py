@@ -7,28 +7,30 @@
 #
 
 import sys
-import yaml
 import os
+import yaml
 
-def parse(config):
+def execute(cmds):
+    for cmd in cmds:
+        os.system(cmd)
+
+def parse(config, target):
     with open(config) as f:
         data = f.read()
 
     data = yaml.load(data)
-    data = data['estack']['script']
-    for cmd in data:
-        os.system(cmd)
+    execute(data[target]['script'])
 
 def check_args():
-    if len(sys.argv) != 2:
-        print("Usage: %s <ci-config-file>" % sys.argv[0])
+    if len(sys.argv) != 3:
+        print("Usage: %s <ci-config-file> <target>" % sys.argv[0])
         sys.exit(-1)
-
 
 def main():
     check_args()
     configfile = sys.argv[1]
-    parse(configfile)
+    target = sys.argv[2]
+    parse(configfile, target)
 
 
 if __name__ == "__main__":

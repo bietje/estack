@@ -11,5 +11,15 @@ estack:
     - make run_ipforward
     - make run_events
     - make run_udptest
-  only:
-    - master
+
+estack-rtos:
+  script:
+    - mkdir xbuild
+    - cd xbuild
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True -DCMAKE_SYSTEM_NAME=Generic -DFREERTOS=True -DPORT=unix -DCONFIG_POLL_TMO=100
+    - make
+    - tests/rtos/rtos-test resources/ip-fragments.pcap
+    - tests/sockets/udp-test resources/udp-input.pcap resources/dns-response.pcap
+    - tests/transport/udp-output-test
+    - tests/events/event-test
+    - tests/events/timer-test
