@@ -17,6 +17,7 @@
 #include <task.h>
 #include <queue.h>
 #include <semphr.h>
+#include <timers.h>
 
 typedef struct thread {
 	const char *name;
@@ -36,5 +37,14 @@ typedef struct event {
 	QueueHandle_t evq;
 #define HAVE_EVENT
 } estack_event_t;
+
+typedef struct timer {
+	TimerHandle_t timer;
+	TickType_t period;
+	void *arg;
+	void (*handle)(struct timer *timer, void *arg);
+	bool oneshot;
+#define HAVE_TIMER
+} estack_timer_t;
 
 #endif

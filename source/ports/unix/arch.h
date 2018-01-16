@@ -15,6 +15,8 @@
 
 #include <pthread.h>
 
+#include <estack/list.h>
+
 typedef DLL_EXPORT struct mutex {
 	pthread_mutex_t mtx;
 #define HAVE_MUTEX
@@ -36,5 +38,15 @@ typedef DLL_EXPORT struct event {
 	int size;
 #define HAVE_EVENT
 } estack_event_t;
+
+typedef DLL_EXPORT struct timer {
+	struct list_head entry;
+	void (*handle)(struct timer *timer, void *arg);
+	bool oneshot;
+	time_t expiry;
+	int tmo;
+	void *arg;
+#define HAVE_TIMER
+} estack_timer_t;
 
 #endif

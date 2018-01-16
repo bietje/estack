@@ -26,6 +26,10 @@
 #error "Missing event definition!"
 #endif
 
+#ifndef HAVE_TIMER
+#error "Missing timer definition!"
+#endif
+
 #define MTX_RECURSIVE 1
 
 typedef void (*thread_handle_t)(void *arg);
@@ -46,6 +50,16 @@ extern DLL_EXPORT void estack_event_destroy(estack_event_t *e);
 extern DLL_EXPORT void estack_event_signal(estack_event_t *event);
 extern DLL_EXPORT int estack_event_wait(estack_event_t *event, int tmo);
 extern DLL_EXPORT void estack_event_signal_irq(estack_event_t *event);
+
+#define TIMER_ONSHOT_FLAG 0x1
+extern DLL_EXPORT void estack_timer_create(estack_timer_t *timer, const char *name, int ms,
+	uint32_t flags, void *arg, void (*cb)(estack_timer_t *timer, void *arg));
+extern DLL_EXPORT int estack_timer_start(estack_timer_t *timer, int delay);
+extern DLL_EXPORT int estack_timer_destroy(estack_timer_t *timer, int delay);
+extern DLL_EXPORT int estack_timer_stop(estack_timer_t *timer, int delay);
+extern DLL_EXPORT int estack_timer_destroy(estack_timer_t *timer, int delay);
+extern DLL_EXPORT void estack_timers_init(void);
+extern DLL_EXPORT void estack_timers_destroy(void);
 
 #define FOREVER 0
 CDECL_END

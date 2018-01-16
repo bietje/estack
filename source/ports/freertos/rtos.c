@@ -165,3 +165,61 @@ void estack_event_destroy(estack_event_t *e)
 {
 	vQueueDelete(e->evq);
 }
+
+/*
+ * TIMER API WRAPPERS
+ */
+
+void estack_timers_init(void)
+{
+}
+
+void estack_timers_destroy(void)
+{
+}
+
+static void vTimerCallbackHook(TimerHandle_t xTimer)
+{
+	estack_timer_t *tmr;
+
+	tmr = pvTimerGetTimerID(xTimer);
+	tmr->handle(tmr, tmr->arg);
+}
+
+void estack_timer_create(estack_timer_t *timer, const char *name, int ms,
+	uint32_t flags, void *arg, void (*cb)(estack_timer_t *timer, void *arg))
+{
+	timer->handle = cb;
+	timer->period = ms / portTICK_PERIOD_MS;
+
+	if(flags & TIMER_ONSHOT_FLAG)
+		timer->oneshot = true;
+	else
+		timer->oneshot = false;
+
+	timer->timer = xTimerCreate(name, ms / portTICK_PERIOD_MS, !timer->oneshot, timer, vTimerCallbackHook);
+}
+
+int estack_timer_start(estack_timer_t *timer, int delay)
+{
+	BaseType_t bt;
+
+	bt = xTimerStart(timer->timer, delay / portTICK_PERIOD_MS);
+	return (bt == pdPASS) ? -EOK : -ETMO;
+}
+
+int estack_timer_stop(estack_timer_t *timer, int delay)
+{
+	BaseType_t bt;
+
+	bt = xTimerStop(timer->timer, delay / portTICK_PERIOD_MS);
+	return (bt == pdPASS) ? -EOK : -ETMO;
+}
+
+int estack_timer_destroy(estack_timer_t *timer, int delay)
+{
+	BaseType_t bt;
+
+	bt = xTimerDelete(timer->timer, delay / portTICK_PERIOD_MS);
+	return (bt == pdPASS) ? -EOK : -ETMO;
+}

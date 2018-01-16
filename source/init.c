@@ -13,6 +13,7 @@
 void estack_init(const FILE *logfile)
 {
 	log_init(logfile);
+	estack_timers_init();
 	route4_init();
 	devcore_init();
 	socket_api_init();
@@ -23,4 +24,5 @@ void estack_destroy(void)
 	socket_api_destroy();
 	devcore_destroy();
 	route4_destroy();
+	estack_timers_destroy();
 }
