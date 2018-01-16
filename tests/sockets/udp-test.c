@@ -107,8 +107,8 @@ static void socket_task(void *arg)
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(1275);
 	addr.sin_addr.s_addr = INADDR_ANY;
-	assert(bind(fd, (struct sockaddr*) &addr, sizeof(addr)) == -EOK);
-	assert(bind(fd, (struct sockaddr*) &addr, sizeof(addr)) == -EINUSE);
+	assert(estack_bind(fd, (struct sockaddr*) &addr, sizeof(addr)) == -EOK);
+	assert(estack_bind(fd, (struct sockaddr*) &addr, sizeof(addr)) == -EINUSE);
 
 	estack_recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr*) &other, sizeof(other));
 	estack_sendto(fd, buf, 205, 0, (struct sockaddr*)&other, sizeof(other));
