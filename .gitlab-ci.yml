@@ -21,5 +21,5 @@ estack-rtos:
     - tests/rtos/rtos-test resources/ip-fragments.pcap
     - tests/sockets/udp-test resources/udp-input.pcap resources/dns-response.pcap
     - tests/transport/udp-output-test
-    - tests/events/event-test
+    - tests/events/events-test
     - tests/events/timer-test
