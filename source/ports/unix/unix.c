@@ -130,18 +130,48 @@ void estack_event_create(estack_event_t *event, int length)
 	pthread_cond_init(&event->cond, NULL);
 }
 
-void estack_event_wait(estack_event_t *event)
+#define NANOSECOND (1000 * 1000 * 1000)
+
+static void timespec_create_from_tmo(struct timespec *spec, int tmo)
 {
+	struct timeval tv;
+	time_t tvsec;
+
+	assert(spec);
+	gettimeofday(&tv, NULL);
+	time(&tvsec);
+	spec->tv_sec = tvsec + (tmo / 1000);
+	spec->tv_nsec = tv.tv_usec * 1000 + (1000 * 1000 * (tmo % 1000));
+	spec->tv_sec += spec->tv_nsec / (NANOSECOND);
+	spec->tv_nsec %= NANOSECOND;
+}
+
+int estack_event_wait(estack_event_t *event, int tmo)
+{
+	struct timespec timeout;
+
 	assert(event);
 
 	pthread_mutex_lock(&event->mtx);
 	assert(++event->length < event->size);
-	while(!event->signalled)
-		pthread_cond_wait(&event->cond, &event->mtx);
+	while(!event->signalled) {
+		if(tmo == FOREVER) {
+			pthread_cond_wait(&event->cond, &event->mtx);
+		} else {
+			timespec_create_from_tmo(&timeout, tmo);
+			if(pthread_cond_timedwait(&event->cond, &event->mtx, &timeout)) {
+				event->length--;
+				pthread_mutex_unlock(&event->mtx);
+				return -ETMO;
+			}
+		}
+
+	}
 	
 	event->length--;
 	event->signalled = false;
 	pthread_mutex_unlock(&event->mtx);
+	return -EOK;
 }
 
 void estack_event_signal(estack_event_t *event)

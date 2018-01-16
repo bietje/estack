@@ -198,17 +198,25 @@ void estack_event_signal_irq(estack_event_t *event)
 	estack_event_signal(event);
 }
 
-void estack_event_wait(estack_event_t *event)
+int estack_event_wait(estack_event_t *event, int tmo)
 {
+	BOOL rv;
 	assert(event);
 
 	EnterCriticalSection(&event->cs);
 	assert(++event->length < event->size);
 
+	if(tmo == FOREVER)
+		tmo = INFINITE;
+
 	while(!event->signalled)
-		SleepConditionVariableCS(&event->cond, &event->cs, INFINITE);
+		rv SleepConditionVariableCS(&event->cond, &event->cs, tmo);
 
 	event->length--;
-	event->signalled = false;
+
+	if(rv)
+		event->signalled = false;
 	LeaveCriticalSection(&event->cs);
+
+	return (rv) ? -EOK : -ETMO;
 }

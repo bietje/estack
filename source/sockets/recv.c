@@ -34,7 +34,7 @@ static ssize_t datagram_recvfrom(struct socket *sock, void *buf, size_t length,
 	sock->readsize = length;
 	if(likely(list_empty(&sock->lh))) {
 		estack_mutex_unlock(&sock->mtx);
-		estack_event_wait(&sock->read_event);
+		estack_event_wait(&sock->read_event, FOREVER);
 		estack_mutex_lock(&sock->mtx, 0);
 	}
 

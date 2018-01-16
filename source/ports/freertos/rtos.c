@@ -129,12 +129,26 @@ void estack_event_create(estack_event_t *event, int length)
 	event->evq = xQueueCreate(length, sizeof(void*));
 }
 
-void estack_event_wait(estack_event_t *event)
+int estack_event_wait(estack_event_t *event, int tmo)
 {
 	estack_event_t *ev;
+	BaseType_t bt;
+	int rv;
 
-	while(xQueueReceive(event->evq, (void*)&ev, portMAX_DELAY) != pdTRUE);
-	assert(ev == event);
+	if(tmo == FOREVER) {
+		while(xQueueReceive(event->evq, (void*)&ev, portMAX_DELAY) != pdTRUE);
+		rv = -EOK;
+	} else {
+		bt = xQueueReceive(event->evq, (void*)&ev, tmo / portTICK_PERIOD_MS);
+		rv = bt == pdTRUE ? -EOK : -ETMO;
+	}
+
+#ifndef NDEBUG
+	if(rv == -EOK)
+		assert(ev == event);
+#endif
+
+	return rv;
 }
 
 void estack_event_signal_irq(estack_event_t *event)

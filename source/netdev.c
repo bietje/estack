@@ -734,7 +734,7 @@ static void netdev_poll_task(void *arg)
 		 * will be suspended on the device core event queue.
 		 */
 		if(!remaining)
-			estack_event_wait(&devcore.event);
+			estack_event_wait(&devcore.event, CONFIG_POLL_TMO);
 		else
 			estack_sleep(CONFIG_POLL_TMO);
 

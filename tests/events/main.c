@@ -40,8 +40,9 @@ static void event_task(void *arg)
 
 	print_dbg("Waiting for event..\n");
 	e = (estack_event_t*)arg;
-	estack_event_wait(e);
+	estack_event_wait(e, FOREVER);
 	print_dbg("Event received!\n");
+	print_dbg("Timeout received! (%i)\n", estack_event_wait(e, 1000));
 
 	vTaskEndScheduler();
 }
@@ -71,7 +72,7 @@ int main(int argc, char **argv)
 	vTaskStartScheduler();
 
 #ifndef HAVE_RTOS
-	estack_sleep(2000);
+	estack_sleep(3000);
 #endif
 	wait_close();
 

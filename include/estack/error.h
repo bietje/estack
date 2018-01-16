@@ -18,6 +18,7 @@ typedef enum error_code {
 	EINUSE,
 	ENOTSUPPORTED,
 	ENOSOCK,
+	ETMO,
 } error_t;
 
 #endif // !__ESTACK_ERROR_H__
