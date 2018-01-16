@@ -209,8 +209,12 @@ int estack_event_wait(estack_event_t *event, int tmo)
 	if(tmo == FOREVER)
 		tmo = INFINITE;
 
-	while(!event->signalled)
-		rv SleepConditionVariableCS(&event->cond, &event->cs, tmo);
+	rv = TRUE;
+	while(!event->signalled) {
+		rv = SleepConditionVariableCS(&event->cond, &event->cs, tmo);
+		if(tmo != INFINITE)
+			break;
+	}
 
 	event->length--;
 

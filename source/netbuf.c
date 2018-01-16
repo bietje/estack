@@ -188,7 +188,7 @@ void netbuf_cpy_data_offset(struct netbuf *nb, size_t ofs, const void *src,
 		return;
 	}
 
-	memcpy(nbd->data+ofs, src, length);
+	memcpy((uint8_t*)nbd->data+ofs, src, length);
 }
 
 struct netbuf *netbuf_clone(struct netbuf *nb, uint32_t layers)

@@ -15,7 +15,7 @@
 #include <estack/error.h>
 #include <estack/socket.h>
 
-int bind(int fd, const struct sockaddr *addr, socklen_t length)
+int estack_bind(int fd, const struct sockaddr *addr, socklen_t length)
 {
 	struct socket *sock;
 	const struct sockaddr_in6 *sin6;
