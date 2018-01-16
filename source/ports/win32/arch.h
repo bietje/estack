@@ -15,6 +15,8 @@
 #include <WinSock2.h>
 #include <Windows.h>
 
+#include <estack/list.h>
+
 typedef struct DLL_EXPORT mutex {
 	HANDLE mtx;
 #define HAVE_MUTEX
@@ -37,3 +39,13 @@ typedef struct DLL_EXPORT event {
 		length;
 #define HAVE_EVENT
 } estack_event_t;
+
+typedef DLL_EXPORT struct timer {
+	struct list_head entry;
+	void (*handle)(struct timer *timer, void *arg);
+	bool oneshot;
+	time_t expiry;
+	int tmo;
+	void *arg;
+#define HAVE_TIMER
+} estack_timer_t;
