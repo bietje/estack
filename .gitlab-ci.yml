@@ -11,6 +11,8 @@ estack:
     - make run_ipforward
     - make run_events
     - make run_udptest
+  only:
+    - master
 
 estack-rtos:
   script:
@@ -23,3 +25,5 @@ estack-rtos:
     - tests/transport/udp-output-test
     - tests/events/events-test
     - tests/events/timer-test
+  only:
+    - master
