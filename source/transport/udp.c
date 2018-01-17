@@ -28,6 +28,7 @@ static void udp_port_unreachable(struct netbuf *nb)
 	print_dbg("UDP socked unreachable ([local - remote]): [%u - %u]\n",
 	            udp->dport, udp->sport);
 	netbuf_set_flag(nb, NBUF_REUSE);
+	netbuf_set_flag(nb, NBUF_WAS_RX);
 	udp->sport = htons(udp->sport);
 	udp->dport = htons(udp->dport);
 	udp->length = htons(udp->length);

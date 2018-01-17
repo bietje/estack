@@ -105,6 +105,10 @@ extern DLL_EXPORT ssize_t estack_sendto(int fd, const void *msg, size_t length, 
 extern DLL_EXPORT ssize_t estack_recvfrom(int fd, void *buf, size_t length,
                                            int flags, struct sockaddr *addr, socklen_t len);
 extern DLL_EXPORT ssize_t estack_recv(int fd, void *buf, size_t length, int flags);
+
+#ifdef HAVE_DEBUG
+extern DLL_EXPORT int estack_connect_setlocalport(int fd, uint16_t localp);
+#endif
 CDECL_END
 
 #endif

@@ -28,6 +28,16 @@
 
 #define IP4_TTL_MAX 0xFF
 
+static inline void ipoutput_free(struct netbuf *nb)
+{
+	if(unlikely(netbuf_test_flag(nb, NBUF_WAS_RX))) {
+		netbuf_clear_flag(nb, NBUF_REUSE);
+		netbuf_set_flag(nb, NBUF_ARRIVED);
+	} else {
+		netbuf_free(nb);
+	}
+}
+
 void __ipv4_output(struct netbuf *nb, uint32_t dst)
 {
 	struct ipv4_header *header;
@@ -59,14 +69,14 @@ void __ipv4_output(struct netbuf *nb, uint32_t dst)
 
 	if(dst == INADDR_BCAST || IS_MULTICAST(dst)) {
 		/* broadcast */
-		netbuf_free(nb);
+		ipoutput_free(nb);
 		return;
 	}
 
 	/* Unicast */
 	dev = route4_lookup(dst, &gw);
 	if(!dev) {
-		netbuf_free(nb);
+		ipoutput_free(nb);
 		return;
 	}
 
@@ -91,7 +101,7 @@ void __ipv4_output(struct netbuf *nb, uint32_t dst)
 		break;
 
 	default:
-		netbuf_free(nb);
+		ipoutput_free(nb);
 		return;
 	}
 }

@@ -23,7 +23,12 @@ static int datagram_connect_ipv4(struct socket *sock, const struct sockaddr *add
 	sock->rport = in->sin_port;
 	sock->addr.addr.in4_addr.s_addr = in->sin_addr.s_addr;
 	sock->addr.type = IPADDR_TYPE_V4;
+#ifdef HAVE_DEBUG
+	if(!sock->lport)
+		sock->lport = htons(eph_port_alloc());
+#else
 	sock->lport = htons(eph_port_alloc());
+#endif
 	sock->local.addr.in4_addr.s_addr = INADDR_ANY;
 
 	sock->flags |= SO_CONNECTED;
@@ -52,3 +57,16 @@ int estack_connect(int fd, const struct sockaddr *addr, socklen_t len)
 
 	return -EINVALID;
 }
+
+#ifdef HAVE_DEBUG
+int estack_connect_setlocalport(int fd, uint16_t localp)
+{
+	struct socket *sock;
+
+	sock = socket_get(fd);
+	assert(sock);
+
+	sock->lport = localp;
+	return -EOK;
+}
+#endif

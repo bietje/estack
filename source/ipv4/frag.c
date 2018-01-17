@@ -80,9 +80,7 @@ static struct netbuf *ipfrag_defragment(struct fragment_bucket *fb)
 		memcpy(dst, src, length);
 
 		list_del(lh);
-		if(enb != nb) {
-			netbuf_free(enb);
-		}
+		netbuf_free(enb);
 	}
 
 	list_del(&fb->entry);

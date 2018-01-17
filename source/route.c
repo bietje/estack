@@ -49,21 +49,25 @@ bool route4_add(uint32_t addr, uint32_t mask, uint32_t gw, struct netdev *dev)
 
 	assert(dev);
 
-	if (__route4_search(addr))
+	estack_mutex_lock(&ip4_head.lock, 0);
+	entry = __route4_search(addr);
+	if(entry) {
+		estack_mutex_unlock(&ip4_head.lock);
 		return false;
+	}
 
-	entry = malloc(sizeof(*entry));
+	entry = z_alloc(sizeof(*entry));
 	assert(entry);
 
 	entry->dev = dev;
 	entry->gateway = gw;
 	entry->ip = addr;
 	entry->mask = mask;
+	list_head_init(&entry->entry);
 
-	estack_mutex_lock(&ip4_head.lock, 0);
 	list_add_tail(&entry->entry, &ip4_head.head);
 	estack_mutex_unlock(&ip4_head.lock);
-	return false;
+	return true;
 }
 
 void route4_clear(void)
@@ -112,7 +116,7 @@ static struct iproute4_entry *__route4_lookup(uint32_t ip, uint32_t *gw, uint8_t
 {
 	struct iproute4_entry *entry;
 	struct list_head *e;
-	struct iproute_head *head;
+	volatile struct iproute_head *head;
 
 	entry = NULL;
 

@@ -100,6 +100,7 @@ void icmp_input(struct netbuf *nb)
 	case ICMP_ECHO:
 		print_dbg("\tICMP ECHOREQUEST received!\n");
 		netbuf_set_flag(nb, NBUF_REUSE);
+		netbuf_set_flag(nb, NBUF_WAS_RX);
 		icmp_reflect(nb, ICMP_REPLY);
 		break;
 

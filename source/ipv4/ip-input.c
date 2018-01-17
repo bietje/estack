@@ -52,6 +52,7 @@ static bool ipv4_forward(struct netbuf *nb, struct ipv4_header *hdr)
 
 	netbuf_set_dev(nb, dev);
 	netbuf_set_flag(nb, NBUF_REUSE);
+	netbuf_set_flag(nb, NBUF_WAS_RX);
 	hdr->offset = htons(hdr->offset);
 	hdr->saddr = htonl(hdr->saddr);
 	__ipv4_output(nb, hdr->daddr);
@@ -92,7 +93,6 @@ void ipv4_input(struct netbuf *nb)
 		}
 	}
 
-	/* TODO: fragmentation */
 	hdrlen = hdrlen * sizeof(uint32_t);
 	nb->network.size = hdrlen;
 
@@ -175,6 +175,7 @@ void ipv4_input_postfrag(struct netbuf *nb)
 	case IP_PROTO_IGMP:
 	default:
 		netbuf_set_flag(nb, NBUF_REUSE);
+		netbuf_set_flag(nb, NBUF_WAS_RX);
 		icmp_response(nb, ICMP_UNREACH, ICMP_UNREACH_PROTO, 0);
 		break;
 	}
