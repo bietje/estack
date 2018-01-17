@@ -109,6 +109,7 @@ int main(int argc, char **argv)
 	addr = ipv4_atoi("80.114.190.254");
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 	test_setup_routes(dev);
+	pcapdev_start(dev);
 	test_ipout(dev, addr);
 
 	estack_sleep(1000);
@@ -119,7 +120,7 @@ int main(int argc, char **argv)
 
 	route4_clear();
 	pcapdev_destroy(dev);
-	devcore_destroy();
+	estack_destroy();
 
 	wait_close();
 	return 0;

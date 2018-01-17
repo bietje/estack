@@ -120,6 +120,7 @@ static void udp_task(void *arg)
 	addr = ipv4_atoi("145.49.63.254");
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 	test_setup_routes(dev);
+	pcapdev_start(dev);
 
 	test_udp_output();
 

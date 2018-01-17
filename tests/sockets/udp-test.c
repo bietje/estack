@@ -101,6 +101,7 @@ static void socket_task(void *arg)
 	ipaddr = ipv4_atoi("145.49.63.254");
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&ipaddr, 4);
 	test_setup_routes(dev);
+	pcapdev_start(dev);
 
 	fd = estack_socket(PF_INET, SOCK_DGRAM, 0);
 	memset(&addr, 0, sizeof(addr));

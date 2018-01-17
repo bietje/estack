@@ -80,6 +80,7 @@ int main(int argc, char **argv)
 	dev = pcapdev_create((const char**)&input, 1, "ethernet-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, 0x9131060C, 0, 0xFFFFC000);
+	pcapdev_start(dev);
 
 	ethernet_output(build_dummy_frame(SAMPLE_DATA, dev), dev->hwaddr);
 	estack_sleep(500);

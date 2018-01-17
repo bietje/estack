@@ -37,6 +37,7 @@ struct pcapdev_private {
 	struct netdev dev;
 	int available, nread;
 	estack_thread_t thread;
+	estack_event_t start;
 	bool running;
 };
 
@@ -282,11 +283,13 @@ static inline bool pcapdev_is_running(struct netdev *dev)
 static void pcap_task(void *arg)
 {
 	struct netdev *dev;
+	struct pcapdev_private *priv;
 	int available;
 
 	dev = arg;
+	priv = container_of(dev, struct pcapdev_private, dev);
 
-	estack_sleep(100);
+	estack_event_wait(&priv->start, FOREVER);
 	while(pcapdev_is_running(dev)) {
 		available = dev->available(dev);
 		if(available)
@@ -294,6 +297,14 @@ static void pcap_task(void *arg)
 		
 		estack_sleep(100);
 	}
+}
+
+void pcapdev_start(struct netdev *dev)
+{
+	struct pcapdev_private *priv;
+
+	priv = container_of(dev, struct pcapdev_private, dev);
+	estack_event_signal(&priv->start);
 }
 
 struct netdev *pcapdev_create(const char **srcs, int length, const char *dstfile,
@@ -341,6 +352,7 @@ struct netdev *pcapdev_create(const char **srcs, int length, const char *dstfile
 	pcapdev_unlock(dev);
 
 	priv->thread.name = "pcap-tsk";
+	estack_event_create(&priv->start, 2);
 	estack_thread_create(&priv->thread, pcap_task, dev);
 
 	return dev;
@@ -356,6 +368,7 @@ void pcapdev_destroy(struct netdev *dev)
 	priv->running = false;
 	pcapdev_unlock(dev);
 	estack_thread_destroy(&priv->thread);
+	estack_event_destroy(&priv->start);
 
 	if(priv->srcs && priv->pio) {
 		for(int i = 0; i < priv->length; i++) {

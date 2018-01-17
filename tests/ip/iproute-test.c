@@ -80,6 +80,7 @@ int main(int argc, char **argv)
 	route4_add(0, 0, gw, dev);
 
 	lookup = route4_lookup(ipv4_atoi("8.8.8.8"), &gwlookup);
+	pcapdev_start(dev);
 
 	estack_sleep(1000);
 	assert(gw == gwlookup);

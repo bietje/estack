@@ -23,6 +23,7 @@ extern DLL_EXPORT void pcapdev_create_link_ip4(struct netdev *dev, uint32_t loca
 	uint32_t remote, uint32_t mask);
 extern DLL_EXPORT void pcapdev_destroy(struct netdev *dev);
 extern DLL_EXPORT void pcapdev_set_name(struct netdev *dev, const char *name);
+extern DLL_EXPORT void pcapdev_start(struct netdev *dev);
 CDECL_END
 
 #endif

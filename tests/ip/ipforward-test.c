@@ -103,7 +103,7 @@ int main(int argc, char **argv)
 	dev1 = setup_dev((const char**)&input, "ipforward-input.pcap", hwaddr1, ipv4_atoi("80.114.180.241"), ipv4_atoi("255.255.255.0"));
 	dev2 = setup_dev(NULL, "ipforward-output.pcap", hwaddr2, ipv4_atoi("80.114.190.241"), ipv4_atoi("255.255.255.0"));
 	pcapdev_set_name(dev1, "dbg0");
-	pcapdev_set_name(dev2, "dbg2");
+	pcapdev_set_name(dev2, "dbg1");
 
 	addr = ipv4_atoi("80.114.180.254");
 	netdev_add_destination(dev1, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
@@ -111,8 +111,10 @@ int main(int argc, char **argv)
 	netdev_add_destination(dev2, hw2, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 
 	test_setup_routes(dev1, dev2);
+	pcapdev_start(dev1);
+	pcapdev_start(dev2);
 
-	estack_sleep(1000);
+	estack_sleep(2000);
 	netdev_print(dev1, stdout);
 	putchar('\n');
 	netdev_print(dev2, stdout);

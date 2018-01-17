@@ -118,6 +118,7 @@ static void task_main(void *arg)
 	addr = ipv4_atoi("80.114.190.254");
 	netdev_add_destination(dev, hw1, ETHERNET_MAC_LENGTH, (void*)&addr, 4);
 	test_setup_routes(dev);
+	pcapdev_start(dev);
 	test_ipout(dev, addr);
 
 	estack_sleep(1000);
