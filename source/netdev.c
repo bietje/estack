@@ -630,7 +630,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			continue;
 		}
 
-		if(arrived) {
+		if(arrived && !netbuf_test_flag(nb, NBUF_TX_KEEP)) {
 			weight -= nb->size;
 			netbuf_free(nb);
 		}

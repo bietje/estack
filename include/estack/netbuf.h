@@ -38,6 +38,8 @@ struct DLL_EXPORT nbdata {
 #define NBUF_BCAST            11
 
 #define NBUF_NOCSUM           12
+#define NBUF_WAS_RX           13
+#define NBUF_TX_KEEP          14
 
 typedef enum {
 	NBAF_DATALINK,
