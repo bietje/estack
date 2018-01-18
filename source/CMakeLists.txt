@@ -40,6 +40,10 @@ sockets/connect.c
 sockets/send.c
 sockets/bind.c
 transport/udp.c
+transport/tcp.c
+transport/tcp-pcb.c
+transport/tcpin.c
+transport/tcpout.c
 ${ESTACK_PORT_SRCS}
 )
 
@@ -100,6 +104,7 @@ prototype.h
 route.h
 socket.h
 test.h
+tcp.h
 translate.h
 types.h
 udp.h

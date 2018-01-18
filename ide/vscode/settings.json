@@ -16,7 +16,8 @@
 		"inet.h": "c",
 		"in.h": "c",
 		"in6.h": "c",
-		"route.h": "c"
+		"route.h": "c",
+		"type_traits": "c"
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False",
