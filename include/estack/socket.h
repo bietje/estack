@@ -51,10 +51,6 @@ struct DLL_EXPORT socket {
 	struct list_head lh;
 	estack_mutex_t mtx;
 	estack_event_t read_event;
-
-	void *rcv_buffer;
-	size_t rcv_length,
-		rcv_index;
 	size_t readsize;
 
 	int(*rcv_event)(struct socket *sock, struct netbuf *nb);

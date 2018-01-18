@@ -624,6 +624,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 
 		if(netbuf_test_flag(nb, NBUF_AGAIN)) {
 			__netdev_add_backlog(dev, nb);
+			arrived = 0;
 		} else if(netbuf_test_flag(nb, NBUF_DROPPED)) {
 			netdev_dropped_stats_inc(dev);
 			netbuf_free(nb);

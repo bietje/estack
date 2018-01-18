@@ -40,9 +40,6 @@ static void socket_free(struct socket *sock)
 	estack_event_destroy(&sock->read_event);
 	estack_mutex_unlock(&sock->mtx);
 	estack_mutex_destroy(&sock->mtx);
-
-	if(sock->rcv_buffer)
-		free(sock->rcv_buffer);
 	free(sock);
 }
 
