@@ -109,6 +109,8 @@ uint16_t ip_checksum(uint16_t start, const void *buf, int len)
 
 void ip_input(struct netbuf *nb)
 {
+	netdev_demux_handle(nb);
+
 	switch(nb->protocol) {
 	case PROTO_IPV4:
 		ipv4_input(nb);

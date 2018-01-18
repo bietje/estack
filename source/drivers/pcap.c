@@ -25,6 +25,7 @@
 #include <estack/netdev.h>
 #include <estack/ethernet.h>
 #include <estack/error.h>
+#include <estack/prototype.h>
 
 struct pcapdev_private {
 	pcap_t **pio;
@@ -194,7 +195,7 @@ static int pcapdev_read(struct netdev *dev, int num)
 		nb = netbuf_alloc(NBAF_DATALINK, length);
 		netbuf_cpy_data(nb, data, length, NBAF_DATALINK);
 		netbuf_set_flag(nb, NBUF_RX);
-		nb->protocol = ethernet_get_type(nb);
+		nb->protocol = PROTO_ETHERNET;
 		nb->size = length;
 		pcapdev_unlock(dev);
 		netdev_add_backlog(dev, nb);

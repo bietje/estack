@@ -159,8 +159,10 @@ void ipv4_input(struct netbuf *nb)
 void ipv4_input_postfrag(struct netbuf *nb)
 {
 	struct ipv4_header *hdr;
+	bool demux;
 
 	hdr = nb->network.data;
+	demux = netdev_demux_handle(nb);
 
 	switch(hdr->protocol) {
 	case IP_PROTO_ICMP:
@@ -174,9 +176,11 @@ void ipv4_input_postfrag(struct netbuf *nb)
 
 	case IP_PROTO_IGMP:
 	default:
-		netbuf_set_flag(nb, NBUF_REUSE);
-		netbuf_set_flag(nb, NBUF_WAS_RX);
-		icmp_response(nb, ICMP_UNREACH, ICMP_UNREACH_PROTO, 0);
+		if(!demux) {
+			netbuf_set_flag(nb, NBUF_REUSE);
+			netbuf_set_flag(nb, NBUF_WAS_RX);
+			icmp_response(nb, ICMP_UNREACH, ICMP_UNREACH_PROTO, 0);
+		}
 		break;
 	}
 }
