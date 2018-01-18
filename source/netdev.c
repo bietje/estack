@@ -766,24 +766,30 @@ void netdev_config_params(struct netdev *dev, int maxrx, int maxweight)
 	netdev_unlock_core();
 }
 
-static void __netdev_demux_handle(struct netbuf *nb)
+static bool __netdev_demux_handle(struct netbuf *nb)
 {
 	struct netdev *dev;
 	struct list_head *entry;
 	struct protocol *proto;
+	bool rv;
 
 	dev = nb->dev;
+	rv = false;
+
 	netdev_lock(dev);
 	list_for_each(entry, &dev->protocols) {
 		proto = list_entry(entry, struct protocol, entry);
-		if(proto->protocol == nb->protocol) {
+		if(unlikely(proto->protocol == nb->protocol)) {
 			netdev_unlock(dev);
 			proto->rx(nb);
 			netdev_lock(dev);
+			rv = true;
 		}
 	}
 
 	netdev_unlock(dev);
+
+	return rv;
 }
 
 /**
@@ -807,13 +813,15 @@ void netdev_config_core_params(uint32_t retry_tmo, uint32_t resolv_tmo, int retr
  *
  * The external handlers will be selected based on the value of `struct netbuf::protocol`.
  */
-void netdev_demux_handle(struct netbuf *nb)
+bool netdev_demux_handle(struct netbuf *nb)
 {
 	assert(nb);
 	assert(nb->dev);
 
 	if(likely(nb->protocol != 0))
-		__netdev_demux_handle(nb);
+		return __netdev_demux_handle(nb);
+	
+	return false;
 }
 
 static inline struct netdev_stats *netdev_get_stats(struct netdev *dev)
