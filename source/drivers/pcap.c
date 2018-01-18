@@ -37,7 +37,6 @@ struct pcapdev_private {
 	struct netdev dev;
 	int available, nread;
 	estack_thread_t thread;
-	estack_event_t start;
 	bool running;
 };
 
@@ -55,6 +54,9 @@ static pcap_t *pcapdev_open_file(const char *src)
 {
 	char errb[PCAP_ERRBUF_SIZE];
 	pcap_t *cap;
+
+	if(!src)
+		return NULL;
 
 	memset(errb, 0, PCAP_ERRBUF_SIZE);
 	cap = pcap_open_offline(src, errb);
@@ -182,6 +184,11 @@ static int pcapdev_read(struct netdev *dev, int num)
 	}
 
 	cap = priv->pio[priv->idx];
+	if(!cap) {
+		pcapdev_unlock(dev);
+		return 0;
+	}
+
 	while(priv->nread > 0 && (rv = pcap_next_ex(cap, &hdr, &data)) >= 0 && num > 0) {
 		length = hdr->len;
 		nb = netbuf_alloc(NBAF_DATALINK, length);
@@ -283,13 +290,10 @@ static inline bool pcapdev_is_running(struct netdev *dev)
 static void pcap_task(void *arg)
 {
 	struct netdev *dev;
-	struct pcapdev_private *priv;
 	int available;
 
 	dev = arg;
-	priv = container_of(dev, struct pcapdev_private, dev);
 
-	estack_event_wait(&priv->start, FOREVER);
 	while(pcapdev_is_running(dev)) {
 		available = dev->available(dev);
 		if(available)
@@ -301,10 +305,7 @@ static void pcap_task(void *arg)
 
 void pcapdev_start(struct netdev *dev)
 {
-	struct pcapdev_private *priv;
-
-	priv = container_of(dev, struct pcapdev_private, dev);
-	estack_event_signal(&priv->start);
+	pcapdev_next_src(dev);
 }
 
 struct netdev *pcapdev_create(const char **srcs, int length, const char *dstfile,
@@ -319,18 +320,20 @@ struct netdev *pcapdev_create(const char **srcs, int length, const char *dstfile
 	assert(dstfile);
 
 	if(srcs && length) {
-		priv->srcs = calloc(length, sizeof(void*));
-		priv->pio = calloc(length, sizeof(void*));
+		priv->srcs = calloc(length + 1, sizeof(void*));
+		priv->pio = calloc(length + 1, sizeof(void*));
 		priv->idx = 0;
-		priv->length = length;
+		priv->length = length + 1;
+		priv->srcs[0] = NULL;
+		priv->pio[0] = NULL;
 
 		for(int i = 0; i < length; i++) {
 			len = strlen(srcs[i]);
-			priv->srcs[i] = z_alloc(len + 1);
-			strcpy(priv->srcs[i], srcs[i]);
-			priv->pio[i] = pcapdev_open_file(srcs[i]);
+			priv->srcs[i+1] = z_alloc(len + 1);
+			strcpy(priv->srcs[i+1], srcs[i]);
+			priv->pio[i+1] = pcapdev_open_file(srcs[i]);
 
-			assert(priv->pio[i]);
+			assert(priv->pio[i+1]);
 		}
 	}
 
@@ -352,7 +355,6 @@ struct netdev *pcapdev_create(const char **srcs, int length, const char *dstfile
 	pcapdev_unlock(dev);
 
 	priv->thread.name = "pcap-tsk";
-	estack_event_create(&priv->start, 2);
 	estack_thread_create(&priv->thread, pcap_task, dev);
 
 	return dev;
@@ -368,10 +370,9 @@ void pcapdev_destroy(struct netdev *dev)
 	priv->running = false;
 	pcapdev_unlock(dev);
 	estack_thread_destroy(&priv->thread);
-	estack_event_destroy(&priv->start);
 
 	if(priv->srcs && priv->pio) {
-		for(int i = 0; i < priv->length; i++) {
+		for(int i = 1; i < priv->length; i++) {
 			pcap_close(priv->pio[i]);
 			free(priv->srcs[i]);
 		}
