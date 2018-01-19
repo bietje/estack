@@ -6,7 +6,15 @@ include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} ${ESTACK
 add_executable(udp-test udp-test.c)
 target_link_libraries(udp-test estack-static ${PCAP_LIBRARY} ${ESTACK_SYSTEM_LIBS})
 
+add_executable(tcp-connect-test tcp-connect.c)
+target_link_libraries(tcp-connect-test estack-static ${PCAP_LIBRARY} ${ESTACK_SYSTEM_LIBS})
+
 add_custom_target(run_udptest
 COMMAND udp-test resources/udp-input.pcap resources/dns-response.pcap
 DEPENDS udp-test
+WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_custom_target(run_tcpconnect
+COMMAND tcp-connect-test resources/tcp/client/synack.pcap resources/tcp/client/data-ack.pcap resources/tcp/client/data-push.pcap resources/tcp/client/fin-ack.pcap
+DEPENDS tcp-connect-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

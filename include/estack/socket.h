@@ -83,6 +83,8 @@ typedef enum {
 
 CDECL
 extern DLL_EXPORT int socket_add(struct socket *socket);
+extern DLL_EXPORT void socket_destroy(struct socket *sock);
+extern DLL_EXPORT void socket_init(struct socket *sock);
 extern DLL_EXPORT struct socket *socket_remove(int fd);
 extern DLL_EXPORT struct socket *socket_find(ip_addr_t *addr, uint16_t port);
 extern DLL_EXPORT struct socket *socket_get(int fd);

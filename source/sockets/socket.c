@@ -13,11 +13,19 @@
 
 #include <estack/error.h>
 #include <estack/socket.h>
+#include <estack/tcp.h>
 
 #define SOCK_EVENT_LENGTH MAX_SOCKETS
 
 extern DLL_EXPORT int socket_stream_receive_event(struct socket *sock, struct netbuf *nb);
 extern DLL_EXPORT int socket_datagram_receive_event(struct socket *sock, struct netbuf *nb);
+
+void socket_init(struct socket *sock)
+{
+	estack_mutex_create(&sock->mtx, 0);
+	estack_event_create(&sock->read_event, SOCK_EVENT_LENGTH);
+	list_head_init(&sock->lh);
+}
 
 static struct socket *socket_alloc(void)
 {
@@ -26,20 +34,28 @@ static struct socket *socket_alloc(void)
 	sock = z_alloc(sizeof(*sock));
 	assert(sock);
 
-	estack_mutex_create(&sock->mtx, 0);
-	estack_event_create(&sock->read_event, SOCK_EVENT_LENGTH);
-	list_head_init(&sock->lh);
+	socket_init(sock);
 	return sock;
+}
+
+void socket_destroy(struct socket *sock)
+{
+	estack_mutex_lock(&sock->mtx, 0);
+	estack_event_destroy(&sock->read_event);
+	estack_mutex_unlock(&sock->mtx);
+	estack_mutex_destroy(&sock->mtx);
 }
 
 static void socket_free(struct socket *sock)
 {
 	assert(sock);
 
-	estack_mutex_lock(&sock->mtx, 0);
-	estack_event_destroy(&sock->read_event);
-	estack_mutex_unlock(&sock->mtx);
-	estack_mutex_destroy(&sock->mtx);
+	if(sock->flags & (SO_STREAM | SO_TCP)) {
+		tcp_socket_free(sock);
+		return;
+	}
+
+	socket_destroy(sock);
 	free(sock);
 }
 
@@ -47,7 +63,6 @@ int estack_socket(int domain, int type, int protocol)
 {
 	struct socket *sock;
 
-	sock = socket_alloc();
 	if(domain == AF_INET)
 		domain = PF_INET;
 
@@ -56,6 +71,11 @@ int estack_socket(int domain, int type, int protocol)
 
 	if(domain != PF_INET && domain != PF_INET6)
 		return -EINVALID;
+
+	if(type == SOCK_STREAM)
+		sock = tcp_socket_alloc();
+	else
+		sock = socket_alloc();
 	
 	if(domain == PF_INET)
 		sock->local.type = IPADDR_TYPE_V4;

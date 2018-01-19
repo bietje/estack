@@ -13,6 +13,7 @@
 
 #include <estack/error.h>
 #include <estack/socket.h>
+#include <estack/tcp.h>
 
 static int datagram_connect_ipv4(struct socket *sock, const struct sockaddr *addr, socklen_t len)
 {
@@ -36,6 +37,27 @@ static int datagram_connect_ipv4(struct socket *sock, const struct sockaddr *add
 	return 0;
 }
 
+static int stream_connect_ipv4(struct socket *sock, const struct sockaddr *addr, socklen_t len)
+{
+	struct sockaddr_in *in;
+
+	in = (struct sockaddr_in*)addr;
+	print_dbg("Stream connect: 0x%x\n", ntohl(in->sin_addr.s_addr));
+	sock->rport = in->sin_port;
+	sock->addr.addr.in4_addr.s_addr = in->sin_addr.s_addr;
+	sock->addr.type = IPADDR_TYPE_V4;
+#ifdef HAVE_DEBUG
+	if(!sock->lport)
+		sock->lport = htons(eph_port_alloc());
+#else
+	sock->lport = htons(eph_port_alloc());
+#endif
+	sock->local.addr.in4_addr.s_addr = INADDR_ANY;
+
+	sock->flags |= SO_CONNECTED;
+	return tcp_connect(sock);
+}
+
 int estack_connect(int fd, const struct sockaddr *addr, socklen_t len)
 {
 	struct socket *sock;
@@ -50,6 +72,8 @@ int estack_connect(int fd, const struct sockaddr *addr, socklen_t len)
 	case AF_INET:
 		if(sock->flags & SO_DGRAM)
 			return datagram_connect_ipv4(sock, addr, len);
+		if(sock->flags & SO_STREAM)
+			return stream_connect_ipv4(sock, addr, len);
 		break;
 	case AF_INET6:
 		return -EINVALID;
