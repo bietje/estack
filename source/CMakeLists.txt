@@ -40,6 +40,9 @@ sockets/connect.c
 sockets/send.c
 sockets/bind.c
 transport/udp.c
+transport/tcp.c
+transport/tcp-in.c
+transport/tcp-out.c
 ${ESTACK_PORT_SRCS}
 )
 
@@ -103,6 +106,7 @@ test.h
 translate.h
 types.h
 udp.h
+tcp.h
 )
 
 SET(BASE_HDRS
