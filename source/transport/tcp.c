@@ -183,6 +183,7 @@ int tcp_connect(struct socket *sock)
 		pcb->dev = dev;
 	} else {
 		print_dbg("TCP/IPv6 not yet supported!\n");
+		return -EINVALID;
 	}
 
 	if(!pcb->dev) {
