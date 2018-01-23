@@ -107,6 +107,50 @@ struct netbuf *netbuf_alloc(netbuf_type_t type, size_t size)
 	return nb;
 }
 
+void netbuf_free_partial(struct netbuf *nb, netbuf_type_t type)
+{
+	struct nbdata *nbd;
+
+	assert(nb);
+	nbd = NULL;
+
+	switch(type) {
+	case NBAF_DATALINK:
+		if(!(nb->flags & NBAF_DATALINK_MASK))
+			return;
+		nbd = &nb->datalink;
+		break;
+
+	case NBAF_NETWORK:
+		if(!(nb->flags & NBAF_NETWORK_MASK))
+			return;
+		nbd = &nb->network;
+		break;
+
+	case NBAF_TRANSPORT:
+		if(!(nb->flags & NBAF_TRANSPORT_MASK))
+			return;
+		
+		nbd = &nb->transport;
+		break;
+
+	case NBAF_APPLICTION:
+		if(!(nb->flags & NBAF_APPLICTION_MASK))
+			return;
+		
+		nbd = &nb->application;
+		break;
+
+	default:
+		return;
+	}
+
+	if(nbd && nbd->data) {
+		free(nbd->data);
+		nbd->size = 0;
+	}
+}
+
 void netbuf_free(struct netbuf *nb)
 {
 	assert(nb);
@@ -164,8 +208,9 @@ void netbuf_cpy_data_offset(struct netbuf *nb, size_t ofs, const void *src,
 	struct nbdata *nbd;
 
 	assert(nb);
-	assert(src);
-	assert(length > 0);
+
+	if(!src || !length)
+		return;
 
 	switch(type) {
 	case NBAF_DATALINK:

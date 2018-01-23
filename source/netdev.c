@@ -91,14 +91,9 @@ struct netdev *netdev_find(const char *name)
 	return NULL;
 }
 
-void netdev_wakeup(void)
+static inline int netdev_backlog_empty(struct netdev *dev)
 {
-	estack_event_signal(&devcore.event);
-}
-
-void netdev_wakeup_irq(void)
-{
-	estack_event_signal_irq(&devcore.event);
+	return list_empty(&dev->backlog.head);
 }
 
 /**
@@ -176,22 +171,12 @@ void netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
 	netdev_unlock(dev);
 }
 
-/**
- * @brief Remove a backlog entry.
- * @param dev Device to remove \p nb from.
- * @param nb Packet buffer to remove.
- */
 static inline void netdev_remove_backlog_entry(struct netdev *dev, struct netbuf *nb)
 {
 	list_del(&nb->bl_entry);
 	dev->backlog.size -= 1;
 }
 
-/**
- * @brief Getter for the backlog length.
- * @param dev Device to get the backlog length for.
- * @return The length of the backlog for \p dev.
- */
 static int netdev_backlog_length(struct netdev *dev)
 {
 	int length;
@@ -573,74 +558,138 @@ static void netdev_try_translate_cache(struct netdev *dev)
 	}
 }
 
+static void netdev_prepare_xmit(struct netdev *dev, struct netbuf *nb)
+{
+	size_t offset, tmp;
+
+	if(unlikely(netbuf_test_and_set_flag(nb, NBUF_IS_LINEAR)))
+		return;
+
+	tmp = offset = nb->datalink.size;
+	netbuf_realloc(nb, NBAF_DATALINK, nb->size);
+	if(nb->network.data) {
+		netbuf_cpy_data_offset(nb, offset, nb->network.data, nb->network.size, NBAF_DATALINK);
+		offset += nb->network.size;
+	}
+
+	if(nb->transport.data) {
+		netbuf_cpy_data_offset(nb, offset, nb->transport.data, nb->transport.size, NBAF_DATALINK);
+		offset += nb->transport.size;
+	}
+
+	if(nb->application.data) {
+		netbuf_cpy_data_offset(nb, offset, nb->application.data,
+			nb->application.size, NBAF_DATALINK);
+	}
+
+	netbuf_free_partial(nb, NBAF_NETWORK);
+	netbuf_free_partial(nb, NBAF_TRANSPORT);
+	netbuf_free_partial(nb, NBAF_APPLICTION);
+
+	nb->network.data     = (uint8_t*)nb->datalink.data + tmp;
+	nb->transport.data   = (uint8_t*)nb->network.data + nb->network.size;
+	nb->application.data = (uint8_t*)nb->transport.data + nb->transport.size;
+
+	nb->flags &= ~(NBAF_APPLICTION_MASK | NBAF_TRANSPORT_MASK | NBAF_NETWORK_MASK);
+}
+
+static inline void netdev_deliver(struct netdev *dev, struct netbuf *nb)
+{
+	netdev_unlock(dev);
+	dev->rx(nb);
+	netdev_lock(dev);
+}
+
+static inline int netbuf_done(struct netbuf *nb)
+{
+	int rc;
+
+	rc = !(nb->flags & ((1 << NBUF_TX_KEEP) | (1 << NBUF_REUSE) | (1 << NBUF_AGAIN)));
+	return netbuf_test_flag(nb, NBUF_ARRIVED) && rc;
+}
+
+static inline int netbuf_test_and_clear_rx(struct netbuf *nb)
+{
+	register uint32_t old;
+
+	old = netbuf_test_and_clear_flag(nb, NBUF_RX);
+	nb->flags |= old << NBUF_WAS_RX;
+
+	return (int)old;
+}
+
 static int netdev_process_backlog(struct netdev *dev, int weight)
 {
 	struct netbuf *nb;
-	struct list_head *entry,
-		*tmp;
-	int rc, arrived;
+	struct list_head *entry, *tmp;
 
 	netdev_lock(dev);
-	if(unlikely(list_empty(&dev->backlog.head))) {
+	netdev_try_translate_cache(dev);
+
+	if(unlikely(netdev_backlog_empty(dev))) {
 		netdev_unlock(dev);
 		return -EOK;
 	}
 
 	backlog_for_each_safe(&dev->backlog, entry, tmp) {
-		nb = list_entry(entry, struct netbuf, bl_entry);
-
-		if(weight < 0)
+		if(weight <= 0)
 			break;
 
+		nb = list_entry(entry, struct netbuf, bl_entry);
 		netdev_remove_backlog_entry(dev, nb);
-		if(likely(netbuf_test_and_clear_flag(nb, NBUF_RX))) {
-			/*
-			 * Push arriving packets into the network stack through the
-			 * receive handle: struct netdev:rx().
-			 */
+
+		if(likely(netbuf_test_and_clear_rx(nb))) {
+			netbuf_set_flag(nb, NBUF_IS_LINEAR);
 			netbuf_set_dev(nb, dev);
-			netbuf_set_timestamp(nb);
-			nb->protocol = ntohs(nb->protocol);
-			nb->size = netbuf_get_size(nb);
+			nb->size = netbuf_calc_size(nb);
+			netdev_deliver(dev, nb);
 
-			netdev_unlock(dev);
-			dev->rx(nb);
-			netdev_lock(dev);
-
-			if(likely(netbuf_test_flag(nb, NBUF_ARRIVED) || netbuf_test_flag(nb, NBUF_REUSE))) {
+			if(netbuf_dropped(nb))
+				netdev_dropped_stats_inc(dev);
+			
+			if(netbuf_arrived(nb))
 				netdev_rx_stats_inc(dev, nb);
-				arrived = !netbuf_test_and_clear_flag(nb, NBUF_REUSE);
-			} else {
-				arrived = 0;
-			}
 		} else {
 			nb->size = netbuf_calc_size(nb);
-			rc = dev->write(dev, nb);
-			arrived = !rc;
+			netdev_prepare_xmit(dev, nb);
 
-			if(!rc)
+			if(likely(dev->write(dev, nb) == -EOK)) {
 				netdev_tx_stats_inc(dev, nb);
+			} else if(unlikely(netbuf_test_and_clear_flag(nb, NBUF_AGAIN))) {
+				__netdev_add_backlog(dev, nb);
+				netbuf_clear_flag(nb, NBUF_ARRIVED);
+				continue;
+			}
+
+			if(netbuf_test_flag(nb, NBUF_TX_KEEP))
+				continue;
 		}
 
-		if(netbuf_test_flag(nb, NBUF_AGAIN)) {
-			__netdev_add_backlog(dev, nb);
-			arrived = 0;
-		} else if(netbuf_test_flag(nb, NBUF_DROPPED)) {
-			netdev_dropped_stats_inc(dev);
+		weight -= nb->size;
+		if(netbuf_done(nb))
 			netbuf_free(nb);
-			continue;
-		}
-
-		if(arrived && !netbuf_test_flag(nb, NBUF_TX_KEEP)) {
-			weight -= nb->size;
-			netbuf_free(nb);
-		}
+		else
+			netbuf_clear_flag(nb, NBUF_REUSE);
 	}
 
-	/* Attempt to resolve any unresolved destination cache entries. */
-	netdev_try_translate_cache(dev);
 	netdev_unlock(dev);
 	return weight;
+}
+
+/**
+ * @brief Wake up the core processor thread.
+ */
+void netdev_wakeup(void)
+{
+	estack_event_signal(&devcore.event);
+}
+
+/**
+ * @brief Wake up the core processor thread from an ISR.
+ */
+void netdev_wakeup_irq(void)
+{
+	estack_event_signal_irq(&devcore.event);
 }
 
 /**
@@ -698,6 +747,12 @@ int netdev_poll_all(void)
 	return num;
 }
 
+/**
+ * @brief Poll the networking core asynchronously.
+ *
+ * Poll all available network devices asynchronously by waking up
+ * the core processing thread.
+ */
 void netdev_poll_async(void)
 {
 	struct list_head *entry;

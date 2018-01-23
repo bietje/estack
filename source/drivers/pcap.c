@@ -120,7 +120,6 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	struct pcap_pkthdr hdr;
 	struct pcapdev_private *priv;
 	uint8_t *data;
-	int index;
 	time_t timestamp;
 
 	assert(dev);
@@ -128,33 +127,21 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 
 	priv = container_of(dev, struct pcapdev_private, dev);
 
+	memset(&hdr, 0, sizeof(hdr));
 	hdr.caplen = hdr.len = nb->size;
 	timestamp = estack_utime();
 	hdr.ts.tv_sec = (long)(timestamp / 1e6L);
 	hdr.ts.tv_usec = timestamp % (long)1e6L;
-
 	data = malloc(hdr.len);
-	index = 0;
+	memset(data, 0, hdr.len);
 
-	if(nb->datalink.size > 0) {
-		memcpy(data + index, nb->datalink.data, nb->datalink.size);
-		index += nb->datalink.size;
-	}
-	if(nb->network.size > 0) {
-		memcpy(data + index, nb->network.data, nb->network.size);
-		index += nb->network.size;
-	}
-	if(nb->transport.size > 0) {
-		memcpy(data + index, nb->transport.data, nb->transport.size);
-		index += nb->transport.size;
-	}
-	if(nb->application.size > 0) {
-		memcpy(data + index, nb->application.data, nb->application.size);
-		index += nb->application.size;
-	}
+	memcpy(data, nb->datalink.data, nb->datalink.size);
 
 	pcap_dump((u_char*)priv->dumper, &hdr, data);
+	pcap_dump_flush(priv->dumper);
 	free(data);
+
+	netbuf_set_flag(nb, NBUF_ARRIVED);
 
 	return -EOK;
 }

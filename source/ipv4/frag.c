@@ -226,7 +226,7 @@ void ipfrag4_add_packet(struct netbuf *nb)
 			nb = ipfrag_defragment(fb);
 			ipv4_input_postfrag(nb);
 
-			if(!netbuf_test_flag(nb, NBUF_REUSE))
+			if(!netbuf_test_and_clear_flag(nb, NBUF_REUSE))
 				netbuf_free(nb);
 			return;
 
