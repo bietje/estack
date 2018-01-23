@@ -93,7 +93,7 @@ static void socket_task(void *arg)
 	const char **argv = arg;
 
 	estack_init(stdout);
-	dev = pcapdev_create((const char**) argv+1, 4, "tcptest-output.pcap", hwaddr, 1500);
+	dev = pcapdev_create((const char**) argv+1, 1, "tcptest-output.pcap", hwaddr, 1500);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, ipv4_atoi("145.49.61.83"), 0, 0xFFFFC000);
 

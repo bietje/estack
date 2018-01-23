@@ -15,6 +15,6 @@ DEPENDS udp-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_custom_target(run_tcpconnect
-COMMAND tcp-connect-test resources/tcp/client/synack.pcap resources/tcp/client/data-ack.pcap resources/tcp/client/data-push.pcap resources/tcp/client/fin-ack.pcap
+COMMAND tcp-connect-test resources/tcp/client/synack.pcap
 DEPENDS tcp-connect-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

@@ -13,6 +13,4 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/ip-fragments.pcap ${CMAKE_BINARY_DIR}
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/udp-input.pcap ${CMAKE_BINARY_DIR}/resources/udp-input.pcap COPYONLY)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/client/synack.pcap ${CMAKE_BINARY_DIR}/resources/tcp/client/synack.pcap COPYONLY)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/client/data-ack.pcap ${CMAKE_BINARY_DIR}/resources/tcp/client/data-ack.pcap COPYONLY)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/client/data-push.pcap ${CMAKE_BINARY_DIR}/resources/tcp/client/data-push.pcap COPYONLY)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/client/fin-ack.pcap ${CMAKE_BINARY_DIR}/resources/tcp/client/fin-ack.pcap COPYONLY)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/syn.pcap ${CMAKE_BINARY_DIR}/resources/tcp/syn.pcap COPYONLY)
