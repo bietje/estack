@@ -275,7 +275,6 @@ struct netbuf *netbuf_clone(struct netbuf *nb, uint32_t layers)
 	copy->size = nb->size;
 	copy->protocol = nb->protocol;
 	copy->dev = nb->dev;
-	copy->timestamp = nb->timestamp;
 
 	return copy;
 }

@@ -66,7 +66,6 @@ struct DLL_EXPORT netbuf {
 
 	struct netdev *dev;
 	uint16_t protocol;
-	time_t timestamp;
 	uint32_t flags;
 };
 
@@ -118,11 +117,6 @@ static inline void netbuf_set_flag(struct netbuf *nb, unsigned int num)
 
 	mask = 1UL << num;
 	nb->flags |= mask;
-}
-
-static inline void netbuf_set_timestamp(struct netbuf *nb)
-{
-	nb->timestamp = estack_utime();
 }
 
 static inline void netbuf_set_dev(struct netbuf *nb, struct netdev *dev)
