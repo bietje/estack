@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <time.h>
+#include <assert.h>
 #include <estack.h>
 
 #include <estack/error.h>
@@ -55,10 +56,12 @@ static void timer_thread_handle(void *arg)
 				timer->handle(timer, timer->arg);
 				timers_lock();
 
-				if(timer->oneshot)
+				if(timer->oneshot) {
 					list_del(entry);
-				else
+					timer->state = TIMER_STOPPED;
+				} else {
 					timer->expiry = now + timer->tmo;
+				}
 			}
 		}
 		timers_unlock();
@@ -100,34 +103,45 @@ void estack_timer_create(estack_timer_t *timer, const char *name, int ms,
 		timer->oneshot = false;
 
 	list_head_init(&timer->entry);
+	timer->state = TIMER_CREATED;
 }
 
-int estack_timer_start(estack_timer_t *timer, int delay)
+int estack_timer_start(estack_timer_t *timer)
 {
-	UNUSED(delay);
+	if(timer->state == TIMER_RUNNING)
+		return -EINVALID;
 
 	timers_lock();
 	timer->expiry = estack_utime() + timer->tmo;
+	timer->state = TIMER_RUNNING;
 	list_add(&timer->entry, &timers);
 	timers_unlock();
 
 	return -EOK;
 }
 
-int estack_timer_stop(estack_timer_t *timer, int delay)
+int estack_timer_stop(estack_timer_t *timer)
 {
-	UNUSED(delay);
+
+	if(timer->state != TIMER_RUNNING)
+		return -EINVALID;
 
 	timers_lock();
+	timer->state = TIMER_STOPPED;
 	list_del(&timer->entry);
 	timers_unlock();
 
 	return -EOK;
 }
 
-int estack_timer_destroy(estack_timer_t *timer, int delay)
+int estack_timer_destroy(estack_timer_t *timer)
 {
-	UNUSED(timer);
-	UNUSED(delay);
+	estack_timer_stop(timer);
 	return -EOK;
+}
+
+bool estack_timer_is_running(estack_timer_t *timer)
+{
+	assert(timer);
+	return timer->state == TIMER_RUNNING;
 }

@@ -54,12 +54,13 @@ extern DLL_EXPORT void estack_event_signal_irq(estack_event_t *event);
 #define TIMER_ONSHOT_FLAG 0x1
 extern DLL_EXPORT void estack_timer_create(estack_timer_t *timer, const char *name, int ms,
 	uint32_t flags, void *arg, void (*cb)(estack_timer_t *timer, void *arg));
-extern DLL_EXPORT int estack_timer_start(estack_timer_t *timer, int delay);
-extern DLL_EXPORT int estack_timer_destroy(estack_timer_t *timer, int delay);
-extern DLL_EXPORT int estack_timer_stop(estack_timer_t *timer, int delay);
-extern DLL_EXPORT int estack_timer_destroy(estack_timer_t *timer, int delay);
+extern DLL_EXPORT int estack_timer_start(estack_timer_t *timer);
+extern DLL_EXPORT int estack_timer_destroy(estack_timer_t *timer);
+extern DLL_EXPORT int estack_timer_stop(estack_timer_t *timer);
+extern DLL_EXPORT int estack_timer_destroy(estack_timer_t *timer);
 extern DLL_EXPORT void estack_timers_init(void);
 extern DLL_EXPORT void estack_timers_destroy(void);
+extern DLL_EXPORT bool estack_timer_is_running(estack_timer_t *timer);
 
 #define FOREVER 0
 CDECL_END

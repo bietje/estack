@@ -14,6 +14,13 @@
 
 #include <estack/compiler.h>
 #include <estack/types.h>
+
+typedef enum {
+	TIMER_CREATED = 1,
+	TIMER_RUNNING,
+	TIMER_STOPPED,
+} timer_state_t;
+
 #include <estack/port.h>
 
 #ifndef UNUSED

@@ -47,5 +47,6 @@ typedef DLL_EXPORT struct timer {
 	time_t expiry;
 	int tmo;
 	void *arg;
+	timer_state_t state;
 #define HAVE_TIMER
 } estack_timer_t;

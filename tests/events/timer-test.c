@@ -42,7 +42,7 @@ static void timer_cb(estack_timer_t *timer, void *arg)
 	print_dbg("Timer triggered!\n");
 
 	if(tmr == 5)
-		estack_timer_stop(timer, 0);
+		estack_timer_stop(timer);
 }
 
 static void timer_task(void *arg)
@@ -51,10 +51,10 @@ static void timer_task(void *arg)
 
 	estack_init(NULL);
 	estack_timer_create(&timer1, "timer1", 1000, 0, NULL, timer_cb);
-	estack_timer_start(&timer1, 200);
+	estack_timer_start(&timer1);
 
 	estack_sleep(7000);
-	print_dbg("Deleting timer: %i\n", estack_timer_destroy(&timer1, 10));
+	print_dbg("Deleting timer: %i\n", estack_timer_destroy(&timer1));
 	estack_destroy();
 
 	print_dbg("Timer test finished\n");

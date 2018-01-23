@@ -30,7 +30,7 @@ DEPENDS iproute-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_custom_target(run_icmp
-COMMAND icmp-test resources/icmp-reply.pcap
+COMMAND icmp-test resources/icmp-request.pcap
 DEPENDS icmp-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 

@@ -44,6 +44,8 @@ typedef struct timer {
 	void *arg;
 	void (*handle)(struct timer *timer, void *arg);
 	bool oneshot;
+	timer_state_t state;
+	bool created;
 #define HAVE_TIMER
 } estack_timer_t;
 

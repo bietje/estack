@@ -108,9 +108,8 @@ static void socket_task(void *arg)
 	in.sin_family = AF_INET;
 	assert(estack_connect(fd, (struct sockaddr*)&in, sizeof(in)) == 0);
 
+	estack_sleep(600);
 	estack_close(fd);
-
-	estack_sleep(300);
 
 	netdev_print(dev, stdout);
 	route4_clear();

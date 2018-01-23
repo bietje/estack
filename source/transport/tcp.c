@@ -54,6 +54,8 @@ void tcp_socket_free(struct socket *sock)
 	struct tcp_pcb *tcb;
 
 	tcb = container_of(sock, struct tcp_pcb, sock);
+	estack_timer_destroy(&tcb->rtx);
+	estack_timer_destroy(&tcb->keepalive);
 	socket_destroy(sock);
 	free(tcb);
 }
@@ -75,11 +77,12 @@ static int tcp_queue_transmit_nb(struct tcp_pcb *pcb, struct netbuf *nb)
 	hdr = nb->transport.data;
 	if(pcb->inflight == 0) {
 		list_add_tail(&nb->entry, &pcb->unack_q);
-		rc = tcp_output(nb, pcb);
 		pcb->inflight++;
 		pcb->snd_next += tcp_datalength(hdr, (uint16_t)nb->transport.size);
 		if(tcp_hdr_get_flags(hdr) & TCP_FIN)
 			pcb->snd_next++;
+		netbuf_set_flag(nb, NBUF_TX_KEEP);
+		rc = tcp_output(nb, pcb);
 	} else {
 		list_add_tail(&nb->entry, &pcb->snd_q);
 		rc = -EOK;
@@ -202,7 +205,7 @@ int tcp_connect(struct socket *sock)
 	pcb->iss = 0;
 
 	estack_timer_create(&pcb->rtx, "rto", TCP_SYN_BACKOFF << pcb->backoff, 0, pcb, tcp_rto_timer);
-	estack_timer_start(&pcb->rtx, 40);
+	estack_timer_start(&pcb->rtx);
 	rc = tcp_send_syn(pcb, dev);
 	pcb->snd_next++;
 	tcp_pcb_unlock(pcb);

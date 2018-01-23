@@ -184,6 +184,9 @@ static void vTimerCallbackHook(TimerHandle_t xTimer)
 
 	tmr = pvTimerGetTimerID(xTimer);
 	tmr->handle(tmr, tmr->arg);
+
+	if(tmr->oneshot)
+		tmr->state = TIMER_STOPPED;
 }
 
 void estack_timer_create(estack_timer_t *timer, const char *name, int ms,
@@ -198,28 +201,59 @@ void estack_timer_create(estack_timer_t *timer, const char *name, int ms,
 		timer->oneshot = false;
 
 	timer->timer = xTimerCreate(name, ms / portTICK_PERIOD_MS, !timer->oneshot, timer, vTimerCallbackHook);
+	timer->created = true;
+	timer->state = TIMER_CREATED;
 }
 
-int estack_timer_start(estack_timer_t *timer, int delay)
+int estack_timer_start(estack_timer_t *timer)
 {
 	BaseType_t bt;
 
-	bt = xTimerStart(timer->timer, delay / portTICK_PERIOD_MS);
+	if(timer->state == TIMER_RUNNING || !timer->created)
+		return -EINVALID;
+
+	bt = pdFAIL;
+	timer->state = TIMER_RUNNING;
+
+	while(bt != pdPASS)
+		bt = xTimerStart(timer->timer, 0);
+
 	return (bt == pdPASS) ? -EOK : -ETMO;
 }
 
-int estack_timer_stop(estack_timer_t *timer, int delay)
+int estack_timer_stop(estack_timer_t *timer)
 {
 	BaseType_t bt;
 
-	bt = xTimerStop(timer->timer, delay / portTICK_PERIOD_MS);
+	if(timer->state != TIMER_RUNNING || !timer->created)
+		return -EINVALID;
+
+	bt = pdFAIL;
+	while(bt != pdPASS)
+		bt = xTimerStop(timer->timer, 0);
+
+	timer->state = TIMER_STOPPED;
 	return (bt == pdPASS) ? -EOK : -ETMO;
 }
 
-int estack_timer_destroy(estack_timer_t *timer, int delay)
+int estack_timer_destroy(estack_timer_t *timer)
 {
-	BaseType_t bt;
+	BaseType_t bt = pdFAIL;
 
-	bt = xTimerDelete(timer->timer, delay / portTICK_PERIOD_MS);
+	if(!timer->created)
+		return -EINVALID;
+
+	estack_timer_stop(timer);
+
+	while(bt != pdPASS)
+		bt = xTimerDelete(timer->timer, 0);
+
+	timer->state = TIMER_STOPPED;
+	timer->created = false;
 	return (bt == pdPASS) ? -EOK : -ETMO;
+}
+
+bool estack_timer_is_running(estack_timer_t *timer)
+{
+	return timer->state == TIMER_RUNNING;
 }
