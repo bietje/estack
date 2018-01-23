@@ -12,18 +12,18 @@ SET(CONFIG_POLL_TMO CACHE STRING 100)
 SET(ESTACK_SRCS
 netbuf.c
 util.c
-netdev.c
-translate.c
 log.c
 nif.c
 addrutil.c
-neighbour.c
 ip.c
 route.c
 sock.c
 socket.c
 addr.c
 init.c
+phy/netdev.c
+phy/neighbour.c
+ipv4/translate.c
 ipv4/arp-in.c
 ipv4/arp-out.c
 ipv4/arp.c
@@ -49,7 +49,7 @@ ${ESTACK_PORT_SRCS}
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
 SET(ESTACK_SRCS
 ${ESTACK_SRCS}
-drivers/pcap.c
+phy/pcap.c
 )
 SET(HAVE_DEBUG True)
 ENDIF()
