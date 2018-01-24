@@ -145,7 +145,7 @@ void netbuf_free_partial(struct netbuf *nb, netbuf_type_t type)
 		return;
 	}
 
-	if(nbd && nbd->data) {
+	if(nbd->size && nbd->data) {
 		free(nbd->data);
 		nbd->size = 0;
 	}

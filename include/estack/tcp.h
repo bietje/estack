@@ -48,8 +48,6 @@ struct tcp_hdr {
 	uint16_t window;
 	uint16_t checksum;
 	uint16_t urg_ptr;
-
-	uint8_t data[];
 };
 
 struct tcp_options {
@@ -96,7 +94,7 @@ struct tcp_pcb {
 	uint16_t inflight;
 
 	uint32_t rcv_next;
-	uint32_t rcv_window;
+	uint16_t rcv_window;
 	uint32_t rcv_window_announce;
 
 	uint32_t snd_unack; /* Oldest unacknowledged sequence number */
@@ -150,10 +148,15 @@ static inline void tcp_hdr_set_flags(struct tcp_hdr *hdr, uint16_t flags)
 	hdr->hlen_flags = (hdr->hlen_flags & htons((uint16_t)~TCP_FLAGS_MASK)) | htons(flags);
 }
 
+static inline void *tcp_hdr_get_options(struct tcp_hdr *hdr)
+{
+	return (void*)(hdr + 1);
+}
+
 extern DLL_EXPORT struct socket *tcp_socket_alloc(void);
 extern DLL_EXPORT void tcp_socket_free(struct socket *sock);
 extern DLL_EXPORT int tcp_connect(struct socket *sock);
-extern DLL_EXPORT int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb);
+extern DLL_EXPORT int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_t seq);
 CDECL_END
 
 #endif

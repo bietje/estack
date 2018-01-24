@@ -108,7 +108,7 @@ static void socket_task(void *arg)
 	in.sin_family = AF_INET;
 	assert(estack_connect(fd, (struct sockaddr*)&in, sizeof(in)) == 0);
 
-	estack_sleep(600);
+	estack_sleep(1600);
 	estack_close(fd);
 
 	netdev_print(dev, stdout);
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 #ifdef HAVE_RTOS
 	vTaskStartScheduler();
 #else
-	estack_sleep(1000);
+	estack_sleep(2000);
 #endif
 
 	estack_thread_destroy(&tp);

@@ -82,7 +82,7 @@ static int tcp_queue_transmit_nb(struct tcp_pcb *pcb, struct netbuf *nb)
 		if(tcp_hdr_get_flags(hdr) & TCP_FIN)
 			pcb->snd_next++;
 		netbuf_set_flag(nb, NBUF_TX_KEEP);
-		rc = tcp_output(nb, pcb);
+		rc = tcp_output(nb, pcb, pcb->snd_next);
 	} else {
 		list_add_tail(&nb->entry, &pcb->snd_q);
 		rc = -EOK;
@@ -96,8 +96,10 @@ static void tcp_write_syn_options(struct tcp_hdr *hdr, struct tcp_options *opts,
 	struct tcp_options_mss *mss_options;
 	size_t idx;
 	uint16_t hlen;
+	uint8_t *data;
 
-	mss_options = (struct tcp_options_mss*) hdr->data;
+	data = tcp_hdr_get_options(hdr);
+	mss_options = (struct tcp_options_mss*)data;
 	mss_options->kind = TCP_OPT_MSS;
 	mss_options->length = TCP_OPTLEN_MSS;
 	mss_options->mss = htons(opts->mss);
@@ -105,14 +107,14 @@ static void tcp_write_syn_options(struct tcp_hdr *hdr, struct tcp_options *opts,
 	idx = sizeof(*mss_options);
 
 	if(opts->sack) {
-		hdr->data[idx++] = TCP_OPT_NOOP;
-		hdr->data[idx++] = TCP_OPT_NOOP;
-		hdr->data[idx++] = TCP_OPT_SACK_OK;
-		hdr->data[idx++] = TCP_OPTLEN_SACK;
+		data[idx++] = TCP_OPT_NOOP;
+		data[idx++] = TCP_OPT_NOOP;
+		data[idx++] = TCP_OPT_SACK_OK;
+		data[idx++] = TCP_OPTLEN_SACK;
 	}
 
 	hlen = TCP_HDR_LENGTH / sizeof(uint32_t);
-	hlen += optlen / sizeof(uint32_t);
+	hlen += (uint16_t)(optlen / sizeof(uint32_t));
 	tcp_hdr_set_hlen(hdr,(uint8_t) hlen & 0xFF);
 }
 
@@ -155,7 +157,25 @@ static int tcp_send_syn(struct tcp_pcb *pcb, struct netdev *dev)
 
 static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 {
-	print_dbg("TCP RTO timeout triggered!\n");
+	struct tcp_pcb *pcb;
+	struct netbuf *nb;
+
+	print_dbg("TCP RTO timer fired! (%lu)\n", estack_utime());
+	pcb = (struct tcp_pcb*)arg;
+	switch(pcb->state) {
+	case TCP_SYN_SENT:
+		tcp_pcb_lock(pcb);
+		nb = list_peak(&pcb->unack_q, struct netbuf, entry);
+		nb->protocol = IP_PROTO_TCP;
+		tcp_output(nb, pcb, pcb->snd_unack);
+		pcb->backoff += 1;
+		estack_timer_set_period(&pcb->rtx, pcb->rto << pcb->backoff);
+		tcp_pcb_unlock(pcb);
+		break;
+
+	default:
+		break;
+	}
 }
 
 int tcp_connect(struct socket *sock)
@@ -204,6 +224,7 @@ int tcp_connect(struct socket *sock)
 	pcb->snd_wu_ack = pcb->snd_wu_seq = 0;
 	pcb->iss = 0;
 
+	pcb->rto = TCP_SYN_BACKOFF;
 	estack_timer_create(&pcb->rtx, "rto", TCP_SYN_BACKOFF << pcb->backoff, 0, pcb, tcp_rto_timer);
 	estack_timer_start(&pcb->rtx);
 	rc = tcp_send_syn(pcb, dev);

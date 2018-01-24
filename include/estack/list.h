@@ -74,7 +74,7 @@ static inline void list_del(struct list_head *entry)
  */
 static inline int list_empty(const struct list_head *head)
 {
-	return (head->next == head);
+	return head->next == head;
 }
 
 /**
@@ -90,6 +90,9 @@ static inline int list_is_last(const struct list_head *list,
 }
 
 typedef int(*list_comparator_t)(struct list_head *lh1, struct list_head *lh2);
+
+#define list_peak(h, type, e) \
+		list_empty(h) ? NULL : list_first_entry(h,type,e)
 
 /**
  * @brief Loop through a list.

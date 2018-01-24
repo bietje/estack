@@ -18,7 +18,7 @@
 #include <estack/ip.h>
 #include <estack/inet.h>
 
-int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb)
+int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_t seq)
 {
 	struct tcp_hdr *hdr;
 	struct socket *sock;
@@ -26,7 +26,7 @@ int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb)
 	hdr = nb->transport.data;
 	hdr->sport = pcb->sock.lport;
 	hdr->dport = pcb->sock.rport;
-	hdr->seq_no = htonl(pcb->snd_next);
+	hdr->seq_no = htonl(seq);
 	hdr->ack_no = htonl(pcb->rcv_next);
 	hdr->window = htons(pcb->rcv_window);
 	hdr->checksum = 0;
