@@ -8,6 +8,6 @@ add_executable(rtos-test ${ETH_TEST_SRCS})
 target_link_libraries(rtos-test estack-static ${PCAP_LIBRARY} ${ESTACK_SYSTEM_LIBS})
 
 add_custom_target(run_rtos
-COMMAND rtos-test resources/ip-fragments.pcap
+COMMAND ${CMAKE_CURRENT_BINARY_DIR}/rtos-test resources/ip-fragments.pcap
 DEPENDS rtos-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
