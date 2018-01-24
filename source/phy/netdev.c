@@ -561,6 +561,7 @@ static void netdev_try_translate_cache(struct netdev *dev)
 static void netdev_prepare_xmit(struct netdev *dev, struct netbuf *nb)
 {
 	size_t offset, tmp;
+	size_t netw, transp, app;
 
 	if(unlikely(netbuf_test_and_set_flag(nb, NBUF_IS_LINEAR)))
 		return;
@@ -582,13 +583,24 @@ static void netdev_prepare_xmit(struct netdev *dev, struct netbuf *nb)
 			nb->application.size, NBAF_DATALINK);
 	}
 
+	netw = nb->network.size;
+	transp = nb->transport.size;
+	app = nb->application.size;
+
 	netbuf_free_partial(nb, NBAF_NETWORK);
 	netbuf_free_partial(nb, NBAF_TRANSPORT);
 	netbuf_free_partial(nb, NBAF_APPLICTION);
 
 	nb->network.data     = (uint8_t*)nb->datalink.data + tmp;
+	nb->network.size = netw;
+
 	nb->transport.data   = (uint8_t*)nb->network.data + nb->network.size;
+	nb->transport.size = transp;
+
 	nb->application.data = (uint8_t*)nb->transport.data + nb->transport.size;
+	nb->application.size = app;
+
+	nb->datalink.size = tmp;
 
 	nb->flags &= ~(NBAF_APPLICTION_MASK | NBAF_TRANSPORT_MASK | NBAF_NETWORK_MASK);
 }

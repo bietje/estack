@@ -135,7 +135,7 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	data = malloc(hdr.len);
 	memset(data, 0, hdr.len);
 
-	memcpy(data, nb->datalink.data, nb->datalink.size);
+	memcpy(data, nb->datalink.data, nb->size);
 
 	pcap_dump((u_char*)priv->dumper, &hdr, data);
 	pcap_dump_flush(priv->dumper);
