@@ -25,5 +25,6 @@ estack-rtos:
     - tests/transport/udp-output-test
     - tests/events/events-test
     - tests/events/timer-test
+    - make run_tcpconnect
   only:
     - master
