@@ -16,12 +16,17 @@
 #include <estack/socket.h>
 #include <estack/tcp.h>
 #include <estack/ip.h>
+#include <estack/route.h>
 #include <estack/inet.h>
 
 int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_t seq)
 {
 	struct tcp_hdr *hdr;
 	struct socket *sock;
+	uint16_t csum;
+	struct netdev *dev;
+	struct netif *nif;
+	uint32_t saddr, dst;
 
 	hdr = nb->transport.data;
 	hdr->sport = pcb->sock.lport;
@@ -34,6 +39,18 @@ int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_t seq)
 
 	sock = &pcb->sock;
 	if(sock->addr.type == IPADDR_TYPE_V4) {
+		dst = sock->addr.addr.in4_addr.s_addr;
+		dev = route4_lookup(dst, &saddr);
+		if(dev) {
+			nif = &dev->nif;
+			saddr = ipv4_ptoi(nif->local_ip);
+		} else {
+			saddr = 0;
+		}
+		csum = ipv4_pseudo_partial_csum(htonl(saddr), dst, IP_PROTO_TCP,
+					htons(nb->transport.size + nb->application.size));
+		csum = ip_checksum_partial(csum, hdr, nb->transport.size);
+		hdr->checksum = ip_checksum(csum, nb->application.data, nb->application.size);
 		ipv4_output(nb, ntohl(sock->addr.addr.in4_addr.s_addr));
 	} else {
 		print_dbg("TCP over IPv6 is not yet supported!\n");
