@@ -108,7 +108,7 @@ void estack_timer_create(estack_timer_t *timer, const char *name, int ms,
 
 int estack_timer_start(estack_timer_t *timer)
 {
-	if(timer->state == TIMER_RUNNING)
+	if(timer->state != TIMER_CREATED)
 		return -EINVALID;
 
 	timers_lock();
@@ -144,4 +144,21 @@ bool estack_timer_is_running(estack_timer_t *timer)
 {
 	assert(timer);
 	return timer->state == TIMER_RUNNING;
+}
+
+int estack_timer_set_period(estack_timer_t *timer, int ms)
+{
+	assert(timer);
+	assert(ms);
+
+	timers_lock();
+	if(timer->state != TIMER_CREATED && timer->state != TIMER_RUNNING) {
+		timers_unlock();
+		return -EINVALID;
+	}
+
+	timer->tmo = ms * 1000U;
+	timers_unlock();
+
+	return -EOK;
 }

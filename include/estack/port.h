@@ -61,6 +61,7 @@ extern DLL_EXPORT int estack_timer_destroy(estack_timer_t *timer);
 extern DLL_EXPORT void estack_timers_init(void);
 extern DLL_EXPORT void estack_timers_destroy(void);
 extern DLL_EXPORT bool estack_timer_is_running(estack_timer_t *timer);
+extern DLL_EXPORT int estack_timer_set_period(estack_timer_t *timer, int ms);
 
 #define FOREVER 0
 CDECL_END

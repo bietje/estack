@@ -257,3 +257,16 @@ bool estack_timer_is_running(estack_timer_t *timer)
 {
 	return timer->state == TIMER_RUNNING;
 }
+
+int estack_timer_set_period(estack_timer_t *timer, int ms)
+{
+	BaseType_t bt = pdFAIL;
+
+	if(!timer->created)
+		return -EINVALID;
+
+	while(bt != pdPASS)
+		bt = xTimerChangePeriod(timer->timer, ms / portTICK_PERIOD_MS, 0);
+
+	return -EOK;
+}
