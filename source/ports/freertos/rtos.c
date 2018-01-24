@@ -194,6 +194,7 @@ void estack_timer_create(estack_timer_t *timer, const char *name, int ms,
 {
 	timer->handle = cb;
 	timer->period = ms / portTICK_PERIOD_MS;
+	timer->arg = arg;
 
 	if(flags & TIMER_ONSHOT_FLAG)
 		timer->oneshot = true;
