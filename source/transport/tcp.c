@@ -49,13 +49,34 @@ struct socket *tcp_socket_alloc(void)
 	return &pcb->sock;
 }
 
+static void tcp_release_queue(struct list_head *lh)
+{
+	struct netbuf *nb;
+	struct list_head *entry, *tmp;
+	struct netdev *dev;
+
+	list_for_each_safe(entry, tmp, lh) {
+		nb = list_entry(entry, struct netbuf, entry);
+		dev = nb->dev;
+		estack_mutex_lock(&dev->mtx, 0);
+		list_del(entry);
+		netbuf_free(nb);
+		estack_mutex_unlock(&dev->mtx);
+	}
+}
+
 void tcp_socket_free(struct socket *sock)
 {
 	struct tcp_pcb *tcb;
 
 	tcb = container_of(sock, struct tcp_pcb, sock);
+	tcp_pcb_lock(tcb);
 	estack_timer_destroy(&tcb->rtx);
 	estack_timer_destroy(&tcb->keepalive);
+	tcp_release_queue(&tcb->unack_q);
+	tcp_release_queue(&tcb->snd_q);
+	tcp_release_queue(&tcb->oos_q);
+	tcp_pcb_unlock(tcb);
 	socket_destroy(sock);
 	free(tcb);
 }
