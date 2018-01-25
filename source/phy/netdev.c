@@ -929,6 +929,7 @@ void netdev_config_core_params(uint32_t retry_tmo, uint32_t resolv_tmo, int retr
 /**
  * @brief Call external handler for the current protocol of \p nb.
  * @param nb Packet buffer to call external handlers for.
+ * @return True or false based on whether or not a user handler was called.
  *
  * The external handlers will be selected based on the value of `struct netbuf::protocol`.
  */
