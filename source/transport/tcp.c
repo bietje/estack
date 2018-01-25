@@ -94,6 +94,7 @@ static int tcp_queue_transmit_nb(struct tcp_pcb *pcb, struct netbuf *nb)
 {
 	struct tcp_hdr *hdr;
 	int rc;
+	uint32_t nxt;
 
 	if(list_empty(&pcb->unack_q)) {
 		estack_timer_start(&pcb->rtx);
@@ -103,14 +104,15 @@ static int tcp_queue_transmit_nb(struct tcp_pcb *pcb, struct netbuf *nb)
 	hdr = nb->transport.data;
 	if(pcb->inflight == 0) {
 		list_add_tail(&nb->entry, &pcb->unack_q);
+		netbuf_set_flag(nb, NBUF_TX_KEEP);
+		nxt = tcp_datalength(hdr, (uint16_t)nb->transport.size);
 		rc = tcp_output(nb, pcb, pcb->snd_next);
 		pcb->inflight++;
-		pcb->snd_next += tcp_datalength(hdr, (uint16_t)nb->transport.size);
+		pcb->snd_next += nxt;
 		nb->sequence_end = pcb->snd_next;
 
 		if(tcp_hdr_get_flags(hdr) & TCP_FIN)
 			pcb->snd_next++;
-		netbuf_set_flag(nb, NBUF_TX_KEEP);
 	} else {
 		list_add_tail(&nb->entry, &pcb->snd_q);
 		rc = -EOK;
