@@ -28,6 +28,8 @@
 
 #define TCP_SYN_BACKOFF 500
 
+#define TCP_CONN_TMO 3
+
 /* TCP flags */
 #define TCP_FIN 0x01U
 #define TCP_SYN 0x02U
@@ -87,8 +89,11 @@ struct tcp_pcb {
 	estack_timer_t rtx;
 
 	bool sackok;
+	uint8_t sacklength;
+
 	uint32_t iss;
 	uint16_t mss;
+	uint16_t smss;
 
 	uint8_t backoff;
 	uint16_t inflight;
@@ -113,12 +118,13 @@ struct tcp_pcb {
 };
 
 #define TCP_MSS 536
-#define TCP_MAX_MSS 1440
+#define TCP_MAX_MSS 1460
 #define TCP_WINSIZE 3216
 #define TCP_MAX_WINDOW_SIZE 0xFFFF
 #define TCP_CLIENT_SEND_WINDOW 4096
 #define TCP_MAX_WINDOW_SHIFT 14
 
+#define TCP_RTO 1000
 #define TCP_TIMER_INTERVAL 250
 #define TCP_SLOW_TIMER_INTERVAL (2 * TCP_TIMER_INTERVAL)
 
@@ -132,7 +138,7 @@ static inline uint16_t tcp_hdr_get_hlen(struct tcp_hdr *hdr)
 
 static inline uint16_t tcp_hdr_get_flags(struct tcp_hdr *hdr)
 {
-	return hdr->hlen_flags & TCP_FLAGS_MASK;
+	return ntohs(hdr->hlen_flags) & TCP_FLAGS_MASK;
 }
 
 static inline void tcp_hdr_set_hlen(struct tcp_hdr *hdr, uint8_t len)
@@ -157,6 +163,9 @@ extern DLL_EXPORT struct socket *tcp_socket_alloc(void);
 extern DLL_EXPORT void tcp_socket_free(struct socket *sock);
 extern DLL_EXPORT int tcp_connect(struct socket *sock);
 extern DLL_EXPORT int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_t seq);
+
+extern DLL_EXPORT void tcp_process(struct socket *pcb, struct netbuf *nb);
+extern DLL_EXPORT void tcp_input(struct netbuf *nb);
 CDECL_END
 
 #endif

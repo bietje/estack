@@ -25,6 +25,7 @@ void socket_init(struct socket *sock)
 	estack_mutex_create(&sock->mtx, 0);
 	estack_event_create(&sock->read_event, SOCK_EVENT_LENGTH);
 	list_head_init(&sock->lh);
+	sock->err = -EOK;
 }
 
 static struct socket *socket_alloc(void)

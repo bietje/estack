@@ -108,7 +108,7 @@ void estack_timer_create(estack_timer_t *timer, const char *name, int ms,
 
 int estack_timer_start(estack_timer_t *timer)
 {
-	if(timer->state != TIMER_CREATED)
+	if(timer->state == TIMER_RUNNING)
 		return -EINVALID;
 
 	timers_lock();

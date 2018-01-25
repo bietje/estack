@@ -42,6 +42,8 @@ struct sock_rcv_buffer {
 
 struct DLL_EXPORT socket {
 	int fd;
+	int err;
+
 	ip_addr_t local; //!< Local address
 	ip_addr_t addr; //!< Remote address
 	uint16_t rport;  //!< Remote port
@@ -52,6 +54,7 @@ struct DLL_EXPORT socket {
 	estack_mutex_t mtx;
 	estack_event_t read_event;
 	size_t readsize;
+	struct netdev *dev;
 
 	int(*rcv_event)(struct socket *sock, struct netbuf *nb);
 };
