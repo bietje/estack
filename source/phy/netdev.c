@@ -644,14 +644,20 @@ static void netdev_prepare_xmit(struct netdev *dev, struct netbuf *nb)
 	netbuf_free_partial(nb, NBAF_TRANSPORT);
 	netbuf_free_partial(nb, NBAF_APPLICTION);
 
-	nb->network.data     = (uint8_t*)nb->datalink.data + tmp;
-	nb->network.size = netw;
+	if(netw) {
+		nb->network.data     = (uint8_t*)nb->datalink.data + tmp;
+		nb->network.size     = netw;
+	}
 
-	nb->transport.data   = (uint8_t*)nb->network.data + nb->network.size;
-	nb->transport.size = transp;
+	if(transp) {
+		nb->transport.data   = (uint8_t*)nb->network.data + nb->network.size;
+		nb->transport.size   = transp;
+	}
 
-	nb->application.data = (uint8_t*)nb->transport.data + nb->transport.size;
-	nb->application.size = app;
+	if(app) {
+		nb->application.data = (uint8_t*)nb->transport.data + nb->transport.size;
+		nb->application.size = app;
+	}
 
 	nb->datalink.size = tmp;
 }
