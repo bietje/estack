@@ -11,11 +11,11 @@ add_executable(timer-test timer-test.c)
 target_link_libraries(timer-test estack-static ${PCAP_LIBRARY} ${ESTACK_SYSTEM_LIBS})
 
 add_custom_target(run_events
-COMMAND events-test
+COMMAND ${CMAKE_CURRENT_BINARY_DIR}/events-test
 DEPENDS events-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_custom_target(run_timers
-COMMAND timer-test
+COMMAND ${CMAKE_CURRENT_BINARY_DIR}/timer-test
 DEPENDS timer-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
