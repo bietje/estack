@@ -217,8 +217,8 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 int tcp_connect(struct socket *sock)
 {
 	struct tcp_pcb *pcb;
-	int rc;
 	struct netdev *dev;
+	int rc;
 
 	pcb = tcp_sock_to_pcb(sock);
 
@@ -268,8 +268,13 @@ int tcp_connect(struct socket *sock)
 	rc = tcp_send_syn(pcb, dev);
 	pcb->snd_next++;
 	tcp_pcb_unlock(pcb);
-	estack_event_wait(&sock->read_event, FOREVER);
-	return sock->err;
+
+	if(rc == -EOK) {
+		estack_event_wait(&sock->read_event, FOREVER);
+		return sock->err;
+	}
+
+	return rc;
 }
 
 static void tcp_parse_options(struct tcp_pcb *pcb, struct tcp_hdr *hdr)
@@ -389,15 +394,14 @@ static void tcp_syn_sent(struct tcp_pcb *pcb, struct netbuf *nb)
 	if(flags & TCP_ACK) {
 		/* Validate packet */
 		if(hdr->ack_no <= pcb->iss || hdr->ack_no > pcb->snd_next) {
-			if(!(flags & TCP_RST))
-				tcp_send_reset(pcb);
+			if(flags & TCP_RST)
+				tcp_reset(pcb);
 
 			netbuf_set_flag(nb, NBUF_DROPPED);
 			return;
 		}
 
 		if(hdr->ack_no < pcb->snd_unack || hdr->ack_no > pcb->snd_next) {
-			tcp_send_reset(pcb);
 			netbuf_set_flag(nb, NBUF_DROPPED);
 			return;
 		}
