@@ -34,5 +34,5 @@ estack-rtos-avr:
   script:
     - mkdir avrbuild
     - cd avrbuild
-    - cmake .. -DCMAKE_TOOLCHAIN_FILE=../avr/avr.cmake -DPORT=ATMega323 -DCOMPILER=GCC -DCONFIG_NO_SYS=True -DCONFIG_POLL_TMO=100 -DCONFIG_CACHE_AGE=60 -DCMAKE_BUILD_TYPE=Release
+    - cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/avr.cmake -DPORT=ATMega323 -DCOMPILER=GCC -DCONFIG_NO_SYS=True -DCONFIG_POLL_TMO=100 -DCONFIG_CACHE_AGE=60 -DCMAKE_BUILD_TYPE=Release
     - make
