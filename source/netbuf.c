@@ -110,6 +110,7 @@ struct netbuf *netbuf_alloc(netbuf_type_t type, size_t size)
 void netbuf_free_partial(struct netbuf *nb, netbuf_type_t type)
 {
 	struct nbdata *nbd;
+	int flag;
 
 	assert(nb);
 	nbd = NULL;
@@ -118,26 +119,32 @@ void netbuf_free_partial(struct netbuf *nb, netbuf_type_t type)
 	case NBAF_DATALINK:
 		if(!(nb->flags & NBAF_DATALINK_MASK))
 			return;
+
+		flag = NBUF_DATALINK_ALLOC;
 		nbd = &nb->datalink;
 		break;
 
 	case NBAF_NETWORK:
 		if(!(nb->flags & NBAF_NETWORK_MASK))
 			return;
+
+		flag = NBUF_NETWORK_ALLOC;
 		nbd = &nb->network;
 		break;
 
 	case NBAF_TRANSPORT:
 		if(!(nb->flags & NBAF_TRANSPORT_MASK))
 			return;
-		
+
+		flag = NBUF_TRANSPORT_ALLOC;
 		nbd = &nb->transport;
 		break;
 
 	case NBAF_APPLICTION:
 		if(!(nb->flags & NBAF_APPLICTION_MASK))
 			return;
-		
+
+		flag = NBUF_APPLICATION_ALLOC;
 		nbd = &nb->application;
 		break;
 
@@ -148,6 +155,7 @@ void netbuf_free_partial(struct netbuf *nb, netbuf_type_t type)
 	if(nbd->size && nbd->data) {
 		free(nbd->data);
 		nbd->size = 0;
+		netbuf_clear_flag(nb, flag);
 	}
 }
 

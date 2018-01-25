@@ -50,7 +50,7 @@ static uint32_t dst_resolve_tmo = 4500000;
 static uint32_t dst_retry_tmo = 1000000;
 static int dst_retries = 4;
 
-#define DST_CACHE_USEC_AGE (CONFIG_CACHE_AGE * 60 * 1000 *1000)
+#define DST_CACHE_USEC_AGE (CONFIG_CACHE_AGE * 60ULL * 1000ULL * 1000ULL)
 
 /**
  * @brief Lock the networking core.
@@ -325,9 +325,18 @@ void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t dadd
 
 	e = z_alloc(sizeof(*e));
 	assert(e);
+	e->timeout = estack_utime() + DST_CACHE_USEC_AGE;
 	__netdev_add_dst(dev, dst, daddrlen, src, saddrlen, e);
 }
 
+/**
+ * @brief Add a permanent destination cache entry.
+ * @param dev Network device.
+ * @param dst Datalink layer address.
+ * @param addrlen Length of \p dst.
+ * @param src Network layer address.
+ * @param saddrlen Length of \p src.
+ */
 void netdev_add_destination_perm(struct netdev *dev, const uint8_t *dst, uint8_t addrlen,
 	const uint8_t *src, uint8_t saddrlen)
 {
@@ -426,6 +435,7 @@ bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t d
 
 			memcpy(e->hwaddr, dst, dlength);
 			e->state = DST_RESOLVED;
+			e->timeout = estack_utime() + DST_CACHE_USEC_AGE;
 			netdev_unlock(dev);
 			return true;
 		}
@@ -525,6 +535,30 @@ static void netdev_drop_dst(struct dst_cache_entry *e)
 	}
 }
 
+static void netdev_age_cache(struct netdev *dev)
+{
+	struct list_head *entry, *tmp;
+	struct dst_cache_entry *dst;
+	time_t now;
+
+	now = estack_utime();
+	list_for_each_safe(entry, tmp, &dev->destinations) {
+		dst = list_entry(entry, struct dst_cache_entry, entry);
+
+		if(dst->state != DST_RESOLVED)
+			continue;
+
+		if(dst->timeout <= now && !(dst->flags & DST_PERM_MASK)) {
+			if(!list_empty(&dst->packets))
+				continue;
+
+			netdev_drop_dst(dst);
+			list_del(entry);
+			netdev_free_dst_entry(dst);
+		}
+	}
+}
+
 static void netdev_try_translate_cache(struct netdev *dev)
 {
 	struct list_head *dst, *dsttmp, *entry, *tmp;
@@ -620,8 +654,6 @@ static void netdev_prepare_xmit(struct netdev *dev, struct netbuf *nb)
 	nb->application.size = app;
 
 	nb->datalink.size = tmp;
-
-	nb->flags &= ~(NBAF_APPLICTION_MASK | NBAF_TRANSPORT_MASK | NBAF_NETWORK_MASK);
 }
 
 static inline void netdev_deliver(struct netdev *dev, struct netbuf *nb)
@@ -656,6 +688,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 
 	netdev_lock(dev);
 	netdev_try_translate_cache(dev);
+	netdev_age_cache(dev);
 
 	if(unlikely(netdev_backlog_empty(dev))) {
 		netdev_unlock(dev);
