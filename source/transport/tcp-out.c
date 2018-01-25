@@ -47,8 +47,8 @@ int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_t seq)
 		} else {
 			saddr = 0;
 		}
-		csum = ipv4_pseudo_partial_csum(htonl(saddr), dst, IP_PROTO_TCP,
-					htons(nb->transport.size + nb->application.size));
+		csum = (uint16_t)ipv4_pseudo_partial_csum(htonl(saddr), dst, IP_PROTO_TCP,
+			htons((uint16_t)(nb->transport.size + nb->application.size)));
 		csum = ip_checksum_partial(csum, hdr, nb->transport.size);
 		hdr->checksum = ip_checksum(csum, nb->application.data, nb->application.size);
 		ipv4_output(nb, ntohl(sock->addr.addr.in4_addr.s_addr));

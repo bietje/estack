@@ -157,6 +157,8 @@ extern DLL_EXPORT struct socket *tcp_socket_alloc(void);
 extern DLL_EXPORT void tcp_socket_free(struct socket *sock);
 extern DLL_EXPORT int tcp_connect(struct socket *sock);
 extern DLL_EXPORT int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_t seq);
+
+extern DLL_EXPORT void tcp_input(struct netbuf *nb);
 CDECL_END
 
 #endif

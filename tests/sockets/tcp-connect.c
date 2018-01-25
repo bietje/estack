@@ -107,6 +107,8 @@ static void socket_task(void *arg)
 	in.sin_port = htons(80);
 	in.sin_family = AF_INET;
 	assert(estack_connect(fd, (struct sockaddr*)&in, sizeof(in)) == 0);
+	estack_sleep(10);
+	pcapdev_next_src(dev);
 
 	estack_sleep(1600);
 	estack_close(fd);

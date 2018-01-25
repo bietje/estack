@@ -22,6 +22,7 @@
 #include <estack/route.h>
 #include <estack/udp.h>
 #include <estack/in.h>
+#include <estack/tcp.h>
 
 static inline struct ipv4_header *ipv4_nbuf_to_iphdr(struct netbuf *nb)
 {
@@ -172,6 +173,10 @@ void ipv4_input_postfrag(struct netbuf *nb)
 
 	case IP_PROTO_UDP:
 		udp_input(nb);
+		break;
+
+	case IP_PROTO_TCP:
+		tcp_input(nb);
 		break;
 
 	case IP_PROTO_IGMP:
