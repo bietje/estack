@@ -50,6 +50,8 @@ static uint32_t dst_resolve_tmo = 4500000;
 static uint32_t dst_retry_tmo = 1000000;
 static int dst_retries = 4;
 
+#define DST_CACHE_USEC_AGE (CONFIG_CACHE_AGE * 60 * 1000 *1000)
+
 /**
  * @brief Lock the networking core.
  * @note This function will acquire struct dev_core::mtx.
@@ -287,6 +289,27 @@ bool netdev_remove_protocol(struct netdev *dev, uint16_t proto)
 	return false;
 }
 
+static void __netdev_add_dst(struct netdev *dev, const uint8_t *dst, uint8_t daddrlen,
+	const uint8_t *src, uint8_t saddrlen, struct dst_cache_entry *e)
+{
+	assert(e);
+	e->state = DST_RESOLVED;
+	e->saddr_length = saddrlen;
+	e->hwaddr_length = daddrlen;
+
+	e->saddr = malloc(saddrlen);
+	memcpy(e->saddr, src, saddrlen);
+
+	e->hwaddr = malloc(daddrlen);
+	memcpy(e->hwaddr, dst, daddrlen);
+
+	list_head_init(&e->entry);
+	list_head_init(&e->packets);
+	netdev_lock(dev);
+	list_add(&e->entry, &dev->destinations);
+	netdev_unlock(dev);
+}
+
 /**
  * @brief Add a destination cache entry to \p dev.
  * @param dev Device to add the destination cache entry to.
@@ -298,26 +321,22 @@ bool netdev_remove_protocol(struct netdev *dev, uint16_t proto)
 void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t daddrlen,
 	const uint8_t *src, uint8_t saddrlen)
 {
-	struct dst_cache_entry *centry;
+	struct dst_cache_entry *e;
 
-	centry = z_alloc(sizeof(*centry));
-	assert(centry);
+	e = z_alloc(sizeof(*e));
+	assert(e);
+	__netdev_add_dst(dev, dst, daddrlen, src, saddrlen, e);
+}
 
-	centry->state = DST_RESOLVED;
-	centry->saddr_length = saddrlen;
-	centry->hwaddr_length = daddrlen;
+void netdev_add_destination_perm(struct netdev *dev, const uint8_t *dst, uint8_t addrlen,
+	const uint8_t *src, uint8_t saddrlen)
+{
+	struct dst_cache_entry *e;
 
-	centry->saddr = malloc(saddrlen);
-	memcpy(centry->saddr, src, saddrlen);
-
-	centry->hwaddr = malloc(daddrlen);
-	memcpy(centry->hwaddr, dst, daddrlen);
-
-	list_head_init(&centry->entry);
-	list_head_init(&centry->packets);
-	netdev_lock(dev);
-	list_add(&centry->entry, &dev->destinations);
-	netdev_unlock(dev);
+	e = z_alloc(sizeof(*e));
+	assert(e);
+	e->flags = DST_PERM_MASK;
+	__netdev_add_dst(dev, dst, addrlen, src, saddrlen, e);
 }
 
 /**
@@ -331,29 +350,29 @@ void netdev_add_destination(struct netdev *dev, const uint8_t *dst, uint8_t dadd
 struct dst_cache_entry *netdev_add_destination_unresolved(struct netdev *dev,
 	const uint8_t *src, uint8_t length, resolve_handle handler)
 {
-	struct dst_cache_entry *centry;
+	struct dst_cache_entry *e;
 
-	centry = z_alloc(sizeof(*centry));
-	assert(centry);
+	e = z_alloc(sizeof(*e));
+	assert(e);
 
-	centry->state = DST_UNFINISHED;
-	centry->saddr_length = length;
+	e->state = DST_UNFINISHED;
+	e->saddr_length = length;
 
-	centry->saddr = malloc(length);
-	memcpy(centry->saddr, src, length);
+	e->saddr = malloc(length);
+	memcpy(e->saddr, src, length);
 
-	list_head_init(&centry->entry);
-	list_head_init(&centry->packets);
+	list_head_init(&e->entry);
+	list_head_init(&e->packets);
 
-	centry->timeout = estack_utime() + dst_resolve_tmo;
-	centry->retry = dst_retries;
-	centry->translate = handler;
+	e->timeout = estack_utime() + dst_resolve_tmo;
+	e->retry = dst_retries;
+	e->translate = handler;
 
 	netdev_lock(dev);
-	list_add(&centry->entry, &dev->destinations);
+	list_add(&e->entry, &dev->destinations);
 	netdev_unlock(dev);
 
-	return centry;
+	return e;
 }
 
 /**
@@ -393,20 +412,20 @@ bool netdev_update_destination(struct netdev *dev, const uint8_t *dst, uint8_t d
 	const uint8_t *src, uint8_t slength)
 {
 	struct list_head *entry;
-	struct dst_cache_entry *centry;
+	struct dst_cache_entry *e;
 
 	netdev_lock(dev);
 	list_for_each(entry, &dev->destinations) {
-		centry = list_entry(entry, struct dst_cache_entry, entry);
-		if(centry->saddr_length != slength)
+		e = list_entry(entry, struct dst_cache_entry, entry);
+		if(e->saddr_length != slength)
 			continue;
 
-		if(!memcmp(centry->saddr, src, slength)) {
-			if(dlength != centry->hwaddr_length)
-				centry->hwaddr = realloc(centry->hwaddr, dlength);
+		if(!memcmp(e->saddr, src, slength)) {
+			if(dlength != e->hwaddr_length)
+				e->hwaddr = realloc(e->hwaddr, dlength);
 
-			memcpy(centry->hwaddr, dst, dlength);
-			centry->state = DST_RESOLVED;
+			memcpy(e->hwaddr, dst, dlength);
+			e->state = DST_RESOLVED;
 			netdev_unlock(dev);
 			return true;
 		}
@@ -437,17 +456,17 @@ static inline void netdev_free_dst_entry(struct dst_cache_entry *e)
 bool netdev_remove_destination(struct netdev *dev, const uint8_t *src, uint8_t length)
 {
 	struct list_head *entry;
-	struct dst_cache_entry *centry;
+	struct dst_cache_entry *e;
 
 	netdev_lock(dev);
 	list_for_each(entry, &dev->destinations) {
-		centry = list_entry(entry, struct dst_cache_entry, entry);
-		if(centry->saddr_length != length)
+		e = list_entry(entry, struct dst_cache_entry, entry);
+		if(e->saddr_length != length)
 			continue;
 
-		if(!memcmp(centry->saddr, src, length)) {
+		if(!memcmp(e->saddr, src, length)) {
 			list_del(entry);
-			netdev_free_dst_entry(centry);
+			netdev_free_dst_entry(e);
 			netdev_unlock(dev);
 			return true;
 		}
@@ -467,17 +486,17 @@ bool netdev_remove_destination(struct netdev *dev, const uint8_t *src, uint8_t l
 struct dst_cache_entry *netdev_find_destination(struct netdev *dev, const uint8_t *src, uint8_t length)
 {
 	struct list_head *entry;
-	struct dst_cache_entry *centry;
+	struct dst_cache_entry *e;
 
 	netdev_lock(dev);
 	list_for_each(entry, &dev->destinations) {
-		centry = list_entry(entry, struct dst_cache_entry, entry);
-		if(centry->saddr_length != length)
+		e = list_entry(entry, struct dst_cache_entry, entry);
+		if(e->saddr_length != length)
 			continue;
 
-		if(!memcmp(centry->saddr, src, length)) {
+		if(!memcmp(e->saddr, src, length)) {
 			netdev_unlock(dev);
-			return centry;
+			return e;
 		}
 	}
 

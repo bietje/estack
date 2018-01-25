@@ -134,11 +134,18 @@ typedef enum {
 
 typedef void(*resolve_handle)(struct netdev *dev, uint8_t *addr);
 
+#ifndef CONFIG_CACHE_AGE
+#define CONFIG_CACHE_AGE 60
+#endif
+
+#define DST_PERM_MASK 0x1
+
 /**
  * @brief Destination cache data structure.
  */
 struct DLL_EXPORT dst_cache_entry {
 	struct list_head entry; //!< List entry.
+	uint8_t flags;
 
 	uint8_t *saddr; //!< Source / network layer address.
 	uint8_t saddr_length; //!< Length of \p saddr.
@@ -192,8 +199,9 @@ extern DLL_EXPORT void devcore_destroy(void);
 extern DLL_EXPORT void netdev_config_params(struct netdev *dev, int maxrx, int maxweight);
 extern DLL_EXPORT void netdev_poll_async(void);
 extern DLL_EXPORT void netdev_wakeup(void);
+extern DLL_EXPORT void netdev_add_destination_perm(struct netdev *dev, const uint8_t *dst, uint8_t addrlen,
+	const uint8_t *src, uint8_t saddrlen);
 extern DLL_EXPORT void netdev_wakeup_irq(void);
-
 CDECL_END
 
 /**
