@@ -2,7 +2,7 @@ estack:
   script:
     - mkdir build
     - cd build
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True -DCONFIG_POLL_TMO=100
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True -DCONFIG_POLL_TMO=100 -DCONFIG_CACHE_AGE=60
     - make
     - make run_netdev
     - make run_arp
@@ -19,7 +19,7 @@ estack-rtos:
   script:
     - mkdir xbuild
     - cd xbuild
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True -DCMAKE_SYSTEM_NAME=Generic -DFREERTOS=True -DPORT=unix -DCONFIG_POLL_TMO=100
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCONFIG_CACHE_AGE=60 -DCMAKE_CI=True -DCMAKE_SYSTEM_NAME=Generic -DFREERTOS=True -DPORT=unix -DCONFIG_POLL_TMO=100
     - make
     - make run_rtos
     - make run_timers
@@ -34,5 +34,5 @@ estack-rtos-avr:
   script:
     - mkdir avrbuild
     - cd avrbuild
-    - cmake .. -DCMAKE_TOOLCHAIN_FILE=../avr/avr.cmake -DPORT=ATMega323 -DCOMPILER=GCC -DCONFIG_NO_SYS -DCONFIG_POLL_TMO=100 -DCONFIG_CACHE_AGE=60 -DCMAKE_BUILD_TYPE=Release
+    - cmake .. -DCMAKE_TOOLCHAIN_FILE=../avr/avr.cmake -DPORT=ATMega323 -DCOMPILER=GCC -DCONFIG_NO_SYS=True -DCONFIG_POLL_TMO=100 -DCONFIG_CACHE_AGE=60 -DCMAKE_BUILD_TYPE=Release
     - make
