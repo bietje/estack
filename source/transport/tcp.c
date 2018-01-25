@@ -95,15 +95,22 @@ static int tcp_queue_transmit_nb(struct tcp_pcb *pcb, struct netbuf *nb)
 	struct tcp_hdr *hdr;
 	int rc;
 
+	if(list_empty(&pcb->unack_q)) {
+		estack_timer_start(&pcb->rtx);
+		estack_timer_set_period(&pcb->rtx, pcb->rto);
+	}
+
 	hdr = nb->transport.data;
 	if(pcb->inflight == 0) {
 		list_add_tail(&nb->entry, &pcb->unack_q);
+		rc = tcp_output(nb, pcb, pcb->snd_next);
 		pcb->inflight++;
 		pcb->snd_next += tcp_datalength(hdr, (uint16_t)nb->transport.size);
+		nb->sequence_end = pcb->snd_next;
+
 		if(tcp_hdr_get_flags(hdr) & TCP_FIN)
 			pcb->snd_next++;
 		netbuf_set_flag(nb, NBUF_TX_KEEP);
-		rc = tcp_output(nb, pcb, pcb->snd_next);
 	} else {
 		list_add_tail(&nb->entry, &pcb->snd_q);
 		rc = -EOK;
@@ -235,6 +242,8 @@ int tcp_connect(struct socket *sock)
 		return -EINVALID;
 	}
 
+	sock->dev = dev;
+
 	pcb->mss = TCP_MSS;
 	pcb->rcv_window = TCP_WINSIZE;
 	pcb->rcv_window_announce = TCP_WINSIZE;
@@ -247,10 +256,186 @@ int tcp_connect(struct socket *sock)
 
 	pcb->rto = TCP_SYN_BACKOFF;
 	estack_timer_create(&pcb->rtx, "rto", TCP_SYN_BACKOFF << pcb->backoff, 0, pcb, tcp_rto_timer);
-	estack_timer_start(&pcb->rtx);
+	pcb->rto = TCP_SYN_BACKOFF;
 	rc = tcp_send_syn(pcb, dev);
 	pcb->snd_next++;
 	tcp_pcb_unlock(pcb);
 
 	return rc;
+}
+
+static void tcp_parse_options(struct tcp_pcb *pcb, struct tcp_hdr *hdr)
+{
+	struct tcp_options_mss *opt_mss;
+	uint16_t mss;
+	uint8_t *data;
+	uint8_t optlen;
+
+	optlen = (uint8_t)(tcp_hdr_get_hlen(hdr) - TCP_HDR_LENGTH);
+	data = (uint8_t*)hdr;
+	data += TCP_HDR_LENGTH;
+
+	while(optlen > 0 && optlen < 20) {
+		switch(*data) {
+		case TCP_OPT_MSS:
+			opt_mss = (struct tcp_options_mss*)data;
+			mss = ntohs(opt_mss->mss);
+
+			if(mss > TCP_MSS && mss < TCP_MAX_MSS)
+				pcb->smss = mss;
+
+			data += sizeof(struct tcp_options_mss);
+			optlen -= sizeof(struct tcp_options_mss);
+			break;
+
+		case TCP_OPT_NOOP:
+			data++;
+			optlen--;
+			break;
+
+		case TCP_OPT_SACK_OK:
+			optlen--;
+			break;
+
+		case TCP_OPT_TS:
+			optlen--;
+			break;
+
+		default:
+			optlen--;
+			break;
+		}
+	}
+}
+
+static void tcp_clear_rto(struct tcp_pcb *pcb)
+{
+	struct list_head *entry, *tmp;
+	struct netbuf *nb;
+
+	list_for_each_safe(entry, tmp, &pcb->unack_q) {
+		nb = list_entry(entry, struct netbuf, entry);
+		if(nb->sequence_end <= pcb->snd_unack) {
+			list_del(entry);
+			if(pcb->inflight > 0)
+				pcb->inflight--;
+			netbuf_free(nb);
+		}
+	}
+
+	if(list_empty(&pcb->unack_q) || !pcb->inflight) {
+		estack_timer_stop(&pcb->rtx);
+	}
+}
+
+static void tcp_send_reset(struct tcp_pcb *pcb)
+{
+
+}
+
+static void tcp_reset(struct tcp_pcb *pcb)
+{
+
+}
+
+static int tcp_options_length(struct tcp_pcb *pcb)
+{
+	int optlen = 0;
+
+	if(pcb->sackok && pcb->sacklength > 0) {
+		/* TODO: implement SACKS */
+
+		optlen += 2;
+	}
+
+	while(optlen % 4 > 0) optlen++;
+
+	return optlen;
+}
+
+static void tcp_send_ack(struct tcp_pcb *pcb)
+{
+	struct netbuf *nb;
+	struct tcp_hdr *hdr;
+	int optlen;
+
+	if(pcb->state == TCP_CLOSED)
+		return;
+
+	optlen = tcp_options_length(pcb);
+	nb = netbuf_alloc(NBAF_TRANSPORT, TCP_HDR_LENGTH + optlen);
+	hdr = nb->transport.data;
+	tcp_hdr_set_flags(hdr, TCP_ACK);
+	tcp_hdr_set_hlen(hdr, (uint8_t)(TCP_HDR_LENGTH + optlen) / sizeof(uint32_t));
+	tcp_output(nb, pcb, pcb->snd_next);
+}
+
+static void tcp_syn_sent(struct tcp_pcb *pcb, struct netbuf *nb)
+{
+	struct tcp_hdr *hdr;
+	uint16_t flags;
+
+	hdr = nb->transport.data;
+	flags = tcp_hdr_get_flags(hdr);
+
+	if(flags & TCP_ACK) {
+		/* Validate packet */
+		if(hdr->ack_no <= pcb->iss || hdr->ack_no > pcb->snd_next) {
+			if(!(flags & TCP_RST))
+				tcp_send_reset(pcb);
+
+			netbuf_set_flag(nb, NBUF_DROPPED);
+			return;
+		}
+
+		if(hdr->ack_no < pcb->snd_unack || hdr->ack_no > pcb->snd_next) {
+			tcp_send_reset(pcb);
+			netbuf_set_flag(nb, NBUF_DROPPED);
+			return;
+		}
+	}
+
+	if(!(flags & TCP_SYN)) {
+		tcp_send_reset(pcb);
+		netbuf_set_flag(nb, NBUF_DROPPED);
+		return;
+	}
+
+	pcb->rcv_next = hdr->seq_no + 1;
+	if(flags & TCP_ACK) {
+		pcb->snd_unack = hdr->ack_no;
+		tcp_clear_rto(pcb);
+	}
+
+	if(pcb->snd_unack > pcb->iss) {
+		pcb->state = TCP_ESTABLISHED;
+		pcb->snd_unack = pcb->snd_next;
+		pcb->backoff = 0;
+		pcb->rto = TCP_RTO;
+		tcp_send_ack(pcb);
+		tcp_parse_options(pcb, hdr);
+	}
+
+	netbuf_set_flag(nb, NBUF_ARRIVED);
+}
+
+void tcp_process(struct socket *sock , struct netbuf *nb)
+{
+	struct tcp_pcb *pcb;
+
+	pcb = container_of(sock, struct tcp_pcb, sock);
+
+	switch(pcb->state) {
+	case TCP_CLOSED:
+		break;
+
+	case TCP_SYN_SENT:
+		tcp_pcb_lock(pcb);
+		tcp_syn_sent(pcb, nb);
+		tcp_pcb_unlock(pcb);
+		return;
+
+	default:
+		break;
+	}
 }

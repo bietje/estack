@@ -67,6 +67,7 @@ struct DLL_EXPORT netbuf {
 	struct netdev *dev;
 	uint16_t protocol;
 	uint32_t flags;
+	uint32_t sequence_end;
 };
 
 CDECL

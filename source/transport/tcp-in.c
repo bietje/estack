@@ -63,12 +63,15 @@ void tcp_input(struct netbuf *nb)
 		addr.type = IPADDR_TYPE_V4;
 		addr.addr.in4_addr.s_addr = htonl(ipv4_get_daddr(nb->network.data));
 		sock = socket_find(&addr, hdr->dport);
-		hdr->dport = ntohs(hdr->dport);
-
 	}
+
+	hdr->dport = ntohs(hdr->dport);
+	hdr->seq_no = ntohl(hdr->seq_no);
+	hdr->window = ntohs(hdr->window);
+	hdr->ack_no = ntohl(hdr->ack_no);
 
 	if(sock) {
 		print_dbg("TCP segment arrived!\n");
-		netbuf_set_flag(nb, NBUF_ARRIVED);
+		tcp_process(sock, nb);
 	}
 }
