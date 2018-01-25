@@ -29,3 +29,10 @@ estack-rtos:
     - make run_tcpconnect
   only:
     - master
+
+estack-rtos-avr:
+  script:
+    - mkdir avrbuild
+    - cd avrbuild
+    - cmake .. -DCMAKE_TOOLCHAIN_FILE=../avr/avr.cmake -DPORT ATMega323 -DCOMPILER=GCC -DCONFIG_NO_SYS -DCONFIG_POLL_TMO=100 -DCONFIG_CACHE_AGE=60 -DCMAKE_BUILD_TYPE=Release
+    - make
