@@ -42,6 +42,8 @@ struct sock_rcv_buffer {
 
 struct DLL_EXPORT socket {
 	int fd;
+	int err;
+
 	ip_addr_t local; //!< Local address
 	ip_addr_t addr; //!< Remote address
 	uint16_t rport;  //!< Remote port

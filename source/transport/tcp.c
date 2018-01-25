@@ -188,11 +188,17 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 	struct tcp_pcb *pcb;
 	struct netbuf *nb;
 
-	print_dbg("TCP RTO timer fired! (%lu)\n", estack_utime());
 	pcb = (struct tcp_pcb*)arg;
 	switch(pcb->state) {
 	case TCP_SYN_SENT:
 		tcp_pcb_lock(pcb);
+		if(pcb->backoff >= TCP_CONN_TMO) {
+			pcb->sock.err = -ETIMEOUT;
+			estack_timer_stop(timer);
+			estack_event_signal(&pcb->sock.read_event);
+			return;
+		}
+
 		nb = list_peak(&pcb->unack_q, struct netbuf, entry);
 		nb->protocol = IP_PROTO_TCP;
 		tcp_output(nb, pcb, pcb->snd_unack);
@@ -204,6 +210,8 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 	default:
 		break;
 	}
+
+	print_dbg("TCP RTO timer fired! (%lu)\n", estack_utime());
 }
 
 int tcp_connect(struct socket *sock)
@@ -260,8 +268,8 @@ int tcp_connect(struct socket *sock)
 	rc = tcp_send_syn(pcb, dev);
 	pcb->snd_next++;
 	tcp_pcb_unlock(pcb);
-
-	return rc;
+	estack_event_wait(&sock->read_event, INFINITE);
+	return sock->err;
 }
 
 static void tcp_parse_options(struct tcp_pcb *pcb, struct tcp_hdr *hdr)
@@ -414,6 +422,7 @@ static void tcp_syn_sent(struct tcp_pcb *pcb, struct netbuf *nb)
 		pcb->rto = TCP_RTO;
 		tcp_send_ack(pcb);
 		tcp_parse_options(pcb, hdr);
+		estack_event_signal(&pcb->sock.read_event);
 	}
 
 	netbuf_set_flag(nb, NBUF_ARRIVED);

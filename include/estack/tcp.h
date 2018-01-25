@@ -28,6 +28,8 @@
 
 #define TCP_SYN_BACKOFF 500
 
+#define TCP_CONN_TMO 3
+
 /* TCP flags */
 #define TCP_FIN 0x01U
 #define TCP_SYN 0x02U

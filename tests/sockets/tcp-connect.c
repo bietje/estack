@@ -83,6 +83,14 @@ static void test_setup_routes(struct netdev *dev)
 	route4_add(0, 0, gw, dev);
 }
 
+static void pcap_packet_feeder(void *arg)
+{
+	struct netdev *dev = arg;
+
+	estack_sleep(600);
+	pcapdev_next_src(dev);
+}
+
 static void socket_task(void *arg)
 {
 	int fd;
@@ -91,9 +99,12 @@ static void socket_task(void *arg)
 	uint32_t ipaddr;
 	struct sockaddr_in in;
 	const char **argv = arg;
+	estack_thread_t pcap;
 
+	pcap.name = "feeder";
 	estack_init(stdout);
 	dev = pcapdev_create((const char**) argv+1, 1, "tcptest-output.pcap", hwaddr, 1500);
+	estack_thread_create(&pcap, pcap_packet_feeder, dev);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, ipv4_atoi("145.49.61.83"), 0, 0xFFFFC000);
 
@@ -107,8 +118,6 @@ static void socket_task(void *arg)
 	in.sin_port = htons(80);
 	in.sin_family = AF_INET;
 	assert(estack_connect(fd, (struct sockaddr*)&in, sizeof(in)) == 0);
-	estack_sleep(600);
-	pcapdev_next_src(dev);
 
 	estack_sleep(1600);
 	estack_close(fd);
@@ -118,6 +127,7 @@ static void socket_task(void *arg)
 	pcapdev_destroy(dev);
 	estack_destroy();
 
+	estack_thread_destroy(&pcap);
 	vTaskEndScheduler();
 }
 
@@ -130,7 +140,6 @@ int main(int argc, char **argv)
 	}
 
 	tp.name = "sock-tsk";
-
 	estack_thread_create(&tp, socket_task, argv);
 
 #ifdef HAVE_RTOS

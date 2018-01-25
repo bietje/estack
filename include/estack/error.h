@@ -22,4 +22,6 @@ typedef enum error_code {
 	EISCONNECTED,
 } error_t;
 
+#define ETIMEOUT ETMO
+
 #endif // !__ESTACK_ERROR_H__
