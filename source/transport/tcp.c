@@ -268,7 +268,7 @@ int tcp_connect(struct socket *sock)
 	rc = tcp_send_syn(pcb, dev);
 	pcb->snd_next++;
 	tcp_pcb_unlock(pcb);
-	estack_event_wait(&sock->read_event, INFINITE);
+	estack_event_wait(&sock->read_event, FOREVER);
 	return sock->err;
 }
 
