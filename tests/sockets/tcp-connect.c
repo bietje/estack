@@ -122,12 +122,15 @@ static void socket_task(void *arg)
 	estack_sleep(1600);
 	estack_close(fd);
 
+	estack_thread_destroy(&pcap);
+
+	assert(netdev_get_rx_bytes(dev) == 60);
+	assert(netdev_get_tx_bytes(dev) == 170);
 	netdev_print(dev, stdout);
 	route4_clear();
 	pcapdev_destroy(dev);
 	estack_destroy();
 
-	estack_thread_destroy(&pcap);
 	vTaskEndScheduler();
 }
 
