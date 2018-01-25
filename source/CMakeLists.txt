@@ -8,6 +8,7 @@ include (TestBigEndian)
 include( ${PROJECT_SOURCE_DIR}/cmake/port.cmake )
 
 SET(CONFIG_POLL_TMO CACHE STRING 100)
+SET(CONFIG_CACHE_AGE CACHE STRING 60)
 
 SET(ESTACK_SRCS
 netbuf.c
