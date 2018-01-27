@@ -60,6 +60,7 @@ static void tcp_release_queue(struct list_head *lh)
 		dev = nb->dev;
 		estack_mutex_lock(&dev->mtx, 0);
 		list_del(entry);
+		netdev_remove_backlog_if(nb->dev, nb);
 		netbuf_free(nb);
 		estack_mutex_unlock(&dev->mtx);
 	}
@@ -189,8 +190,10 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 {
 	struct tcp_pcb *pcb;
 	struct netbuf *nb;
+	struct netdev *dev;
 
 	pcb = (struct tcp_pcb*)arg;
+	dev = pcb->sock.dev;
 	switch(pcb->state) {
 	case TCP_SYN_SENT:
 		tcp_pcb_lock(pcb);
@@ -201,7 +204,9 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 			return;
 		}
 
+		estack_mutex_lock(&dev->mtx, FOREVER);
 		nb = list_peak(&pcb->unack_q, struct netbuf, entry);
+		estack_mutex_unlock(&dev->mtx);
 		nb->protocol = IP_PROTO_TCP;
 		tcp_output(nb, pcb, pcb->snd_unack);
 		pcb->backoff += 1;
@@ -240,19 +245,16 @@ int tcp_connect(struct socket *sock)
 	}
 
 	if(sock->addr.type == IPADDR_TYPE_V4) {
-		dev = route4_lookup(sock->addr.addr.in4_addr.s_addr, NULL);
-		pcb->dev = dev;
+		dev = pcb->sock.dev;
 	} else {
 		print_dbg("TCP/IPv6 not yet supported!\n");
 		return -EINVALID;
 	}
 
-	if(!pcb->dev) {
+	if(!dev) {
 		tcp_pcb_unlock(pcb);
 		return -EINVALID;
 	}
-
-	sock->dev = dev;
 
 	pcb->mss = TCP_MSS;
 	pcb->rcv_window = TCP_WINSIZE;
@@ -332,6 +334,7 @@ static void tcp_clear_rto(struct tcp_pcb *pcb)
 		nb = list_entry(entry, struct netbuf, entry);
 		if(nb->sequence_end <= pcb->snd_unack) {
 			list_del(entry);
+			netdev_remove_backlog_if(pcb->sock.dev, nb);
 			if(pcb->inflight > 0)
 				pcb->inflight--;
 			netbuf_free(nb);

@@ -48,17 +48,15 @@ int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_t seq)
 	nb->protocol = IP_PROTO_TCP;
 
 	sock = &pcb->sock;
+	dev = sock->dev;
+	netbuf_set_dev(nb, dev);
+	nif = &dev->nif;
+
 	if(sock->addr.type == IPADDR_TYPE_V4) {
 		dst = sock->addr.addr.in4_addr.s_addr;
-		dev = route4_lookup(dst, &saddr);
-		if(dev) {
-			nif = &dev->nif;
-			saddr = ipv4_ptoi(nif->local_ip);
-			nb->dev = dev;
-		} else {
-			saddr = 0;
-			return -EINVALID;
-		}
+		saddr = ipv4_ptoi(nif->local_ip);
+		dev = sock->dev;
+
 		csum = (uint16_t)ipv4_pseudo_partial_csum(htonl(saddr), dst, IP_PROTO_TCP,
 			htons((uint16_t)(nb->transport.size + nb->application.size)));
 		csum = ip_checksum_partial(csum, hdr, nb->transport.size);

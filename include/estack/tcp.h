@@ -83,7 +83,6 @@ typedef enum {
 struct tcp_pcb {
 	struct socket sock;
 	tcp_state_t state;
-	struct netdev *dev;
 
 	estack_timer_t keepalive;
 	estack_timer_t rtx;
