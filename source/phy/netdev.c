@@ -151,6 +151,7 @@ struct netdev *netdev_remove(const char *name)
 
 static inline void __netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
 {
+	netbuf_set_flag(nb, NBUF_BL_QUEUED);
 	list_add_tail(&nb->bl_entry, &dev->backlog.head);
 	dev->backlog.size += 1;
 }
@@ -177,6 +178,29 @@ static inline void netdev_remove_backlog_entry(struct netdev *dev, struct netbuf
 {
 	list_del(&nb->bl_entry);
 	dev->backlog.size -= 1;
+	netbuf_clear_flag(nb, NBUF_BL_QUEUED);
+}
+
+/**
+ * @brief Remove an entry from the backlog.
+ * @param dev Device to remove from.
+ * @param nb Packet buffer to remove.
+ *
+ * Check if \p nb is queued on the backlog of \p dev, and if so, remove it.
+ */
+void netdev_remove_backlog_if(struct netdev *dev, struct netbuf *nb)
+{
+	assert(dev);
+	assert(nb);
+
+	netdev_lock(dev);
+	if(unlikely(!netbuf_test_flag(nb, NBUF_BL_QUEUED))) {
+		netdev_unlock(dev);
+		return;
+	}
+
+	netdev_remove_backlog_entry(dev, nb);
+	netdev_unlock(dev);
 }
 
 static int netdev_backlog_length(struct netdev *dev)
