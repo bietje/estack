@@ -74,7 +74,8 @@ void __ipv4_output(struct netbuf *nb, uint32_t dst)
 	}
 
 	/* Unicast */
-	dev = route4_lookup(dst, &gw);
+	route4_lookup(dst, &gw);
+	dev = nb->dev;
 	if(!dev) {
 		ipoutput_free(nb);
 		return;

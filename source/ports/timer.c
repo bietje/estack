@@ -75,10 +75,10 @@ void estack_timers_init(void)
 	estack_mutex_create(&timer_lock, 0);
 
 	timer_thread.name = "timer-thread";
-	estack_thread_create(&timer_thread, timer_thread_handle, NULL);
 	timers_lock();
 	running = true;
 	timers_unlock();
+	estack_thread_create(&timer_thread, timer_thread_handle, NULL);
 }
 
 void estack_timers_destroy(void)
@@ -122,11 +122,12 @@ int estack_timer_start(estack_timer_t *timer)
 
 int estack_timer_stop(estack_timer_t *timer)
 {
-
-	if(timer->state != TIMER_RUNNING)
-		return -EINVALID;
-
 	timers_lock();
+	if(timer->state != TIMER_RUNNING) {
+		timers_unlock();
+		return -EINVALID;
+	}
+
 	timer->state = TIMER_STOPPED;
 	list_del(&timer->entry);
 	timers_unlock();

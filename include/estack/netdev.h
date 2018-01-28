@@ -202,6 +202,7 @@ extern DLL_EXPORT void netdev_wakeup(void);
 extern DLL_EXPORT void netdev_add_destination_perm(struct netdev *dev, const uint8_t *dst, uint8_t addrlen,
 	const uint8_t *src, uint8_t saddrlen);
 extern DLL_EXPORT void netdev_wakeup_irq(void);
+extern DLL_EXPORT void netdev_remove_backlog_if(struct netdev *dev, struct netbuf *nb);
 CDECL_END
 
 /**

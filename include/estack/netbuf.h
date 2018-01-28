@@ -42,6 +42,8 @@ struct DLL_EXPORT nbdata {
 #define NBUF_NOCSUM           14
 #define NBUF_TX_KEEP          15
 
+#define NBUF_BL_QUEUED        16
+
 typedef enum {
 	NBAF_DATALINK = 0,
 	NBAF_NETWORK,

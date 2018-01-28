@@ -13,6 +13,7 @@
 
 #include <estack/error.h>
 #include <estack/socket.h>
+#include <estack/route.h>
 #include <estack/tcp.h>
 
 static int datagram_connect_ipv4(struct socket *sock, const struct sockaddr *addr, socklen_t len)
@@ -33,7 +34,6 @@ static int datagram_connect_ipv4(struct socket *sock, const struct sockaddr *add
 	sock->local.addr.in4_addr.s_addr = INADDR_ANY;
 
 	sock->flags |= SO_CONNECTED;
-
 	return 0;
 }
 
@@ -43,6 +43,10 @@ static int stream_connect_ipv4(struct socket *sock, const struct sockaddr *addr,
 
 	in = (struct sockaddr_in*)addr;
 	print_dbg("Stream connect: 0x%x\n", ntohl(in->sin_addr.s_addr));
+	sock->dev = route4_lookup(ntohl(in->sin_addr.s_addr), 0);
+	if(!sock->dev)
+		return -EINVALID;
+
 	sock->rport = in->sin_port;
 	sock->addr.addr.in4_addr.s_addr = in->sin_addr.s_addr;
 	sock->addr.type = IPADDR_TYPE_V4;

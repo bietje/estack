@@ -151,6 +151,7 @@ struct netdev *netdev_remove(const char *name)
 
 static inline void __netdev_add_backlog(struct netdev *dev, struct netbuf *nb)
 {
+	netbuf_set_flag(nb, NBUF_BL_QUEUED);
 	list_add_tail(&nb->bl_entry, &dev->backlog.head);
 	dev->backlog.size += 1;
 }
@@ -177,6 +178,29 @@ static inline void netdev_remove_backlog_entry(struct netdev *dev, struct netbuf
 {
 	list_del(&nb->bl_entry);
 	dev->backlog.size -= 1;
+	netbuf_clear_flag(nb, NBUF_BL_QUEUED);
+}
+
+/**
+ * @brief Remove an entry from the backlog.
+ * @param dev Device to remove from.
+ * @param nb Packet buffer to remove.
+ *
+ * Check if \p nb is queued on the backlog of \p dev, and if so, remove it.
+ */
+void netdev_remove_backlog_if(struct netdev *dev, struct netbuf *nb)
+{
+	assert(dev);
+	assert(nb);
+
+	netdev_lock(dev);
+	if(unlikely(!netbuf_test_flag(nb, NBUF_BL_QUEUED))) {
+		netdev_unlock(dev);
+		return;
+	}
+
+	netdev_remove_backlog_entry(dev, nb);
+	netdev_unlock(dev);
 }
 
 static int netdev_backlog_length(struct netdev *dev)
@@ -535,6 +559,20 @@ static void netdev_drop_dst(struct dst_cache_entry *e)
 	}
 }
 
+static inline void netdev_xmit_cache(struct netdev *dev, struct dst_cache_entry *dst)
+{
+	struct list_head *entry, *tmp;
+	struct netbuf *nb;
+
+	list_for_each_safe(entry, tmp, &dst->packets) {
+		nb = list_entry(entry, struct netbuf, bl_entry);
+		list_del(entry);
+		netdev_unlock(dev);
+		dev->tx(nb, dst->hwaddr);
+		netdev_lock(dev);
+	}
+}
+
 static void netdev_age_cache(struct netdev *dev)
 {
 	struct list_head *entry, *tmp;
@@ -545,14 +583,13 @@ static void netdev_age_cache(struct netdev *dev)
 	list_for_each_safe(entry, tmp, &dev->destinations) {
 		dst = list_entry(entry, struct dst_cache_entry, entry);
 
-		if(dst->state != DST_RESOLVED)
+		if(dst->state != DST_RESOLVED || (dst->flags & DST_PERM_MASK))
 			continue;
 
-		if(dst->timeout <= now && !(dst->flags & DST_PERM_MASK)) {
-			if(!list_empty(&dst->packets))
-				continue;
+		if(unlikely(dst->timeout <= now)) {
+			if(unlikely(!list_empty(&dst->packets)))
+				netdev_xmit_cache(dev, dst);
 
-			netdev_drop_dst(dst);
 			list_del(entry);
 			netdev_free_dst_entry(dst);
 		}

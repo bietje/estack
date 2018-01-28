@@ -1,0 +1,48 @@
+unix:
+  netdev-test:
+    command: ../build/tests/netdev/netdev-test
+    args: resources/arp-request.pcap
+  ip-test:
+    command: ../build/tests/ip/ip-test
+    args: resources/icmp-reply.pcap
+  iproute-test:
+    command: ../build/tests/ip/iproute-test
+    args: resources/icmp-reply.pcap
+  icmp-test:
+    command: ../build/tests/ip/icmp-test
+    args: resources/icmp-request.pcap
+  udp-test:
+    command: ../build/tests/sockets/udp-test
+    args: resources/udp-input.pcap resources/dns-response.pcap
+  events-test:
+    command: ../build/tests/events/events-test
+    args:
+  timer-test:
+    command: ../build/tests/events/timer-test
+    args:
+  tcp-connect-test:
+    command: ../build/tests/sockets/tcp-connect-test
+    args: resources/tcp/client/synack.pcap resources/tcp/client/finack.pcap
+  arp-test:
+    command: ../build/tests/arp/arp-test
+    args: resources/arp-request.pcap
+
+freertos:
+  rtos-test:
+    command: ../xbuild/tests/rtos/rtos-test
+    args: resources/ip-fragments.pcap
+  udp-test:
+    command: ../xbuild/tests/sockets/udp-test
+    args: resources/udp-input.pcap resources/dns-response.pcap
+  events-test:
+    command: ../xbuild/tests/events/events-test
+    args:
+  timer-test:
+    command: ../xbuild/tests/events/timer-test
+    args:
+  tcp-connect-test:
+    command: ../xbuild/tests/sockets/tcp-connect-test
+    args: resources/tcp/client/synack.pcap resources/tcp/client/finack.pcap
+  udp-output-test:
+    command: ../xbuild/tests/transport/udp-output-test
+    args:

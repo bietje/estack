@@ -135,7 +135,7 @@ void udp_output(struct netbuf *nb, ip_addr_t *daddr, uint16_t rport, uint16_t lp
 			saddr = 0;
 		}
 
-		nb->dev = dev;
+		netbuf_set_dev(nb, dev);
 		hdr->csum = 0;
 		hdr->length = htons(hdr->length);
 		chksum = ipv4_pseudo_partial_csum(htonl(saddr), dst, IP_PROTO_UDP, hdr->length);

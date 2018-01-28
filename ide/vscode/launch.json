@@ -28,7 +28,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/build/tests/ip/ip-test",
-			"args": ["resources/dns-response.pcap"],
+			"args": ["resources/icmp-reply.pcap"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}/build",
 			"environment": [],

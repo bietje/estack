@@ -4,14 +4,7 @@ estack:
     - cd build
     - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True -DCONFIG_POLL_TMO=100 -DCONFIG_CACHE_AGE=60
     - make
-    - make run_netdev
-    - make run_arp
-    - make run_ip
-    - make run_ipfrag
-    - make run_ipforward
-    - make run_events
-    - make run_udptest
-    - make run_udp_output_test
+    - python tools/utest.py -c utest.yaml -p unix -a
   only:
     - master
 
@@ -21,12 +14,7 @@ estack-rtos:
     - cd xbuild
     - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCONFIG_CACHE_AGE=60 -DCMAKE_CI=True -DCMAKE_SYSTEM_NAME=Generic -DFREERTOS=True -DPORT=unix -DCONFIG_POLL_TMO=100
     - make
-    - make run_rtos
-    - make run_timers
-    - make run_events
-    - make run_udptest
-    - make run_udp_output_test
-    - make run_tcpconnect
+    - python tools/utest.py -c utest.yaml -p freertos -a
   only:
     - master
 
