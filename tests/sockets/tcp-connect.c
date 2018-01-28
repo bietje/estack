@@ -89,6 +89,8 @@ static void pcap_packet_feeder(void *arg)
 
 	estack_sleep(600);
 	pcapdev_next_src(dev);
+	estack_sleep(300);
+	pcapdev_next_src(dev);
 }
 
 static void socket_task(void *arg)
@@ -103,7 +105,7 @@ static void socket_task(void *arg)
 
 	pcap.name = "feeder";
 	estack_init(stdout);
-	dev = pcapdev_create((const char**) argv+1, 1, "tcptest-output.pcap", hwaddr, 1500);
+	dev = pcapdev_create((const char**) argv+1, 2, "tcptest-output.pcap", hwaddr, 1500);
 	estack_thread_create(&pcap, pcap_packet_feeder, dev);
 	netdev_config_params(dev, 30, 15000);
 	pcapdev_create_link_ip4(dev, ipv4_atoi("145.49.61.83"), 0, 0xFFFFC000);
@@ -119,12 +121,11 @@ static void socket_task(void *arg)
 	in.sin_family = AF_INET;
 	assert(estack_connect(fd, (struct sockaddr*)&in, sizeof(in)) == 0);
 
-	estack_sleep(1600);
 	estack_close(fd);
 
 	estack_thread_destroy(&pcap);
 
-	assert(netdev_get_rx_bytes(dev) == 60);
+	//assert(netdev_get_rx_bytes(dev) == 60);
 	//assert(netdev_get_tx_bytes(dev) == 170);
 	netdev_print(dev, stdout);
 	route4_clear();

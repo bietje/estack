@@ -199,7 +199,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/build/tests/sockets/tcp-connect-test",
-			"args": ["resources/tcp/client/synack.pcap"],
+			"args": ["resources/tcp/client/synack.pcap", "resources/tcp/client/finack.pcap"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}/build",
 			"environment": [],

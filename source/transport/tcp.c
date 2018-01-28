@@ -89,9 +89,12 @@ void tcp_close(struct socket *sock)
 
 	tcb = container_of(sock, struct tcp_pcb, sock);
 	tcp_pcb_lock(tcb);
-	tcp_send_fin(tcb);	
 
-	while(tcb->state != TCP_CLOSED) {
+	if(tcb->state == TCP_ESTABLISHED)
+		tcb->state = TCP_FIN_WAIT_1;
+	tcp_send_fin(tcb);
+
+	while(tcb->state != TCP_CLOSED && tcb->state != TCP_TIME_WAIT) {
 		tcp_pcb_unlock(tcb);
 		estack_event_wait(&sock->read_event, FOREVER);
 		tcp_pcb_lock(tcb);
@@ -469,8 +472,13 @@ static void tcp_syn_sent(struct tcp_pcb *pcb, struct netbuf *nb)
 void tcp_process(struct socket *sock , struct netbuf *nb)
 {
 	struct tcp_pcb *pcb;
+	bool expected;
+	struct tcp_hdr *hdr;
+	uint16_t flags;
 
 	pcb = container_of(sock, struct tcp_pcb, sock);
+	hdr = nb->transport.data;
+	flags = tcp_hdr_get_flags(hdr);
 
 	switch(pcb->state) {
 	case TCP_CLOSED:
@@ -485,6 +493,26 @@ void tcp_process(struct socket *sock , struct netbuf *nb)
 	default:
 		break;
 	}
+
+	/* Verify sequency numbers */
+
+	/* Check reset flags */
+
+	/* Check syn */
+
+	expected = hdr->seq_no == pcb->rcv_next;
+	/* Process data */
+
+	/* In sequence FIN */
+	if((flags & TCP_FIN) && expected) {
+		pcb->rcv_next += 1;
+		tcp_send_ack(pcb);
+		estack_timer_stop(&pcb->rtx);
+		pcb->state = TCP_CLOSED;
+		estack_event_signal(&pcb->sock.read_event);
+	}
+
+	netbuf_set_flag(nb, NBUF_ARRIVED);
 }
 
 static void tcp_send_fin(struct tcp_pcb *pcb)
