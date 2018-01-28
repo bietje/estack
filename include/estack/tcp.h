@@ -166,6 +166,7 @@ extern DLL_EXPORT int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_
 
 extern DLL_EXPORT void tcp_process(struct socket *pcb, struct netbuf *nb);
 extern DLL_EXPORT void tcp_input(struct netbuf *nb);
+extern DLL_EXPORT void tcp_close(struct socket *sock);
 CDECL_END
 
 #endif

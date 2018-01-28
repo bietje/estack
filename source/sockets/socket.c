@@ -115,10 +115,12 @@ int estack_close(int fd)
 {
 	struct socket *sock;
 
-	sock = socket_remove(fd);
+	sock = socket_get(fd);
 	if(!sock)
 		return -EINVALID;
 
+	tcp_close(sock);
+	socket_remove(fd);
 	socket_free(sock);
 	return -EOK;
 }

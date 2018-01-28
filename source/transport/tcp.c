@@ -17,6 +17,8 @@
 #include <estack/tcp.h>
 #include <estack/route.h>
 
+static void tcp_send_fin(struct tcp_pcb *pcb);
+
 static inline struct tcp_pcb *tcp_sock_to_pcb(struct socket *sock)
 {
 	return container_of(sock, struct tcp_pcb, sock);
@@ -79,6 +81,23 @@ void tcp_socket_free(struct socket *sock)
 	tcp_pcb_unlock(tcb);
 	socket_destroy(sock);
 	free(tcb);
+}
+
+void tcp_close(struct socket *sock)
+{
+	struct tcp_pcb *tcb;
+
+	tcb = container_of(sock, struct tcp_pcb, sock);
+	tcp_pcb_lock(tcb);
+	tcp_send_fin(tcb);	
+
+	while(tcb->state != TCP_CLOSED) {
+		tcp_pcb_unlock(tcb);
+		estack_event_wait(&sock->read_event, FOREVER);
+		tcp_pcb_lock(tcb);
+	}
+
+	tcp_pcb_unlock(tcb);
 }
 
 static inline uint16_t tcp_datalength(struct tcp_hdr *hdr, uint16_t buffersize)
@@ -210,6 +229,19 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 		break;
 
 	default:
+		tcp_pcb_lock(pcb);
+		if(pcb->backoff >= TCP_CONN_TMO) {
+			pcb->sock.err = -ETIMEOUT;
+			estack_timer_stop(timer);
+			pcb->state = TCP_CLOSED;
+			estack_event_signal(&pcb->sock.read_event);
+			tcp_pcb_unlock(pcb);
+			return;
+		}
+
+		pcb->backoff += 1;
+		estack_timer_set_period(&pcb->rtx, pcb->rto << pcb->backoff);
+		tcp_pcb_unlock(pcb);
 		break;
 	}
 
@@ -453,4 +485,17 @@ void tcp_process(struct socket *sock , struct netbuf *nb)
 	default:
 		break;
 	}
+}
+
+static void tcp_send_fin(struct tcp_pcb *pcb)
+{
+	struct netbuf *nb;
+	struct tcp_hdr *hdr;
+
+	nb = netbuf_alloc(NBAF_TRANSPORT, TCP_HDR_LENGTH);
+	hdr = nb->transport.data;
+
+	tcp_hdr_set_flags(hdr, TCP_FIN | TCP_ACK);
+	tcp_hdr_set_hlen(hdr, TCP_HDR_LENGTH / sizeof(uint32_t));
+	tcp_queue_transmit_nb(pcb, nb);
 }
