@@ -17,6 +17,8 @@
 #include <estack/tcp.h>
 #include <estack/route.h>
 
+static void tcp_send_fin(struct tcp_pcb *pcb);
+
 static inline struct tcp_pcb *tcp_sock_to_pcb(struct socket *sock)
 {
 	return container_of(sock, struct tcp_pcb, sock);
@@ -79,6 +81,26 @@ void tcp_socket_free(struct socket *sock)
 	tcp_pcb_unlock(tcb);
 	socket_destroy(sock);
 	free(tcb);
+}
+
+void tcp_close(struct socket *sock)
+{
+	struct tcp_pcb *tcb;
+
+	tcb = container_of(sock, struct tcp_pcb, sock);
+	tcp_pcb_lock(tcb);
+
+	if(tcb->state == TCP_ESTABLISHED)
+		tcb->state = TCP_FIN_WAIT_1;
+	tcp_send_fin(tcb);
+
+	while(tcb->state != TCP_CLOSED && tcb->state != TCP_TIME_WAIT) {
+		tcp_pcb_unlock(tcb);
+		estack_event_wait(&sock->read_event, FOREVER);
+		tcp_pcb_lock(tcb);
+	}
+
+	tcp_pcb_unlock(tcb);
 }
 
 static inline uint16_t tcp_datalength(struct tcp_hdr *hdr, uint16_t buffersize)
@@ -185,6 +207,8 @@ static int tcp_send_syn(struct tcp_pcb *pcb, struct netdev *dev)
 	return tcp_queue_transmit_nb(pcb, nb);
 }
 
+#define TCP_TMO (60 * 1000)
+
 static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 {
 	struct tcp_pcb *pcb;
@@ -210,6 +234,32 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 		break;
 
 	default:
+		tcp_pcb_lock(pcb);
+
+		if(pcb->rto > TCP_TMO) {
+			pcb->sock.err = -ETIMEOUT;
+			estack_timer_stop(timer);
+			pcb->state = TCP_CLOSED;
+			estack_event_signal(&pcb->sock.read_event);
+			tcp_pcb_unlock(pcb);
+			return;
+		}
+
+		nb = list_peak(&pcb->unack_q, struct netbuf, entry);
+		nb->protocol = IP_PROTO_TCP;
+		if(tcp_hdr_get_flags(nb->transport.data) & TCP_FIN) {
+			if(pcb->state == TCP_ESTABLISHED)
+				pcb->state = TCP_FIN_WAIT_1;
+			else if(pcb->state == TCP_CLOSE_WAIT)
+				pcb->state = TCP_LAST_ACK;
+		}
+		tcp_output(nb, pcb, pcb->snd_unack);
+
+		pcb->backoff += 1;
+		pcb->rto *= 2;
+		estack_timer_set_period(&pcb->rtx, pcb->rto << pcb->backoff);
+
+		tcp_pcb_unlock(pcb);
 		break;
 	}
 
@@ -437,8 +487,13 @@ static void tcp_syn_sent(struct tcp_pcb *pcb, struct netbuf *nb)
 void tcp_process(struct socket *sock , struct netbuf *nb)
 {
 	struct tcp_pcb *pcb;
+	bool expected;
+	struct tcp_hdr *hdr;
+	uint16_t flags;
 
 	pcb = container_of(sock, struct tcp_pcb, sock);
+	hdr = nb->transport.data;
+	flags = tcp_hdr_get_flags(hdr);
 
 	switch(pcb->state) {
 	case TCP_CLOSED:
@@ -453,4 +508,37 @@ void tcp_process(struct socket *sock , struct netbuf *nb)
 	default:
 		break;
 	}
+
+	/* Verify sequency numbers */
+
+	/* Check reset flags */
+
+	/* Check syn */
+
+	expected = hdr->seq_no == pcb->rcv_next;
+	/* Process data */
+
+	/* In sequence FIN */
+	if((flags & TCP_FIN) && expected) {
+		pcb->rcv_next += 1;
+		tcp_send_ack(pcb);
+		estack_timer_stop(&pcb->rtx);
+		pcb->state = TCP_CLOSED;
+		estack_event_signal(&pcb->sock.read_event);
+	}
+
+	netbuf_set_flag(nb, NBUF_ARRIVED);
+}
+
+static void tcp_send_fin(struct tcp_pcb *pcb)
+{
+	struct netbuf *nb;
+	struct tcp_hdr *hdr;
+
+	nb = netbuf_alloc(NBAF_TRANSPORT, TCP_HDR_LENGTH);
+	hdr = nb->transport.data;
+
+	tcp_hdr_set_flags(hdr, TCP_FIN | TCP_ACK);
+	tcp_hdr_set_hlen(hdr, TCP_HDR_LENGTH / sizeof(uint32_t));
+	tcp_queue_transmit_nb(pcb, nb);
 }
