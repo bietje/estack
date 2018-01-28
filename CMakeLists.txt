@@ -12,6 +12,8 @@ include(CMakeToolsHelpers OPTIONAL)
 include(CheckIncludeFiles)
 include(CheckTypeSize)
 
+find_package(Doxygen)
+
 if(UNIX OR CMAKE_SYSTEM_NAME MATCHES Generic)
 	if(CMAKE_BUILD_TYPE MATCHES Debug)
 		SET(CFLAGS_EXTRA "-ggdb -g3")
@@ -71,3 +73,10 @@ endif()
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
 add_subdirectory(tests)
 ENDIF()
+
+configure_file(${CMAKE_SOURCE_DIR}/Doxyfile ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
+add_custom_target(doc
+${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
+WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+COMMENT "Generating API documentation with Doxygen" VERBATIM
+)
