@@ -204,7 +204,7 @@ static int tcp_send_syn(struct tcp_pcb *pcb, struct netdev *dev)
 	return tcp_queue_transmit_nb(pcb, nb);
 }
 
-#define TCP_TMO (60 * 1000)
+#define TCP_TMO (60UL * 1000UL)
 
 static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 {
