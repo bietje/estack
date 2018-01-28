@@ -71,3 +71,5 @@ endif()
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
 add_subdirectory(tests)
 ENDIF()
+
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/utest.yaml ${CMAKE_BINARY_DIR}/utest.yaml COPYONLY)
