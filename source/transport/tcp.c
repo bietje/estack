@@ -55,16 +55,12 @@ static void tcp_release_queue(struct list_head *lh)
 {
 	struct netbuf *nb;
 	struct list_head *entry, *tmp;
-	struct netdev *dev;
 
 	list_for_each_safe(entry, tmp, lh) {
 		nb = list_entry(entry, struct netbuf, entry);
-		dev = nb->dev;
-		estack_mutex_lock(&dev->mtx, 0);
 		list_del(entry);
 		netdev_remove_backlog_if(nb->dev, nb);
 		netbuf_free(nb);
-		estack_mutex_unlock(&dev->mtx);
 	}
 }
 
@@ -250,8 +246,10 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 			return;
 		}
 
+		estack_mutex_lock(&dev->mtx, FOREVER);
 		nb = list_peak(&pcb->unack_q, struct netbuf, entry);
 		nb->protocol = IP_PROTO_TCP;
+		estack_mutex_unlock(&dev->mtx);
 		if(tcp_hdr_get_flags(nb->transport.data) & TCP_FIN) {
 			if(pcb->state == TCP_ESTABLISHED)
 				pcb->state = TCP_FIN_WAIT_1;
