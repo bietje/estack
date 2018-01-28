@@ -119,7 +119,8 @@ int estack_close(int fd)
 	if(!sock)
 		return -EINVALID;
 
-	tcp_close(sock);
+	if(sock->flags & SO_TCP)
+		tcp_close(sock);
 	socket_remove(fd);
 	socket_free(sock);
 	return -EOK;
