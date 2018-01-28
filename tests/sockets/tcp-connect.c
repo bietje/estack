@@ -89,7 +89,7 @@ static void pcap_packet_feeder(void *arg)
 
 	estack_sleep(600);
 	pcapdev_next_src(dev);
-	estack_sleep(300);
+	estack_sleep(1100);
 	pcapdev_next_src(dev);
 }
 

@@ -207,6 +207,8 @@ static int tcp_send_syn(struct tcp_pcb *pcb, struct netdev *dev)
 	return tcp_queue_transmit_nb(pcb, nb);
 }
 
+#define TCP_TMO (60 * 1000)
+
 static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 {
 	struct tcp_pcb *pcb;
@@ -233,7 +235,8 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 
 	default:
 		tcp_pcb_lock(pcb);
-		if(pcb->backoff >= TCP_CONN_TMO) {
+
+		if(pcb->rto > TCP_TMO) {
 			pcb->sock.err = -ETIMEOUT;
 			estack_timer_stop(timer);
 			pcb->state = TCP_CLOSED;
@@ -242,8 +245,20 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 			return;
 		}
 
+		nb = list_peak(&pcb->unack_q, struct netbuf, entry);
+		nb->protocol = IP_PROTO_TCP;
+		if(tcp_hdr_get_flags(nb->transport.data) & TCP_FIN) {
+			if(pcb->state == TCP_ESTABLISHED)
+				pcb->state = TCP_FIN_WAIT_1;
+			else if(pcb->state == TCP_CLOSE_WAIT)
+				pcb->state = TCP_LAST_ACK;
+		}
+		tcp_output(nb, pcb, pcb->snd_unack);
+
 		pcb->backoff += 1;
+		pcb->rto *= 2;
 		estack_timer_set_period(&pcb->rtx, pcb->rto << pcb->backoff);
+
 		tcp_pcb_unlock(pcb);
 		break;
 	}
