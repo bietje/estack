@@ -89,7 +89,7 @@ static void pcap_packet_feeder(void *arg)
 
 	estack_sleep(600);
 	pcapdev_next_src(dev);
-	estack_sleep(1100);
+	estack_sleep(1200);
 	pcapdev_next_src(dev);
 }
 
@@ -125,9 +125,9 @@ static void socket_task(void *arg)
 
 	estack_thread_destroy(&pcap);
 
+	netdev_print(dev, stdout);
 	assert(netdev_get_rx_bytes(dev) == 114);
 	assert(netdev_get_tx_bytes(dev) == 332);
-	netdev_print(dev, stdout);
 	route4_clear();
 	pcapdev_destroy(dev);
 	estack_destroy();
