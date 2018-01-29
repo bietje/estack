@@ -510,6 +510,7 @@ void tcp_process(struct socket *sock , struct netbuf *nb)
 		break;
 	}
 
+	tcp_pcb_lock(pcb);
 	/* Verify sequency numbers */
 
 	/* Check reset flags */
@@ -529,6 +530,7 @@ void tcp_process(struct socket *sock , struct netbuf *nb)
 	}
 
 	netbuf_set_flag(nb, NBUF_ARRIVED);
+	tcp_pcb_unlock(pcb);
 }
 
 static void tcp_send_fin(struct tcp_pcb *pcb)
