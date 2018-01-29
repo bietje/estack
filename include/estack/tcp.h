@@ -16,6 +16,12 @@
 #include <estack/socket.h>
 #include <estack/list.h>
 
+#ifdef CONFIG_TCP_LINGER
+#define TCP_2MSL CONFIG_TCP_LINGER
+#else
+#define TCP_2MSL (60*1000UL)
+#endif
+
 #define TCP_OPT_NOOP 1
 #define TCP_OPTLEN_MSS 4
 #define TCP_OPT_MSS 2
@@ -159,13 +165,20 @@ static inline void *tcp_hdr_get_options(struct tcp_hdr *hdr)
 }
 
 extern DLL_EXPORT struct socket *tcp_socket_alloc(void);
-extern DLL_EXPORT void tcp_socket_free(struct socket *sock);
 extern DLL_EXPORT int tcp_connect(struct socket *sock);
 extern DLL_EXPORT int tcp_output(struct netbuf *nb, struct tcp_pcb *pcb, uint32_t seq);
 
 extern DLL_EXPORT void tcp_process(struct socket *pcb, struct netbuf *nb);
 extern DLL_EXPORT void tcp_input(struct netbuf *nb);
 extern DLL_EXPORT void tcp_close(struct socket *sock);
+
+static inline void tcp_socket_free(struct socket *sock)
+{
+	struct tcp_pcb *pcb;
+
+	pcb = container_of(sock, struct tcp_pcb, sock);
+	free(pcb);
+}
 CDECL_END
 
 #endif

@@ -64,20 +64,13 @@ static void tcp_release_queue(struct list_head *lh)
 	}
 }
 
-void tcp_socket_free(struct socket *sock)
+static void tcp_pcb_destroy(struct tcp_pcb *tcb)
 {
-	struct tcp_pcb *tcb;
-
-	tcb = container_of(sock, struct tcp_pcb, sock);
-	tcp_pcb_lock(tcb);
 	estack_timer_destroy(&tcb->rtx);
 	estack_timer_destroy(&tcb->keepalive);
 	tcp_release_queue(&tcb->unack_q);
 	tcp_release_queue(&tcb->snd_q);
 	tcp_release_queue(&tcb->oos_q);
-	tcp_pcb_unlock(tcb);
-	socket_destroy(sock);
-	free(tcb);
 }
 
 void tcp_close(struct socket *sock)
@@ -87,14 +80,39 @@ void tcp_close(struct socket *sock)
 	tcb = container_of(sock, struct tcp_pcb, sock);
 	tcp_pcb_lock(tcb);
 
-	if(tcb->state == TCP_ESTABLISHED)
-		tcb->state = TCP_FIN_WAIT_1;
-	tcp_send_fin(tcb);
-
-	while(tcb->state != TCP_CLOSED && tcb->state != TCP_TIME_WAIT) {
+	switch(tcb->state) {
+	case TCP_CLOSED:
+	case TCP_LISTEN:
+	case TCP_SYN_SENT:
+	case TCP_SYN_RECEIVED:
+		tcp_pcb_destroy(tcb);
 		tcp_pcb_unlock(tcb);
-		estack_event_wait(&sock->read_event, FOREVER);
-		tcp_pcb_lock(tcb);
+		socket_remove(sock->fd);
+		socket_destroy(sock);
+		free(tcb);
+		return;
+
+	case TCP_CLOSING:
+	case TCP_LAST_ACK:
+	case TCP_TIME_WAIT:
+	case TCP_FIN_WAIT_1:
+	case TCP_FIN_WAIT_2:
+		sock->err = EINVALID;
+		break;
+
+	case TCP_ESTABLISHED:
+		tcb->state = TCP_FIN_WAIT_1;
+		tcp_send_fin(tcb);
+		tcp_pcb_unlock(tcb);
+		return;
+
+	case TCP_CLOSE_WAIT:
+		tcp_send_fin(tcb);
+		break;
+
+	default:
+		print_dbg("Unknown TCP state for `tcp_close()'\n");
+		break;
 	}
 
 	tcp_pcb_unlock(tcb);
@@ -126,6 +144,11 @@ static int tcp_queue_transmit_nb(struct tcp_pcb *pcb, struct netbuf *nb)
 		netbuf_set_flag(nb, NBUF_TX_KEEP);
 		nxt = tcp_datalength(hdr, (uint16_t)nb->transport.size);
 		rc = tcp_output(nb, pcb, pcb->snd_next);
+
+		estack_mutex_lock(&pcb->sock.dev->mtx, FOREVER);
+		hdr = nb->transport.data;
+		estack_mutex_unlock(&pcb->sock.dev->mtx);
+
 		pcb->inflight++;
 		pcb->snd_next += nxt;
 		nb->sequence_end = pcb->snd_next;
@@ -450,19 +473,19 @@ static void tcp_syn_sent(struct tcp_pcb *pcb, struct netbuf *nb)
 			if(flags & TCP_RST)
 				tcp_reset(pcb);
 
-			netbuf_set_flag(nb, NBUF_DROPPED);
+			netbuf_set_dropped(nb);
 			return;
 		}
 
 		if(hdr->ack_no < pcb->snd_unack || hdr->ack_no > pcb->snd_next) {
-			netbuf_set_flag(nb, NBUF_DROPPED);
+			netbuf_set_dropped(nb);
 			return;
 		}
 	}
 
 	if(!(flags & TCP_SYN)) {
 		tcp_send_reset(pcb);
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
@@ -483,6 +506,26 @@ static void tcp_syn_sent(struct tcp_pcb *pcb, struct netbuf *nb)
 	}
 
 	netbuf_set_flag(nb, NBUF_ARRIVED);
+}
+
+static void tcp_linger_timer(estack_timer_t *timer, void *arg)
+{
+	struct tcp_pcb *pcb;
+
+	pcb = (struct tcp_pcb*)arg;
+	tcp_pcb_lock(pcb);
+	pcb->sock.flags |= SO_DONE;
+	estack_timer_stop(&pcb->keepalive);
+	tcp_pcb_unlock(pcb);
+}
+
+static void tcp_enter_wait(struct tcp_pcb *pcb)
+{
+	tcp_pcb_destroy(pcb);
+	pcb->state = TCP_TIME_WAIT;
+	estack_timer_create(&pcb->keepalive, "tcp-linger", TCP_2MSL, TIMER_ONSHOT_FLAG,
+		pcb, tcp_linger_timer);
+	estack_timer_start(&pcb->keepalive);
 }
 
 void tcp_process(struct socket *sock , struct netbuf *nb)
@@ -522,11 +565,49 @@ void tcp_process(struct socket *sock , struct netbuf *nb)
 
 	/* In sequence FIN */
 	if((flags & TCP_FIN) && expected) {
+		switch(pcb->state) {
+		case TCP_CLOSED:
+		case TCP_LISTEN:
+		case TCP_SYN_SENT:
+			netbuf_set_dropped(nb);
+			tcp_pcb_unlock(pcb);
+			return;
+		default:
+			break;
+		}
+
 		pcb->rcv_next += 1;
 		tcp_send_ack(pcb);
 		estack_timer_stop(&pcb->rtx);
-		pcb->state = TCP_CLOSED;
 		estack_event_signal(&pcb->sock.read_event);
+
+		switch(pcb->state) {
+			case TCP_SYN_RECEIVED:
+			case TCP_ESTABLISHED:
+				pcb->state = TCP_CLOSE_WAIT;
+				break;
+
+			case TCP_FIN_WAIT_1:
+				if(list_empty(&pcb->snd_q))
+					tcp_enter_wait(pcb);
+				else
+					pcb->state = TCP_CLOSING;
+
+				break;
+			case TCP_FIN_WAIT_2:
+				tcp_enter_wait(pcb);
+				break;
+
+			case TCP_CLOSE_WAIT:
+			case TCP_CLOSING:
+			case TCP_LAST_ACK:
+			default:
+				break;
+
+			case TCP_TIME_WAIT:
+				/* TODO: restart the 2MSL timer */
+				break;
+		}
 	}
 
 	netbuf_set_flag(nb, NBUF_ARRIVED);

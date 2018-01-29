@@ -56,7 +56,7 @@ static void timer_thread_handle(void *arg)
 				timer->handle(timer, timer->arg);
 				timers_lock();
 
-				if(timer->oneshot) {
+				if(timer->state == TIMER_RUNNING && timer->oneshot) {
 					list_del(entry);
 					timer->state = TIMER_STOPPED;
 				} else {

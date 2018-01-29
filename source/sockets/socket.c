@@ -51,11 +51,7 @@ static void socket_free(struct socket *sock)
 {
 	assert(sock);
 
-	if(sock->flags & (SO_STREAM | SO_TCP)) {
-		tcp_socket_free(sock);
-		return;
-	}
-
+	socket_remove(sock->fd);
 	socket_destroy(sock);
 	free(sock);
 }
@@ -121,7 +117,8 @@ int estack_close(int fd)
 
 	if(sock->flags & SO_TCP)
 		tcp_close(sock);
-	socket_remove(fd);
-	socket_free(sock);
+	else
+		socket_free(sock);
+
 	return -EOK;
 }

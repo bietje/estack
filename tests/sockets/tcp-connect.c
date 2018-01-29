@@ -20,6 +20,7 @@
 #include <estack/socket.h>
 #include <estack/route.h>
 #include <estack/in.h>
+#include <estack/tcp.h>
 
 #define HW_ADDR1 {0xf0, 0xf7, 0x55, 0xbd, 0xbe, 0x40}
 static const uint8_t hw1[] = HW_ADDR1;
@@ -83,13 +84,14 @@ static void test_setup_routes(struct netdev *dev)
 	route4_add(0, 0, gw, dev);
 }
 
+#define FINACK_TMO 1200
 static void pcap_packet_feeder(void *arg)
 {
 	struct netdev *dev = arg;
 
 	estack_sleep(600);
 	pcapdev_next_src(dev);
-	estack_sleep(1200);
+	estack_sleep(FINACK_TMO);
 	pcapdev_next_src(dev);
 }
 
@@ -122,7 +124,7 @@ static void socket_task(void *arg)
 	assert(estack_connect(fd, (struct sockaddr*)&in, sizeof(in)) == 0);
 
 	estack_close(fd);
-
+	estack_sleep(FINACK_TMO + TCP_2MSL + (CONFIG_POLL_TMO * 2));
 	estack_thread_destroy(&pcap);
 
 	netdev_print(dev, stdout);

@@ -18,6 +18,7 @@
 #cmakedefine HAVE_RTOS
 #cmakedefine CONFIG_POLL_TMO ${CONFIG_POLL_TMO}
 #cmakedefine CONFIG_CACHE_AGE ${CONFIG_CACHE_AGE}
+#cmakedefine CONFIG_TCP_LINGER ${CONFIG_TCP_LINGER}
 #cmakedefine CONFIG_NO_SYS
 
 #cmakedefine HAVE_SIZE_T

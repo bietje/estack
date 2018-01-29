@@ -53,7 +53,7 @@ void tcp_input(struct netbuf *nb)
 	}
 
 	if(tcp_input_verify(nb, hdr)) {
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
@@ -73,5 +73,8 @@ void tcp_input(struct netbuf *nb)
 	if(sock) {
 		print_dbg("TCP segment arrived!\n");
 		tcp_process(sock, nb);
+	} else {
+		print_dbg("TCP segment dropped: NO SOCKET!\n");
+		netbuf_set_dropped(nb);
 	}
 }
