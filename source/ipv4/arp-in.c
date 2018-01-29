@@ -74,19 +74,19 @@ static void arp_input_ipv4(struct netbuf *nb, struct arp_header *hdr)
 	 * Discard packets that aren't ment for us
 	 */
 	if(ipv4_ptoi(nif->local_ip) != ip4hdr->ip_target_addr) {
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
 	/* Discard packets with our own source address */
 	if(ipv4_ptoi(nif->local_ip) == ip4hdr->ip_src_addr) {
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
 	/* Discard all packets that have have an ETHERNET broadcast address */
 	if(hdr->hwtype == ARP_TYPE_ETHERNET && ethernet_addr_is_broadcast(ip4hdr->hw_src_addr)) {
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
@@ -118,7 +118,7 @@ void arp_input(struct netbuf *nb)
 	struct arp_header *hdr;
 
 	if(nb->network.size < sizeof(*hdr)) {
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
@@ -133,7 +133,7 @@ void arp_input(struct netbuf *nb)
 		break;
 
 	default:
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		break;
 	}
 }

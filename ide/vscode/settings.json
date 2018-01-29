@@ -20,7 +20,7 @@
 	},
 	"cmake.configureArgs":[
 		"-DCMAKE_CI=False",
-		"-DCONFIG_POLL_TMO=1"
+		"-DCONFIG_POLL_TMO=50"
         //"-DCMAKE_SYSTEM_NAME=Generic",
         //"-DFREERTOS=True",
 		//"-DPORT=unix"

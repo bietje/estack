@@ -44,7 +44,7 @@ void udp_input(struct netbuf *nb)
 
 	hdr = nb->transport.data;
 	if(nb->transport.size <= sizeof(*hdr)) {
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
@@ -60,7 +60,7 @@ void udp_input(struct netbuf *nb)
 			
 			if(csum) {
 				print_dbg("Dropping UDP packet with bogus checksum: %x\n", csum);
-				netbuf_set_flag(nb, NBUF_DROPPED);
+				netbuf_set_dropped(nb);
 				return;
 			}
 		}

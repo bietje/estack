@@ -80,7 +80,7 @@ void ipv4_input(struct netbuf *nb)
 
 	if(version != 4) {
 		print_dbg("Dropping IPv4 packet with bogus version field (%u)!\n", version);
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
@@ -89,7 +89,7 @@ void ipv4_input(struct netbuf *nb)
 		if(csum) {
 			print_dbg("Dropping IPv4 packet with bogus checksum (is %x, should be %x)\n",
 						hdr->chksum, csum);
-			netbuf_set_flag(nb, NBUF_DROPPED);
+			netbuf_set_dropped(nb);
 			return;
 		}
 	}
@@ -101,7 +101,7 @@ void ipv4_input(struct netbuf *nb)
 		print_dbg("Dropping IPv4 packet with bogus header length (%u)!\n", hdrlen);
 		print_dbg("\tHeader size: %u\n", hdrlen);
 		print_dbg("\tsizeof(ipv4_header): %u :: Buffer size: %u\n", sizeof(*hdr), nb->network.size);
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
@@ -124,7 +124,7 @@ void ipv4_input(struct netbuf *nb)
 		/* TODO: implement multicast */
 		print_dbg("Multicast not supported, dropping IP datagram.\n");
 		netbuf_set_flag(nb, NBUF_MULTICAST);
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	} else {
 		netbuf_set_flag(nb, NBUF_UNICAST);
@@ -132,7 +132,7 @@ void ipv4_input(struct netbuf *nb)
 
 	nb->transport.size = hdr->length - hdrlen;
 	if(nb->transport.size < hdrlen) {
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
@@ -143,7 +143,7 @@ void ipv4_input(struct netbuf *nb)
 		if(ipv4_forward(nb, hdr))
 			return;
 		print_dbg("Dropping IP packet that isn't ment for us..\n");
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 

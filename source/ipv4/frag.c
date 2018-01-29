@@ -130,7 +130,7 @@ static int ipfrag_try_add_packet(struct fragment_bucket *fb, struct netbuf *nb)
 			/* we already have the packet or there is overlap,
 			   drop the packet in both scenario's.
 			*/
-			netbuf_set_flag(nb, NBUF_DROPPED);
+			netbuf_set_dropped(nb);
 			return -1;
 		}
 

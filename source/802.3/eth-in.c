@@ -50,7 +50,7 @@ void ethernet_input(struct netbuf *nb)
 
 	default:
 		print_dbg("Unkown ethernet type detected (packet dropped) (type number: %u)\n", nb->protocol);
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		break;
 	}
 }

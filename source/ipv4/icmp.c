@@ -86,7 +86,7 @@ void icmp_input(struct netbuf *nb)
 	header = nb->transport.data;
 
 	if(!header || nb->transport.size < sizeof(*header)) {
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		return;
 	}
 
@@ -110,7 +110,7 @@ void icmp_input(struct netbuf *nb)
 		break;
 
 	default:
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 		break;
 	}
 }

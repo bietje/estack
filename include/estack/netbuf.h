@@ -132,9 +132,15 @@ static inline int netbuf_dropped(struct netbuf *nb)
 	return netbuf_test_flag(nb, NBUF_DROPPED);
 }
 
+static inline void netbuf_set_dropped(struct netbuf *nb)
+{
+	nb->flags |= 1 << NBUF_DROPPED;
+	nb->flags |= 1 << NBUF_ARRIVED;
+}
+
 static inline int netbuf_arrived(struct netbuf *nb)
 {
-	return netbuf_test_flag(nb, NBUF_ARRIVED);
+	return netbuf_test_flag(nb, NBUF_ARRIVED) && !netbuf_test_flag(nb, NBUF_DROPPED);
 }
 
 extern DLL_EXPORT struct netbuf *netbuf_realloc(struct netbuf *nb, netbuf_type_t type, size_t size);

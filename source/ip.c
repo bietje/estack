@@ -118,7 +118,7 @@ void ip_input(struct netbuf *nb)
 	case PROTO_IPV6:
 	default:
 		print_dbg("Dropped supposed IP packet\n");
-		netbuf_set_flag(nb, NBUF_DROPPED);
+		netbuf_set_dropped(nb);
 	}
 }
 
