@@ -27,6 +27,7 @@
 #include <estack/netdev.h>
 #include <estack/error.h>
 #include <estack/inet.h>
+#include <estack/socket.h>
 #include <estack/log.h>
 
 /**
@@ -881,6 +882,8 @@ void netdev_poll_async(void)
 #define CONFIG_POLL_TMO 100
 #endif
 
+#define POLL_TMO_SHORT 10 
+ 
 static void netdev_poll_task(void *arg)
 {
 	int remaining;
@@ -899,7 +902,7 @@ static void netdev_poll_task(void *arg)
 		if(!remaining)
 			estack_event_wait(&devcore.event, CONFIG_POLL_TMO);
 		else
-			estack_sleep(CONFIG_POLL_TMO);
+			estack_sleep(POLL_TMO_SHORT);
 
 		netdev_lock_core();
 		if(unlikely(!devcore.running)) {
@@ -908,6 +911,7 @@ static void netdev_poll_task(void *arg)
 		}
 		netdev_unlock_core();
 
+		socket_cleanup();
 		remaining = netdev_poll_all();
 	}
 }

@@ -30,6 +30,7 @@ typedef unsigned short sa_family_t;
 #define SO_UDP    0x10
 #define SO_TCP    0x20
 #define SO_CONNECTED 0x40
+#define SO_DONE   0x80
 
 struct sock_rcv_buffer {
 	struct list_head entry;
@@ -93,6 +94,7 @@ extern DLL_EXPORT struct socket *socket_find(ip_addr_t *addr, uint16_t port);
 extern DLL_EXPORT struct socket *socket_get(int fd);
 extern DLL_EXPORT struct socket *socket_find_by_addr(const struct sockaddr *s, socklen_t length);
 extern DLL_EXPORT uint16_t eph_port_alloc(void);
+extern DLL_EXPORT void socket_cleanup(void);
 
 extern DLL_EXPORT int socket_trigger_receive(int fd, void *data, size_t length);
 extern DLL_EXPORT int estack_socket(int domain, int type, int protocol);

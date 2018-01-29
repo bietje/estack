@@ -15,6 +15,7 @@
 #include <estack/socket.h>
 #include <estack/inet.h>
 #include <estack/addr.h>
+#include <estack/tcp.h>
 
 struct socket_pool {
 	estack_mutex_t mtx;
@@ -133,6 +134,30 @@ struct socket *socket_remove(int fd)
 	socket_pool_unlock();
 
 	return sock;
+}
+
+void socket_cleanup(void)
+{
+	struct socket *sock;
+
+	socket_pool_lock();
+	for(int fd = 0; fd < MAX_SOCKETS; fd++) {
+		sock = sockets.sockets[fd];
+		if(!sock)
+			continue;
+
+		estack_mutex_lock(&sock->mtx, FOREVER);
+		if(sock->flags & SO_DONE) {
+			sockets.sockets[fd] = NULL;
+			estack_mutex_unlock(&sock->mtx);
+			socket_destroy(sock);
+			tcp_socket_free(sock);
+			continue;
+		}
+		estack_mutex_unlock(&sock->mtx);
+	}
+
+	socket_pool_unlock();
 }
 
 int socket_add(struct socket *socket)
