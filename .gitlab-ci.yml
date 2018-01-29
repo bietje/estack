@@ -2,21 +2,18 @@ estack:
   script:
     - mkdir build
     - cd build
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True -DCONFIG_POLL_TMO=100 -DCONFIG_CACHE_AGE=60
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CI=True -DCONFIG_TCP_LINGER=1000 -DCONFIG_POLL_TMO=100 -DCONFIG_CACHE_AGE=60
     - make
     - python tools/utest.py -c utest.yaml -p unix -a
-  only:
-    - master
 
 estack-rtos:
   script:
     - mkdir xbuild
     - cd xbuild
     - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCONFIG_CACHE_AGE=60 -DCMAKE_CI=True -DCMAKE_SYSTEM_NAME=Generic -DFREERTOS=True -DPORT=unix -DCONFIG_POLL_TMO=100
+    - cmake .. -DCONFIG_TCP_LINGER=1000
     - make
     - python ../tools/utest.py -c utest.yaml -p freertos -a
-  only:
-    - master
 
 estack-rtos-avr:
   script:
