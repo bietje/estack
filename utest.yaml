@@ -20,6 +20,9 @@ unix:
   timer-test:
     command: ../build/tests/events/timer-test
     args:
+  tcp-connect-close-test:
+    command: ../build/tests/sockets/tcp-connect-test
+    args: resources/tcp/client/synack.pcap resources/tcp/client/finack-server.pcap resources/tcp/client/finack-server-ack.pcap
   tcp-connect-test:
     command: ../build/tests/sockets/tcp-connect-test
     args: resources/tcp/client/synack.pcap resources/tcp/client/finack.pcap
@@ -43,6 +46,9 @@ freertos:
   tcp-connect-test:
     command: ../xbuild/tests/sockets/tcp-connect-test
     args: resources/tcp/client/synack.pcap resources/tcp/client/finack.pcap
+  tcp-connect-close-test:
+    command: ../build/tests/sockets/tcp-connect-test
+    args: resources/tcp/client/synack.pcap resources/tcp/client/finack-server.pcap resources/tcp/client/finack-server-ack.pcap
   udp-output-test:
     command: ../xbuild/tests/transport/udp-output-test
     args:
