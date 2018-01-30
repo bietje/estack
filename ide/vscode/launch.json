@@ -195,6 +195,25 @@
 			]
 		},
 		{
+			"name": "(gdb) TCP connect server close",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/build/tests/sockets/tcp-connect-test",
+			"args": ["resources/tcp/client/synack.pcap", "resources/tcp/client/finack-server.pcap", "resources/tcp/client/finack-server-ack.pcap"],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}/build",
+			"environment": [],
+			"externalConsole": true,
+			"MIMode": "gdb",
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				}
+			]
+		},
+		{
 			"name": "(gdb) TCP connect",
 			"type": "cppdbg",
 			"request": "launch",

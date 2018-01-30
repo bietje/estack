@@ -6,6 +6,9 @@ include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} ${ESTACK
 add_executable(udp-test udp-test.c)
 target_link_libraries(udp-test estack-static ${PCAP_LIBRARY} ${ESTACK_SYSTEM_LIBS})
 
+add_executable(tcp-connectclose-test tcp-connect-close.c)
+target_link_libraries(tcp-connectclose-test estack-static ${PCAP_LIBRARY} ${ESTACK_SYSTEM_LIBS})
+
 add_executable(tcp-connect-test tcp-connect.c)
 target_link_libraries(tcp-connect-test estack-static ${PCAP_LIBRARY} ${ESTACK_SYSTEM_LIBS})
 
@@ -14,7 +17,7 @@ COMMAND ${CMAKE_CURRENT_BINARY_DIR}/udp-test resources/udp-input.pcap resources/
 DEPENDS udp-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_custom_target(run_tcpconnect
-COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tcp-connect-test resources/tcp/client/synack.pcap resources/tcp/client/finack.pcap
-DEPENDS tcp-connect-test
+add_custom_target(run_tcpconnectclose
+COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tcp-connect-test resources/tcp/client/synack.pcap resources/tcp/client/finack-server.pcap resources/tcp/client/finack-server-ack.pcap
+DEPENDS tcp-connectclose-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
