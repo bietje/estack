@@ -14,4 +14,6 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/udp-input.pcap ${CMAKE_BINARY_DIR}/re
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/client/synack.pcap ${CMAKE_BINARY_DIR}/resources/tcp/client/synack.pcap COPYONLY)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/client/finack.pcap ${CMAKE_BINARY_DIR}/resources/tcp/client/finack.pcap COPYONLY)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/client/finack-server.pcap ${CMAKE_BINARY_DIR}/resources/tcp/client/finack-server.pcap COPYONLY)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/client/finack-server-ack.pcap ${CMAKE_BINARY_DIR}/resources/tcp/client/finack-server-ack.pcap COPYONLY)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/tcp/syn.pcap ${CMAKE_BINARY_DIR}/resources/tcp/syn.pcap COPYONLY)

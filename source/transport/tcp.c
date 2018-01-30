@@ -153,8 +153,11 @@ static int tcp_queue_transmit_nb(struct tcp_pcb *pcb, struct netbuf *nb)
 		pcb->snd_next += nxt;
 		nb->sequence_end = pcb->snd_next;
 
-		if(tcp_hdr_get_flags(hdr) & TCP_FIN)
+		if(tcp_hdr_get_flags(hdr) & TCP_FIN) {
 			pcb->snd_next++;
+			if(pcb->state == TCP_CLOSE_WAIT)
+				pcb->state = TCP_LAST_ACK;
+		}
 	} else {
 		list_add_tail(&nb->entry, &pcb->snd_q);
 		rc = -EOK;
@@ -237,12 +240,14 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 
 	pcb = (struct tcp_pcb*)arg;
 	dev = pcb->sock.dev;
+
+	tcp_pcb_lock(pcb);
 	switch(pcb->state) {
 	case TCP_SYN_SENT:
-		tcp_pcb_lock(pcb);
 		if(pcb->backoff >= TCP_CONN_TMO) {
 			pcb->sock.err = -ETIMEOUT;
 			estack_timer_stop(timer);
+			tcp_pcb_unlock(pcb);
 			estack_event_signal(&pcb->sock.read_event);
 			return;
 		}
@@ -250,22 +255,21 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 		estack_mutex_lock(&dev->mtx, FOREVER);
 		nb = list_peak(&pcb->unack_q, struct netbuf, entry);
 		estack_mutex_unlock(&dev->mtx);
+
 		nb->protocol = IP_PROTO_TCP;
 		tcp_output(nb, pcb, pcb->snd_unack);
 		pcb->backoff += 1;
 		estack_timer_set_period(&pcb->rtx, pcb->rto << pcb->backoff);
-		tcp_pcb_unlock(pcb);
 		break;
 
 	default:
-		tcp_pcb_lock(pcb);
 
 		if(pcb->rto > TCP_TMO) {
 			pcb->sock.err = -ETIMEOUT;
 			estack_timer_stop(timer);
 			pcb->state = TCP_CLOSED;
-			estack_event_signal(&pcb->sock.read_event);
 			tcp_pcb_unlock(pcb);
+			estack_event_signal(&pcb->sock.read_event);
 			return;
 		}
 
@@ -273,6 +277,7 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 		nb = list_peak(&pcb->unack_q, struct netbuf, entry);
 		nb->protocol = IP_PROTO_TCP;
 		estack_mutex_unlock(&dev->mtx);
+
 		if(tcp_hdr_get_flags(nb->transport.data) & TCP_FIN) {
 			if(pcb->state == TCP_ESTABLISHED)
 				pcb->state = TCP_FIN_WAIT_1;
@@ -285,9 +290,9 @@ static void tcp_rto_timer(estack_timer_t *timer, void *arg)
 		pcb->rto *= 2;
 		estack_timer_set_period(&pcb->rtx, pcb->rto << pcb->backoff);
 
-		tcp_pcb_unlock(pcb);
 		break;
 	}
+	tcp_pcb_unlock(pcb);
 
 	print_dbg("TCP RTO timer fired! (%lu)\n", estack_utime());
 }
@@ -559,6 +564,34 @@ void tcp_process(struct socket *sock , struct netbuf *nb)
 	/* Check reset flags */
 
 	/* Check syn */
+
+	/* If the write queue is empty, then our FINACK was acked */
+	if(list_empty(&pcb->snd_q)) {
+		switch(pcb->state) {
+			case TCP_FIN_WAIT_1:
+				pcb->state = TCP_FIN_WAIT_2;
+			case TCP_FIN_WAIT_2:
+				break;
+
+			case TCP_CLOSING:
+				pcb->state = TCP_TIME_WAIT;
+				break;
+
+			case TCP_LAST_ACK:
+				pcb->state = TCP_CLOSED;
+				pcb->sock.flags |= SO_DONE;
+				tcp_pcb_destroy(pcb);
+				tcp_pcb_unlock(pcb);
+				netbuf_set_flag(nb, NBUF_ARRIVED);
+				return;
+
+			case TCP_TIME_WAIT:
+				if(pcb->rcv_next == hdr->seq_no)
+					tcp_send_ack(pcb);
+			default:
+				break;
+		}
+	}
 
 	expected = hdr->seq_no == pcb->rcv_next;
 	/* Process data */
