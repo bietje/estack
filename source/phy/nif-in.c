@@ -24,7 +24,7 @@ void netif_input(struct netdev *dev, const void *data, size_t length, int protoc
 	nb = netbuf_alloc(NBAF_DATALINK, length);
 	assert(nb);
 
-	nb->protocol = protocol;
+	nb->protocol = (uint16_t)protocol;
 	netbuf_cpy_data(nb, data, length, NBAF_DATALINK);
 	netbuf_set_flag(nb, NBUF_RX);
 	netdev_add_backlog(dev, nb);
