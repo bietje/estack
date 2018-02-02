@@ -198,7 +198,7 @@
 			"name": "(gdb) TCP connect server close",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/build/tests/sockets/tcp-connect-test",
+			"program": "${workspaceFolder}/build/tests/sockets/tcp-connectclose-test",
 			"args": ["resources/tcp/client/synack.pcap", "resources/tcp/client/finack-server.pcap", "resources/tcp/client/finack-server-ack.pcap"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}/build",

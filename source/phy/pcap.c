@@ -16,9 +16,7 @@
 #include <pcap.h>
 #include <stdarg.h>
 
-#ifndef WIN32
 #include <limits.h>
-#endif
 
 #include <estack/estack.h>
 #include <estack/netbuf.h>
@@ -26,6 +24,7 @@
 #include <estack/ethernet.h>
 #include <estack/error.h>
 #include <estack/prototype.h>
+#include <estack/interface.h>
 
 struct pcapdev_private {
 	pcap_t **pio;
@@ -115,7 +114,7 @@ static int pcapdev_available(struct netdev *dev)
 
 #define PCAP_MAGIC 0xa1b2c3d4
 
-static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
+/*static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 {
 	struct pcap_pkthdr hdr;
 	struct pcapdev_private *priv;
@@ -144,13 +143,35 @@ static int pcapdev_write(struct netdev *dev, struct netbuf *nb)
 	netbuf_set_flag(nb, NBUF_ARRIVED);
 
 	return -EOK;
+}*/
+
+static int pcapdev_write(struct netdev *dev, const void *data, size_t length)
+{
+	struct pcap_pkthdr hdr;
+	struct pcapdev_private *priv;
+	time_t timestamp;
+
+	assert(dev);
+	assert(data);
+	assert(length);
+
+	priv = container_of(dev, struct pcapdev_private, dev);
+
+	memset(&hdr, 0, sizeof(hdr));
+	hdr.caplen = hdr.len = length;
+	timestamp = estack_utime();
+	hdr.ts.tv_sec = (long)(timestamp / 1e6L);
+	hdr.ts.tv_usec = timestamp % (long)1e6L;
+
+	pcap_dump((u_char*)priv->dumper, &hdr, data);
+	pcap_dump_flush(priv->dumper);
+	return -EOK;
 }
 
 static int pcapdev_read(struct netdev *dev, int num)
 {
 	struct pcap_pkthdr *hdr;
 	const u_char *data;
-	struct netbuf *nb;
 	struct pcapdev_private *priv;
 	int rv, tmp;
 	size_t length;
@@ -179,13 +200,8 @@ static int pcapdev_read(struct netdev *dev, int num)
 
 	while(priv->nread > 0 && (rv = pcap_next_ex(cap, &hdr, &data)) >= 0 && num > 0) {
 		length = hdr->len;
-		nb = netbuf_alloc(NBAF_DATALINK, length);
-		netbuf_cpy_data(nb, data, length, NBAF_DATALINK);
-		netbuf_set_flag(nb, NBUF_RX);
-		nb->protocol = PROTO_ETHERNET;
-		nb->size = length;
 		pcapdev_unlock(dev);
-		netdev_add_backlog(dev, nb);
+		netif_input(dev, data, length, PROTO_ETHERNET);
 		pcapdev_lock(dev);
 
 		num -= 1;

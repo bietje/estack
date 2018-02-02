@@ -28,6 +28,7 @@
 #include <estack/error.h>
 #include <estack/inet.h>
 #include <estack/socket.h>
+#include <estack/interface.h>
 #include <estack/log.h>
 
 /**
@@ -761,7 +762,7 @@ static int netdev_process_backlog(struct netdev *dev, int weight)
 			nb->size = netbuf_calc_size(nb);
 			netdev_prepare_xmit(dev, nb);
 
-			if(likely(dev->write(dev, nb) == -EOK)) {
+			if(likely(netif_output(dev, nb) == -EOK)) {
 				netdev_tx_stats_inc(dev, nb);
 			} else if(unlikely(netbuf_test_and_clear_flag(nb, NBUF_AGAIN))) {
 				__netdev_add_backlog(dev, nb);

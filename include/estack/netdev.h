@@ -102,10 +102,11 @@ struct DLL_EXPORT netdev {
 	/**
 	 * @brief PHY write handle.
 	 * @param dev Device pointer.
-	 * @param nb Packet buffer to write.
+	 * @param data Output data.
+	 * @param length Length of \p data.
 	 * @return Error code.
 	 */
-	int(*write)(struct netdev *dev, struct netbuf *nb);
+	int(*write)(struct netdev *dev, const void *data, size_t length);
 	/**
 	* @brief PHY read handle.
 	* @param dev Device pointer.

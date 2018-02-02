@@ -24,6 +24,8 @@ socket.c
 addr.c
 init.c
 phy/netdev.c
+phy/nif-out.c
+phy/nif-in.c
 phy/neighbour.c
 ipv4/translate.c
 ipv4/arp-in.c
@@ -97,6 +99,7 @@ in6.h
 list.h
 log.h
 neighbour.h
+interface.h
 netbuf.h
 netdev.h
 pcapdev.h
@@ -113,6 +116,7 @@ tcp.h
 
 SET(BASE_HDRS
 ${PROJECT_SOURCE_DIR}/include/estack.h
+${PROJECT_BINARY_DIR}/config.h
 ${ESTACK_PORT_HEADERS})
 
 SET(CONFIG_NO_SYS CACHE BOOL False)

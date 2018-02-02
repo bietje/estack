@@ -18,6 +18,6 @@ DEPENDS udp-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_custom_target(run_tcpconnectclose
-COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tcp-connect-test resources/tcp/client/synack.pcap resources/tcp/client/finack-server.pcap resources/tcp/client/finack-server-ack.pcap
+COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tcp-connectclose-test resources/tcp/client/synack.pcap resources/tcp/client/finack-server.pcap resources/tcp/client/finack-server-ack.pcap
 DEPENDS tcp-connectclose-test
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
