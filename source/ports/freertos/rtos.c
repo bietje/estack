@@ -271,3 +271,14 @@ int estack_timer_set_period(estack_timer_t *timer, int ms)
 
 	return -EOK;
 }
+
+#ifdef CONFIG_NO_SYS
+time_t estack_utime(void)
+{
+	time_t ticks;
+
+	ticks = xTaskGetTickCount();
+	ticks *= (float)1/configTICK_RATE_HZ * 1000ULL * 1000ULL;
+	return ticks;
+}
+#endif
